@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Image } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuthStore } from "../store/auth";
 
@@ -21,7 +21,11 @@ export default function IndexScreen() {
   if (isLoading) {
     return (
       <View style={styles.center}>
-        <Text style={styles.logo}>BlueWaste</Text>
+        <Image
+          source={require("../assets/logo-bluewaste.png")}
+          style={styles.logoImage}
+          resizeMode="contain"
+        />
         <Text style={styles.subtitle}>Loading...</Text>
       </View>
     );
@@ -30,7 +34,11 @@ export default function IndexScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.hero}>
-        <Text style={styles.logo}>🗑️ BlueWaste</Text>
+        <Image
+          source={require("../assets/logo-bluewaste.png")}
+          style={styles.logoImage}
+          resizeMode="contain"
+        />
         <Text style={styles.tagline}>
           Smart Waste Management{"\n"}for Panabo City
         </Text>
@@ -67,7 +75,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   hero: { flex: 1, justifyContent: "center", alignItems: "center" },
-  logo: { fontSize: 36, fontWeight: "800", color: "#1d4ed8", marginBottom: 12 },
+  logoImage: { width: 160, height: 160, marginBottom: 12 },
   tagline: {
     fontSize: 18,
     color: "#64748b",

@@ -3,6 +3,7 @@
 import { useAuth } from "@/providers/AuthProvider";
 import { useUnreadCount } from "@/hooks/useNotifications";
 import { Bell, Menu, LogOut } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -32,9 +33,15 @@ export function Header() {
 
         {/* Title */}
         <div className="md:hidden flex items-center space-x-2">
-          <div className="w-7 h-7 bg-primary rounded-md flex items-center justify-center">
-            <span className="text-white font-bold text-xs">BW</span>
-          </div>
+          <Image
+            src="/logo-bluewaste.png"
+            alt="BlueWaste logo"
+            width={36}
+            height={36}
+            quality={100}
+            sizes="36px"
+            className="h-9 w-9 rounded-md object-contain"
+          />
           <span className="font-bold text-primary">BlueWaste</span>
         </div>
 

@@ -3,12 +3,12 @@
     "name": "BlueWaste",
     "slug": "bluewaste",
     "version": "1.0.0",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/logo-bluewaste.png",
     "orientation": "portrait",
     "scheme": "bluewaste",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/logo-bluewaste.png",
       "resizeMode": "contain",
       "backgroundColor": "#1d4ed8"
     },
@@ -26,7 +26,7 @@
     "android": {
       "versionCode": 1,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/logo-bluewaste.png",
         "backgroundColor": "#1d4ed8"
       },
       "package": "com.bluewaste.app",

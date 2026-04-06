@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/providers/AuthProvider";
 import { useSidebar } from "@/contexts/SidebarContext";
@@ -66,9 +67,15 @@ export function Sidebar() {
             href={isAdmin ? "/dashboard" : "/citizen/report"}
             className="flex items-center space-x-2"
           >
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">BW</span>
-            </div>
+            <Image
+              src="/logo-bluewaste.png"
+              alt="BlueWaste logo"
+              width={36}
+              height={36}
+              quality={100}
+              sizes="36px"
+              className="h-9 w-9 rounded-lg object-contain"
+            />
             <span className="text-xl font-bold text-primary">BlueWaste</span>
           </Link>
         )}
@@ -76,9 +83,17 @@ export function Sidebar() {
         {isCollapsed && (
           <Link
             href={isAdmin ? "/dashboard" : "/citizen/report"}
-            className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center"
+            className="w-9 h-9 rounded-lg overflow-hidden"
           >
-            <span className="text-white font-bold text-sm">BW</span>
+            <Image
+              src="/logo-bluewaste.png"
+              alt="BlueWaste logo"
+              width={36}
+              height={36}
+              quality={100}
+              sizes="36px"
+              className="h-9 w-9 object-contain"
+            />
           </Link>
         )}
 

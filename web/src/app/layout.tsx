@@ -10,6 +10,11 @@ export const metadata: Metadata = {
   title: "BlueWaste - Smart Waste Management Platform",
   description:
     "Smart environmental platform for waste reporting and management in Panabo City",
+  icons: {
+    icon: "/logo-bluewaste.png",
+    shortcut: "/logo-bluewaste.png",
+    apple: "/logo-bluewaste.png",
+  },
 };
 
 export default function RootLayout({

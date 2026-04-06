@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   View,
   Text,
+  Image,
   TextInput,
   TouchableOpacity,
   StyleSheet,
@@ -72,7 +73,11 @@ export default function RegisterScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <Text style={styles.logo}>BlueWaste</Text>
+          <Image
+            source={require("../../assets/logo-bluewaste.png")}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
           <Text style={styles.subtitle}>Create your account</Text>
         </View>
 
@@ -168,7 +173,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   header: { alignItems: "center", marginBottom: 32 },
-  logo: { fontSize: 32, fontWeight: "800", color: "#1d4ed8" },
+  logoImage: { width: 128, height: 128, marginBottom: 6 },
   subtitle: { fontSize: 16, color: "#64748b", marginTop: 8 },
   form: { gap: 14, marginBottom: 24 },
   row: { flexDirection: "row", gap: 12 },

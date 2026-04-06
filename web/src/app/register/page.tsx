@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { useAuth } from "@/providers/AuthProvider";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,7 +21,6 @@ import {
   MapPin,
   BarChart3,
   CheckCircle2,
-  Leaf,
 } from "lucide-react";
 
 const registerSchema = z
@@ -93,9 +93,16 @@ export default function RegisterPage() {
       <div className="relative mx-auto flex min-h-screen max-w-7xl items-stretch px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
         <section className="hidden lg:flex lg:w-1/2 lg:flex-col lg:justify-between rounded-3xl border border-sky-100 bg-white/80 p-10 shadow-2xl shadow-sky-100/70 backdrop-blur-md">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary ring-1 ring-primary/20">
-              <Leaf className="h-5 w-5 text-white" />
-            </div>
+            <Image
+              src="/logo-bluewaste.png"
+              alt="BlueWaste logo"
+              width={44}
+              height={44}
+              quality={100}
+              sizes="44px"
+              className="h-11 w-11 rounded-xl object-contain ring-1 ring-primary/20"
+              priority
+            />
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-blue-700/90">
                 BlueWaste System
@@ -149,9 +156,16 @@ export default function RegisterPage() {
         <section className="w-full lg:w-1/2 lg:pl-8">
           <div className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center py-6 sm:py-10">
             <div className="mb-8 flex items-center gap-3 lg:hidden">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-lg shadow-blue-200/70">
-                <Leaf className="h-5 w-5 text-white" />
-              </div>
+              <Image
+                src="/logo-bluewaste.png"
+                alt="BlueWaste logo"
+                width={40}
+                height={40}
+                quality={100}
+                sizes="40px"
+                className="h-10 w-10 rounded-xl object-contain shadow-lg shadow-blue-200/70"
+                priority
+              />
               <div>
                 <p className="text-xs uppercase tracking-[0.18em] text-blue-700/80">
                   BlueWaste

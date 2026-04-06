@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -112,9 +113,16 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">BW</span>
-              </div>
+              <Image
+                src="/logo-bluewaste.png"
+                alt="BlueWaste logo"
+                width={44}
+                height={44}
+                quality={100}
+                sizes="44px"
+                className="h-11 w-11 rounded-lg object-contain"
+                priority
+              />
               <span className="text-xl font-bold text-primary">BlueWaste</span>
             </div>
 
@@ -460,9 +468,15 @@ export default function HomePage() {
       <footer className="bg-white border-t py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center space-x-2">
-            <div className="w-7 h-7 bg-primary rounded-md flex items-center justify-center">
-              <span className="text-white font-bold text-xs">BW</span>
-            </div>
+            <Image
+              src="/logo-bluewaste.png"
+              alt="BlueWaste logo"
+              width={36}
+              height={36}
+              quality={100}
+              sizes="36px"
+              className="h-9 w-9 rounded-md object-contain"
+            />
             <span className="font-semibold text-gray-700">BlueWaste</span>
           </div>
           <p className="text-sm text-gray-400">

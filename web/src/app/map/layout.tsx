@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/providers/AuthProvider";
 import { Button } from "@/components/ui/button";
@@ -19,9 +20,15 @@ export default function PublicMapLayout({
       <header className="border-b bg-white shadow-sm sticky top-0 z-40">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
           <Link href="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">BW</span>
-            </div>
+            <Image
+              src="/logo-bluewaste.png"
+              alt="BlueWaste logo"
+              width={44}
+              height={44}
+              quality={100}
+              sizes="44px"
+              className="h-11 w-11 rounded-lg object-contain"
+            />
             <span className="text-xl font-bold text-primary">BlueWaste</span>
           </Link>
 
