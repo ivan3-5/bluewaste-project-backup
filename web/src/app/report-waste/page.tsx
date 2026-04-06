@@ -24,6 +24,13 @@ interface AnalyzeWasteResult {
   wasteType: "Recyclable" | "Non-recyclable" | "Organic";
   confidence: number;
   imageUrl: string;
+  top_confidence?: number | null;
+  decision?: {
+    is_uncertain?: boolean;
+    message?: string | null;
+    retake_recommended?: boolean;
+    capture_tips?: string[];
+  };
   labels: string[];
   detections: DetectionBox[];
 }
@@ -50,6 +57,7 @@ export default function ReportWastePage() {
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locationStatus, setLocationStatus] = useState<string>("");
   const [address, setAddress] = useState<string>("");
+  const [decisionNotice, setDecisionNotice] = useState<string>("");
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -89,6 +97,7 @@ export default function ReportWastePage() {
 
     setError("");
     setResult(null);
+    setDecisionNotice("");
     setImageFile(file);
     setPreviewUrl(URL.createObjectURL(file));
   };
@@ -134,6 +143,7 @@ export default function ReportWastePage() {
 
     setIsAnalyzing(true);
     setError("");
+    setDecisionNotice("");
 
     try {
       const formData = new FormData();
@@ -165,6 +175,15 @@ export default function ReportWastePage() {
       }
 
       setResult(data as AnalyzeWasteResult);
+
+      const decision = (data as AnalyzeWasteResult).decision;
+      const retakeRecommended = !!decision?.retake_recommended;
+      if (retakeRecommended) {
+        setDecisionNotice(
+          decision?.message ||
+            "Uncertain classification. Please retake the image for a more reliable result.",
+        );
+      }
     } catch (err) {
       const message = getApiErrorMessage(err, "Failed to analyze image");
       setError(message);
@@ -336,6 +355,12 @@ export default function ReportWastePage() {
                   <p className="text-lg font-semibold text-gray-900">
                     {confidencePercent}
                   </p>
+                  {typeof result.top_confidence === "number" && (
+                    <p className="text-xs text-gray-500">
+                      Top detection confidence:{" "}
+                      {(result.top_confidence * 100).toFixed(1)}%
+                    </p>
+                  )}
                 </div>
 
                 {result.detections.length > 0 && (
@@ -366,6 +391,19 @@ export default function ReportWastePage() {
                         {longitude.toFixed(5)}
                       </p>
                     )}
+                  </div>
+                )}
+
+                {decisionNotice && (
+                  <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+                    <p className="font-medium">Retake Recommended</p>
+                    <p>{decisionNotice}</p>
+                    {Array.isArray(result.decision?.capture_tips) &&
+                      result.decision!.capture_tips!.length > 0 && (
+                        <p className="mt-1 text-xs text-amber-700">
+                          Tips: {result.decision!.capture_tips!.join(" | ")}
+                        </p>
+                      )}
                   </div>
                 )}
               </div>

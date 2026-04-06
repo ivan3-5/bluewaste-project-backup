@@ -79,11 +79,52 @@ Example response:
         "width": 0.34,
         "height": 0.52,
         "normalized": true
-      }
+      },
+      "is_waste": true
     }
   ],
-  "count": 1
+  "count": 1,
+  "waste_count": 1,
+  "status": "DIRTY",
+  "top_confidence": 0.92,
+  "decision": {
+    "is_uncertain": false,
+    "reason": null,
+    "message": null,
+    "retake_recommended": false,
+    "capture_tips": []
+  },
+  "thresholds": {
+    "model_confidence": 0.2,
+    "decision_confidence": 0.65,
+    "nms_iou": 0.55
+  },
+  "model": {
+    "name": "yolov8n.pt",
+    "version": "ultralytics-8.3.2"
+  }
 }
+```
+
+Low-confidence fallback behavior:
+
+- If detections exist but top confidence is below decision threshold, `decision.is_uncertain=true`.
+- API returns `decision.message` with retake guidance.
+- `status` remains available for compatibility with existing DIRTY/CLEAN handling.
+
+## Training Templates Included
+
+Added under yolo-fastapi-sample/:
+
+- config/waste-dataset.yaml
+- config/train-yolo11s.yaml
+- experiment-tracker-template.csv
+
+Quick start for training template:
+
+```bash
+cd yolo-fastapi-sample
+yolo detect train model=yolo11s.pt data=config/waste-dataset.yaml cfg=config/train-yolo11s.yaml
 ```
 
 ## Deployment (Railway)

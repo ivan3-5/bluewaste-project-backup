@@ -8,6 +8,14 @@ const MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024;
 
 type DecisionStatus = "DIRTY" | "CLEAN";
 
+type AnalyzeDecision = {
+  is_uncertain: boolean;
+  reason: string | null;
+  message: string | null;
+  retake_recommended: boolean;
+  capture_tips: string[];
+};
+
 function toNumberOrUndefined(
   value: FormDataEntryValue | null,
 ): number | undefined {
@@ -25,6 +33,35 @@ function toNumberOrUndefined(
 
 function normalizeBaseApiUrl(url: string) {
   return url.endsWith("/") ? url.slice(0, -1) : url;
+}
+
+function toFiniteNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function toBooleanOrNull(value: unknown): boolean | null {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "true") return true;
+    if (normalized === "false") return false;
+  }
+
+  return null;
 }
 
 function toJsonError(status: number, message: string, details?: string) {
@@ -73,6 +110,38 @@ function normalizeDecisionStatus(value: unknown): DecisionStatus | null {
   }
 
   return null;
+}
+
+function normalizeDecision(payload: any): AnalyzeDecision {
+  const decision = payload?.decision ?? {};
+  const isUncertain = toBooleanOrNull(decision?.is_uncertain) ?? false;
+  const retakeRecommended =
+    toBooleanOrNull(decision?.retake_recommended) ?? isUncertain;
+
+  const reason =
+    typeof decision?.reason === "string" && decision.reason.trim().length > 0
+      ? decision.reason.trim()
+      : null;
+
+  const message =
+    typeof decision?.message === "string" && decision.message.trim().length > 0
+      ? decision.message.trim()
+      : null;
+
+  const captureTips = Array.isArray(decision?.capture_tips)
+    ? decision.capture_tips
+        .filter((tip: unknown): tip is string => typeof tip === "string")
+        .map((tip: string) => tip.trim())
+        .filter((tip: string) => tip.length > 0)
+    : [];
+
+  return {
+    is_uncertain: isUncertain,
+    reason,
+    message,
+    retake_recommended: retakeRecommended,
+    capture_tips: captureTips,
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -151,9 +220,19 @@ export async function POST(request: NextRequest) {
     const wasteCount =
       toNonNegativeInt((yoloJson as any)?.waste_count) ??
       classification.detections.length;
+    const topConfidence = toFiniteNumber((yoloJson as any)?.top_confidence);
     const status: DecisionStatus =
       normalizeDecisionStatus((yoloJson as any)?.status) ??
       (wasteCount > 0 ? "DIRTY" : "CLEAN");
+    const decision = normalizeDecision(yoloJson);
+    const thresholds =
+      yoloJson && typeof (yoloJson as any)?.thresholds === "object"
+        ? (yoloJson as any).thresholds
+        : null;
+    const modelInfo =
+      yoloJson && typeof (yoloJson as any)?.model === "object"
+        ? (yoloJson as any).model
+        : null;
 
     const saveIfDirtyEntry = formData.get("saveIfDirty");
     const saveIfDirty =
@@ -163,7 +242,7 @@ export async function POST(request: NextRequest) {
     let uploadedImageUrl: string | null = null;
     let savedReport: unknown = null;
 
-    if (saveIfDirty && status === "DIRTY") {
+    if (saveIfDirty && status === "DIRTY" && !decision.retake_recommended) {
       const uploadBody = new FormData();
       uploadBody.append(
         "image",
@@ -225,6 +304,10 @@ export async function POST(request: NextRequest) {
       status,
       waste_count: wasteCount,
       count: rawCount,
+      top_confidence: topConfidence,
+      decision,
+      thresholds,
+      model: modelInfo,
       imageUrl: uploadedImageUrl,
       labels: classification.labels,
       detections: classification.detections,

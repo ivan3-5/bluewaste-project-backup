@@ -1,0 +1,15 @@
+# Ultralytics dataset configuration for waste detection.
+# Update `path`, `train`, `val`, and `test` to your dataset locations.
+
+path: ./datasets/waste-v1
+train: images/train
+val: images/val
+test: images/test
+
+names:
+  0: plastic
+  1: glass
+  2: metal
+  3: paper
+  4: organic
+  5: other

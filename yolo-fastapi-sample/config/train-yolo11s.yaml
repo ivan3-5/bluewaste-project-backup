@@ -1,0 +1,46 @@
+# Ultralytics training template aligned with enhance-yolo.md targets.
+# Example usage:
+# yolo detect train model=yolo11s.pt data=config/waste-dataset.yaml cfg=config/train-yolo11s.yaml
+
+task: detect
+mode: train
+
+# Core
+model: yolo11s.pt
+data: config/waste-dataset.yaml
+epochs: 120
+imgsz: 640
+batch: 16
+patience: 20
+seed: 42
+
+# Optimization
+optimizer: AdamW
+lr0: 0.001
+lrf: 0.01
+weight_decay: 0.0005
+cos_lr: true
+
+# Augmentation
+hsv_h: 0.015
+hsv_s: 0.5
+hsv_v: 0.25
+degrees: 15.0
+translate: 0.10
+scale: 0.50
+shear: 2.0
+perspective: 0.0
+flipud: 0.10
+fliplr: 0.50
+mosaic: 0.70
+mixup: 0.10
+erasing: 0.20
+
+# Validation / export behavior
+val: true
+plots: true
+save: true
+save_period: 10
+project: runs/waste
+name: yolo11s-baseline
+exist_ok: true

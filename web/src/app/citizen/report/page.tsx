@@ -38,6 +38,13 @@ type AnalyzeWasteResult = {
   status: "DIRTY" | "CLEAN";
   wasteCount: number;
   count: number;
+  topConfidence: number | null;
+  decision: {
+    isUncertain: boolean;
+    message: string | null;
+    retakeRecommended: boolean;
+    captureTips: string[];
+  };
   labels: string[];
   detections: DetectionBox[];
 };
@@ -89,6 +96,35 @@ function normalizeDecisionStatus(value: unknown): "DIRTY" | "CLEAN" {
   }
 
   return value.trim().toUpperCase() === "DIRTY" ? "DIRTY" : "CLEAN";
+}
+
+function toFiniteNumberOrNull(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function toBoolean(value: unknown, fallback = false): boolean {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "true") return true;
+    if (normalized === "false") return false;
+  }
+
+  return fallback;
 }
 
 async function requestAnalyzeWaste(
@@ -283,6 +319,24 @@ export default function SubmitReportPage() {
       payload?.count,
       Array.isArray(payload?.detections) ? payload.detections.length : 0,
     );
+    const topConfidence = toFiniteNumberOrNull(payload?.top_confidence);
+
+    const decisionPayload = payload?.decision ?? {};
+    const isUncertain = toBoolean(decisionPayload?.is_uncertain, false);
+    const retakeRecommended = toBoolean(
+      decisionPayload?.retake_recommended,
+      isUncertain,
+    );
+    const decisionMessage =
+      typeof decisionPayload?.message === "string" &&
+      decisionPayload.message.trim().length > 0
+        ? decisionPayload.message.trim()
+        : null;
+    const captureTips = Array.isArray(decisionPayload?.capture_tips)
+      ? decisionPayload.capture_tips.filter(
+          (tip: unknown): tip is string => typeof tip === "string",
+        )
+      : [];
 
     return {
       detectedObject:
@@ -303,6 +357,13 @@ export default function SubmitReportPage() {
       status,
       wasteCount,
       count,
+      topConfidence,
+      decision: {
+        isUncertain,
+        message: decisionMessage,
+        retakeRecommended,
+        captureTips,
+      },
       labels: Array.isArray(payload?.labels) ? payload.labels : [],
       detections: Array.isArray(payload?.detections) ? payload.detections : [],
     };
@@ -318,7 +379,12 @@ export default function SubmitReportPage() {
 
       setAnalysisResult(result);
       setSelectedCategory(mapAnalysisTypeToCategory(result.wasteType));
-      if (result.status === "CLEAN") {
+      if (result.decision.retakeRecommended) {
+        setDecisionMessage(
+          result.decision.message ||
+            "Uncertain classification. Please retake the image for better accuracy.",
+        );
+      } else if (result.status === "CLEAN") {
         setDecisionMessage("No waste detected. Report not saved.");
       } else {
         setDecisionMessage(
@@ -377,6 +443,15 @@ export default function SubmitReportPage() {
       const latestAnalysis = await analyzeWasteImage();
       setAnalysisResult(latestAnalysis);
       setSelectedCategory(mapAnalysisTypeToCategory(latestAnalysis.wasteType));
+
+      if (latestAnalysis.decision.retakeRecommended) {
+        const message =
+          latestAnalysis.decision.message ||
+          "Uncertain classification. Please retake the image and try again.";
+        setDecisionMessage(message);
+        setSubmitError(message);
+        return;
+      }
 
       if (latestAnalysis.status === "CLEAN") {
         setDecisionMessage("No waste detected. Report not saved.");
@@ -632,18 +707,30 @@ export default function SubmitReportPage() {
                       Confidence: {(analysisResult.confidence * 100).toFixed(1)}
                       %
                     </span>
+                    {analysisResult.topConfidence !== null && (
+                      <span className="text-gray-500">
+                        Top box:{" "}
+                        {(analysisResult.topConfidence * 100).toFixed(1)}%
+                      </span>
+                    )}
                   </div>
                   {analysisResult.detections.length > 0 && (
                     <p className="text-xs text-emerald-700">
                       Bounding boxes: {analysisResult.detections.length}
                     </p>
                   )}
+                  {analysisResult.decision.retakeRecommended &&
+                    analysisResult.decision.captureTips.length > 0 && (
+                      <p className="text-xs text-amber-700">
+                        Tips: {analysisResult.decision.captureTips.join(" | ")}
+                      </p>
+                    )}
                 </div>
               )}
 
               {decisionMessage && (
                 <p
-                  className={`rounded-lg border px-3 py-2 text-sm ${analysisResult?.status === "DIRTY" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-amber-200 bg-amber-50 text-amber-700"}`}
+                  className={`rounded-lg border px-3 py-2 text-sm ${analysisResult?.decision?.retakeRecommended ? "border-amber-300 bg-amber-50 text-amber-800" : analysisResult?.status === "DIRTY" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-amber-200 bg-amber-50 text-amber-700"}`}
                 >
                   {decisionMessage}
                 </p>

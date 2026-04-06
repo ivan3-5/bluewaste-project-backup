@@ -203,6 +203,9 @@ function parseDetection(entry: any): DetectionBox | null {
     box = parseBoxFromObject(rawBox as Record<string, unknown>);
   } else if (Array.isArray(entry?.xyxy)) {
     box = parseBoxFromArray(entry.xyxy);
+  } else {
+    // Some providers return x/y/width/height (or x/y/w/h) directly on the detection object.
+    box = parseBoxFromObject(entry as Record<string, unknown>);
   }
 
   if (!className || !box) {
