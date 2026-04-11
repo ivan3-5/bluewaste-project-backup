@@ -1,7 +1,7 @@
 import prisma from "../config/database";
 import { Prisma, Role } from "@prisma/client";
 
-export class ResortBoxService {
+export class ResortAreaService {
   private static normalizeBounds(bounds: {
     minLat: number;
     maxLat: number;
@@ -32,7 +32,7 @@ export class ResortBoxService {
   }
 
   private static async ensureUniqueName(name: string, excludeId?: string) {
-    const existing = await prisma.resortBox.findFirst({
+    const existing = await prisma.resortArea.findFirst({
       where: {
         name: { equals: name, mode: "insensitive" },
         ...(excludeId ? { NOT: { id: excludeId } } : {}),
@@ -49,7 +49,7 @@ export class ResortBoxService {
     bounds: { minLat: number; maxLat: number; minLng: number; maxLng: number },
     excludeId?: string,
   ) {
-    const overlap = await prisma.resortBox.findFirst({
+    const overlap = await prisma.resortArea.findFirst({
       where: {
         isActive: true,
         ...(excludeId ? { NOT: { id: excludeId } } : {}),
@@ -82,7 +82,7 @@ export class ResortBoxService {
     await this.ensureUniqueName(data.name);
     await this.ensureNoOverlap(bounds);
 
-    return prisma.resortBox.create({
+    return prisma.resortArea.create({
       data: {
         name: data.name,
         description: data.description,
@@ -106,7 +106,7 @@ export class ResortBoxService {
     requesterId: string;
     includeInactive?: boolean;
   }) {
-    const where: Prisma.ResortBoxWhereInput = {
+    const where: Prisma.ResortAreaWhereInput = {
       ...(options.includeInactive ? {} : { isActive: true }),
     };
 
@@ -114,7 +114,7 @@ export class ResortBoxService {
       where.ownerId = options.requesterId;
     }
 
-    return prisma.resortBox.findMany({
+    return prisma.resortArea.findMany({
       where,
       include: {
         owner: {
@@ -142,7 +142,7 @@ export class ResortBoxService {
       isActive?: boolean;
     },
   ) {
-    const existing = await prisma.resortBox.findUnique({ where: { id } });
+    const existing = await prisma.resortArea.findUnique({ where: { id } });
     if (!existing) {
       throw new Error("Resort box not found");
     }
@@ -171,7 +171,7 @@ export class ResortBoxService {
       await this.ensureNoOverlap(nextBounds, id);
     }
 
-    return prisma.resortBox.update({
+    return prisma.resortArea.update({
       where: { id },
       data: {
         ...(data.name !== undefined ? { name: data.name } : {}),
@@ -194,12 +194,12 @@ export class ResortBoxService {
   }
 
   static async deactivate(id: string) {
-    const existing = await prisma.resortBox.findUnique({ where: { id } });
+    const existing = await prisma.resortArea.findUnique({ where: { id } });
     if (!existing) {
       throw new Error("Resort box not found");
     }
 
-    return prisma.resortBox.update({
+    return prisma.resortArea.update({
       where: { id },
       data: { isActive: false },
     });

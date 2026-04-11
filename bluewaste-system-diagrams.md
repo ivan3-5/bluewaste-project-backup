@@ -45,7 +45,7 @@ BlueWaste is a multi-client, service-oriented waste management platform composed
 
 ### Key Domain Data Objects
 
-- `User`, `Barangay`, `ResortBox`
+- `User`, `Barangay`, `ResortArea`
 - `Report`, `ReportImage`, `StatusHistory`
 - `Notification`, `ActivityLog`
 - `WasteReport` (AI-detection-oriented report log)
@@ -302,7 +302,7 @@ flowchart LR
   D4[(D4 StatusHistory)]
   D5[(D5 Notification)]
   D6[(D6 Barangay)]
-  D7[(D7 ResortBox)]
+  D7[(D7 ResortArea)]
 
   Citizen -->|registration login profile| P1
   LGU -->|registration login profile| P1

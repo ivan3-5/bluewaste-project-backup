@@ -167,7 +167,7 @@ export class ReportService {
     }
 
     return {
-      resortBox: {
+      resortArea: {
         is: {
           ownerId: viewer.id,
         },
@@ -205,11 +205,11 @@ export class ReportService {
     };
   }
 
-  private static async findMatchingResortBox(
+  private static async findMatchingResortArea(
     latitude: number,
     longitude: number,
   ) {
-    const matched = await prisma.resortBox.findFirst({
+    const matched = await prisma.resortArea.findFirst({
       where: {
         isActive: true,
         minLat: { lte: latitude },
@@ -405,7 +405,7 @@ export class ReportService {
     reporterId?: string;
   }) {
     await this.purgeExpiredSpamIfDue();
-    const matchedResortBox = await this.findMatchingResortBox(
+    const matchedResortArea = await this.findMatchingResortArea(
       data.latitude,
       data.longitude,
     );
@@ -423,7 +423,7 @@ export class ReportService {
           isAnonymous: data.isAnonymous || false,
           priority: (data.priority as any) || "MEDIUM",
           reporterId: data.isAnonymous ? null : data.reporterId,
-          resortBoxId: matchedResortBox?.id,
+          resortAreaId: matchedResortArea?.id,
         },
         include: {
           reporter: {
@@ -455,11 +455,11 @@ export class ReportService {
         report.id,
       );
 
-      if (matchedResortBox?.ownerId) {
+      if (matchedResortArea?.ownerId) {
         await NotificationService.create({
-          userId: matchedResortBox.ownerId,
+          userId: matchedResortArea.ownerId,
           title: this.RESORT_ADMIN_NEW_REPORT_TITLE,
-          message: `A new report is inside ${matchedResortBox.name}: "${data.title}"`,
+          message: `A new report is inside ${matchedResortArea.name}: "${data.title}"`,
           type: NotificationType.NEW_REPORT,
           reportId: report.id,
         });

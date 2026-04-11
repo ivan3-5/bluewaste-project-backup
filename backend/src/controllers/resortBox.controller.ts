@@ -1,12 +1,12 @@
 import { Response } from "express";
 import { AuthRequest } from "../middleware/auth";
 import { sendError } from "../utils/http";
-import { ResortBoxService } from "../services/resortBox.service";
+import { ResortAreaService } from "../services/resortBox.service";
 
-export class ResortBoxController {
+export class ResortAreaController {
   static async create(req: AuthRequest, res: Response) {
     try {
-      const created = await ResortBoxService.create({
+      const created = await ResortAreaService.create({
         ...req.body,
         createdById: req.user!.id,
       });
@@ -38,7 +38,7 @@ export class ResortBoxController {
     try {
       const includeInactive = String(req.query.includeInactive) === "true";
 
-      const boxes = await ResortBoxService.list({
+      const boxes = await ResortAreaService.list({
         requesterRole: req.user!.role,
         requesterId: req.user!.id,
         includeInactive,
@@ -57,7 +57,7 @@ export class ResortBoxController {
 
   static async update(req: AuthRequest, res: Response) {
     try {
-      const updated = await ResortBoxService.update(req.params.id, req.body);
+      const updated = await ResortAreaService.update(req.params.id, req.body);
       res.json(updated);
     } catch (error: any) {
       if (error.message === "Resort box not found") {
@@ -87,7 +87,7 @@ export class ResortBoxController {
 
   static async deactivate(req: AuthRequest, res: Response) {
     try {
-      await ResortBoxService.deactivate(req.params.id);
+      await ResortAreaService.deactivate(req.params.id);
       res.json({ message: "Resort box deactivated successfully" });
     } catch (error: any) {
       if (error.message === "Resort box not found") {

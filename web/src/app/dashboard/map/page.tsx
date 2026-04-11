@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useMapData } from "@/hooks/useReports";
-import { useCreateResortBox, useResortBoxes } from "@/hooks/useResortBoxes";
+import { useCreateResortArea, useResortAreaes } from "@/hooks/useResortAreaes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/providers/AuthProvider";
@@ -91,9 +91,9 @@ export default function MapPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [mapInstance, setMapInstance] = useState<any>(null);
 
-  const createResortBox = useCreateResortBox();
+  const createResortArea = useCreateResortArea();
 
-  const { data: resortBoxes = [] } = useResortBoxes(false, canViewBoxes);
+  const { data: resortBoxes = [] } = useResortAreaes(false, canViewBoxes);
 
   const {
     data: resortAdmins = [],
@@ -215,7 +215,7 @@ export default function MapPage() {
     }
 
     try {
-      await createResortBox.mutateAsync({
+      await createResortArea.mutateAsync({
         name: boxName.trim(),
         description: boxDescription.trim() || undefined,
         ownerId,
@@ -672,12 +672,12 @@ export default function MapPage() {
                 <Button
                   type="submit"
                   disabled={
-                    createResortBox.isPending ||
+                    createResortArea.isPending ||
                     isLoadingResortAdmins ||
                     resortAdmins.length === 0
                   }
                 >
-                  {createResortBox.isPending ? "Saving..." : "Save Box"}
+                  {createResortArea.isPending ? "Saving..." : "Save Box"}
                 </Button>
               </div>
             </form>

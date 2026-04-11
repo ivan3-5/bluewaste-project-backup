@@ -261,7 +261,7 @@ async function main() {
   }
   console.log(`✅ Created ${sampleReports.length} sample reports`);
 
-  await prisma.resortBox.upsert({
+  await prisma.resortArea.upsert({
     where: { name: "Resort Mr Suave" },
     update: {},
     create: {

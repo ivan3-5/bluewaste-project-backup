@@ -121,7 +121,7 @@ export interface MapReport {
   images: { imageUrl: string }[];
 }
 
-export interface ResortBox {
+export interface ResortArea {
   id: string;
   name: string;
   description?: string | null;

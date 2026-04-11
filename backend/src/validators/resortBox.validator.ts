@@ -3,11 +3,11 @@ import { z } from "zod";
 const latSchema = z.number().min(-90).max(90);
 const lngSchema = z.number().min(-180).max(180);
 
-export const resortBoxIdParamSchema = z.object({
-  id: z.string().uuid("Invalid resort box ID"),
+export const resortAreaIdParamSchema = z.object({
+  id: z.string().uuid("Invalid resort area ID"),
 });
 
-export const createResortBoxSchema = z
+export const createResortAreaSchema = z
   .object({
     name: z
       .string()
@@ -30,7 +30,7 @@ export const createResortBoxSchema = z
     path: ["minLng"],
   });
 
-export const updateResortBoxSchema = z
+export const updateResortAreaSchema = z
   .object({
     name: z.string().trim().min(3).max(120).optional(),
     description: z.string().trim().max(500).nullable().optional(),
@@ -69,7 +69,7 @@ export const updateResortBoxSchema = z
     },
   );
 
-export const listResortBoxesQuerySchema = z.object({
+export const listResortAreasQuerySchema = z.object({
   includeInactive: z
     .enum(["true", "false"])
     .optional()

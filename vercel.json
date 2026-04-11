@@ -14,6 +14,18 @@
     {
       "source": "/api/:path*",
       "destination": "/api/[...path].ts"
+    },
+    {
+      "source": "/dashboard/reports/:id",
+      "destination": "/web/dashboard/report?id=:id"
+    },
+    {
+      "source": "/",
+      "destination": "/web"
+    },
+    {
+      "source": "/:path*",
+      "destination": "/web/:path*"
     }
   ]
 }

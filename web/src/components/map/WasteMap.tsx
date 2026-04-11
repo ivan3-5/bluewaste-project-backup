@@ -8,7 +8,7 @@ import "leaflet-draw";
 import "leaflet-draw/dist/leaflet.draw.css";
 import {
   MapReport,
-  ResortBox,
+  ResortArea,
   WASTE_CATEGORY_LABELS,
   REPORT_STATUS_LABELS,
   STATUS_COLORS,
@@ -21,7 +21,7 @@ interface WasteMapProps {
   showHeatmap?: boolean;
   onReportClick?: (report: MapReport) => void;
   onMapReady?: (map: L.Map | null) => void;
-  resortBoxes?: ResortBox[];
+  resortBoxes?: ResortArea[];
   canDraw?: boolean;
   drawMode?: boolean;
   onDrawRectangle?: (bounds: {

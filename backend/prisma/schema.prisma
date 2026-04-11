@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ==================== ENUMS ====================
@@ -82,10 +83,10 @@ model User {
   barangayId String?
   barangay   Barangay? @relation(fields: [barangayId], references: [id])
 
-  // Resort boxes assigned to this resort admin
-  ownedResortBoxes ResortBox[] @relation("ResortBoxOwner")
-  // Resort boxes created by LGU admin users
-  createdResortBoxes ResortBox[] @relation("ResortBoxCreator")
+  // Resort areas assigned to this resort admin
+  ownedResortAreas ResortArea[] @relation("ResortAreaOwner")
+  // Resort areas created by LGU admin users
+  createdResortAreas ResortArea[] @relation("ResortAreaCreator")
 
   // Reports submitted by the user
   reports         Report[]        @relation("ReporterReports")
@@ -139,9 +140,9 @@ model Report {
   barangayId String?
   barangay   Barangay? @relation(fields: [barangayId], references: [id])
 
-  // Resort box assignment (auto-routed by map bounds)
-  resortBoxId String?
-  resortBox   ResortBox? @relation(fields: [resortBoxId], references: [id])
+  // Resort area assignment (auto-routed by map bounds)
+  resortAreaId String?
+  resortArea   ResortArea? @relation(fields: [resortAreaId], references: [id])
 
   // Related records
   images        ReportImage[]
@@ -161,13 +162,13 @@ model Report {
   @@index([isDeleted, barangayId, createdAt])
   @@index([isDeleted, reporterId, createdAt])
   @@index([isDeleted, assignedToId, createdAt])
-  @@index([resortBoxId])
-  @@index([isDeleted, resortBoxId, createdAt])
+  @@index([resortAreaId])
+  @@index([isDeleted, resortAreaId, createdAt])
   @@index([isDeleted, isSpam, createdAt])
   @@index([isDeleted, isSpam, spamMarkedAt])
 }
 
-model ResortBox {
+model ResortArea {
   id          String   @id @default(uuid())
   name        String   @unique
   description String?
@@ -180,9 +181,9 @@ model ResortBox {
   updatedAt   DateTime @updatedAt
 
   ownerId   String
-  owner     User   @relation("ResortBoxOwner", fields: [ownerId], references: [id])
+  owner     User   @relation("ResortAreaOwner", fields: [ownerId], references: [id])
   createdById String
-  createdBy User   @relation("ResortBoxCreator", fields: [createdById], references: [id])
+  createdBy User   @relation("ResortAreaCreator", fields: [createdById], references: [id])
 
   reports Report[]
 

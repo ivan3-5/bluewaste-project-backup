@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
-import { ResortBox } from "@/types";
+import { ResortArea } from "@/types";
 
-interface CreateResortBoxPayload {
+interface CreateResortAreaPayload {
   name: string;
   description?: string;
   minLat: number;
@@ -12,8 +12,8 @@ interface CreateResortBoxPayload {
   ownerId: string;
 }
 
-export function useResortBoxes(includeInactive = false, enabled = true) {
-  return useQuery<ResortBox[]>({
+export function useResortAreaes(includeInactive = false, enabled = true) {
+  return useQuery<ResortArea[]>({
     queryKey: ["resort-boxes", includeInactive],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -31,13 +31,13 @@ export function useResortBoxes(includeInactive = false, enabled = true) {
   });
 }
 
-export function useCreateResortBox() {
+export function useCreateResortArea() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (payload: CreateResortBoxPayload) => {
+    mutationFn: async (payload: CreateResortAreaPayload) => {
       const { data } = await api.post("/resort-boxes", payload);
-      return data as ResortBox;
+      return data as ResortArea;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["resort-boxes"] });
@@ -46,7 +46,7 @@ export function useCreateResortBox() {
   });
 }
 
-export function useDeactivateResortBox() {
+export function useDeactivateResortArea() {
   const queryClient = useQueryClient();
 
   return useMutation({

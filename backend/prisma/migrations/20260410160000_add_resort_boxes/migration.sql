@@ -2,7 +2,7 @@
 ALTER TYPE "Role" ADD VALUE 'RESORT_ADMIN';
 
 -- Create saved map boxes owned by resort admins
-CREATE TABLE "ResortBox" (
+CREATE TABLE "ResortArea" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
@@ -16,21 +16,21 @@ CREATE TABLE "ResortBox" (
     "ownerId" TEXT NOT NULL,
     "createdById" TEXT NOT NULL,
 
-    CONSTRAINT "ResortBox_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "ResortArea_pkey" PRIMARY KEY ("id")
 );
 
-CREATE UNIQUE INDEX "ResortBox_name_key" ON "ResortBox"("name");
-CREATE INDEX "ResortBox_ownerId_idx" ON "ResortBox"("ownerId");
-CREATE INDEX "ResortBox_ownerId_isActive_idx" ON "ResortBox"("ownerId", "isActive");
-CREATE INDEX "ResortBox_createdById_idx" ON "ResortBox"("createdById");
-CREATE INDEX "ResortBox_isActive_minLat_maxLat_minLng_maxLng_idx" ON "ResortBox"("isActive", "minLat", "maxLat", "minLng", "maxLng");
+CREATE UNIQUE INDEX "ResortArea_name_key" ON "ResortArea"("name");
+CREATE INDEX "ResortArea_ownerId_idx" ON "ResortArea"("ownerId");
+CREATE INDEX "ResortArea_ownerId_isActive_idx" ON "ResortArea"("ownerId", "isActive");
+CREATE INDEX "ResortArea_createdById_idx" ON "ResortArea"("createdById");
+CREATE INDEX "ResortArea_isActive_minLat_maxLat_minLng_maxLng_idx" ON "ResortArea"("isActive", "minLat", "maxLat", "minLng", "maxLng");
 
-ALTER TABLE "ResortBox"
-    ADD CONSTRAINT "ResortBox_ownerId_fkey"
+ALTER TABLE "ResortArea"
+    ADD CONSTRAINT "ResortArea_ownerId_fkey"
     FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
-ALTER TABLE "ResortBox"
-    ADD CONSTRAINT "ResortBox_createdById_fkey"
+ALTER TABLE "ResortArea"
+    ADD CONSTRAINT "ResortArea_createdById_fkey"
     FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- Persist the matched box for each report
@@ -40,4 +40,4 @@ CREATE INDEX "Report_isDeleted_resortBoxId_createdAt_idx" ON "Report"("isDeleted
 
 ALTER TABLE "Report"
     ADD CONSTRAINT "Report_resortBoxId_fkey"
-    FOREIGN KEY ("resortBoxId") REFERENCES "ResortBox"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    FOREIGN KEY ("resortBoxId") REFERENCES "ResortArea"("id") ON DELETE SET NULL ON UPDATE CASCADE;
