@@ -10,6 +10,10 @@ import { Button } from "@/components/ui/button";
 import { timeAgo } from "@/lib/utils";
 import Link from "next/link";
 import { Bell, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  NotificationListSkeleton,
+  PageHeadingSkeleton,
+} from "@/components/skeletons/page-skeletons";
 
 const typeIcons: Record<string, string> = {
   NEW_REPORT: "📋",
@@ -27,6 +31,15 @@ export default function FieldWorkerNotificationsPage() {
   const notifications = data?.data || [];
   const pagination = data?.pagination;
   const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <PageHeadingSkeleton />
+        <NotificationListSkeleton rows={6} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -51,11 +64,7 @@ export default function FieldWorkerNotificationsPage() {
       </div>
 
       {/* Notifications List */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-16">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-        </div>
-      ) : notifications.length === 0 ? (
+      {notifications.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-xl border">
           <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500 text-sm font-medium">

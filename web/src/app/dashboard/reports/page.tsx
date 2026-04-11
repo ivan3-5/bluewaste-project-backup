@@ -22,6 +22,11 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { useAuth } from "@/providers/AuthProvider";
+import {
+  DataTableSkeleton,
+  FilterToolbarSkeleton,
+  PageHeadingSkeleton,
+} from "@/components/skeletons/page-skeletons";
 
 export default function ReportsPage() {
   const { user } = useAuth();
@@ -91,6 +96,18 @@ export default function ReportsPage() {
 
   const reports = data?.data || [];
   const pagination = data?.pagination;
+
+  if (isLoading) {
+    return (
+      <div>
+        <div className="mb-6 flex items-center justify-between">
+          <PageHeadingSkeleton withSubtitle={false} />
+        </div>
+        <FilterToolbarSkeleton blocks={2} />
+        <DataTableSkeleton rows={8} cols={8} />
+      </div>
+    );
+  }
 
   return (
     <div>

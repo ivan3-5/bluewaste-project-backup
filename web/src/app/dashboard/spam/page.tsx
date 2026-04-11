@@ -16,6 +16,11 @@ import {
   WasteCategory,
 } from "@/types";
 import { formatDateTime } from "@/lib/utils";
+import {
+  DataTableSkeleton,
+  FilterToolbarSkeleton,
+  PageHeadingSkeleton,
+} from "@/components/skeletons/page-skeletons";
 
 const RETENTION_DAYS = 3;
 
@@ -66,6 +71,18 @@ export default function SpamReportsPage() {
       }),
     [reports],
   );
+
+  if (isLoading) {
+    return (
+      <div>
+        <div className="mb-6 flex items-center justify-between">
+          <PageHeadingSkeleton withSubtitle={false} />
+        </div>
+        <FilterToolbarSkeleton blocks={2} />
+        <DataTableSkeleton rows={8} cols={5} />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -182,16 +199,7 @@ export default function SpamReportsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {isLoading ? (
-              <tr>
-                <td
-                  colSpan={5}
-                  className="px-4 py-10 text-center text-gray-400"
-                >
-                  Loading spam reports...
-                </td>
-              </tr>
-            ) : records.length === 0 ? (
+            {records.length === 0 ? (
               <tr>
                 <td
                   colSpan={5}

@@ -10,6 +10,13 @@ import {
 } from "@/hooks/useAnalytics";
 import { Button } from "@/components/ui/button";
 import api from "@/lib/api";
+import {
+  ChartPanelsSkeleton,
+  DataTableSkeleton,
+  PageHeadingSkeleton,
+  StatsCardsSkeleton,
+} from "@/components/skeletons/page-skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const TrendChart = dynamic(() => import("@/components/analytics/TrendChart"), {
   ssr: false,
@@ -23,10 +30,18 @@ export default function AnalyticsPage() {
   const [period, setPeriod] = useState<"daily" | "weekly" | "monthly">("daily");
   const [days, setDays] = useState(30);
 
-  const { data: overview } = useAnalyticsOverview();
-  const { data: trends = [] } = useAnalyticsTrends(period, days);
-  const { data: categories = [] } = useAnalyticsCategories();
-  const { data: barangays = [] } = useAnalyticsBarangays();
+  const { data: overview, isLoading: overviewLoading } = useAnalyticsOverview();
+  const { data: trends = [], isLoading: trendsLoading } = useAnalyticsTrends(
+    period,
+    days,
+  );
+  const { data: categories = [], isLoading: categoriesLoading } =
+    useAnalyticsCategories();
+  const { data: barangays = [], isLoading: barangaysLoading } =
+    useAnalyticsBarangays();
+
+  const isInitialLoading =
+    overviewLoading || trendsLoading || categoriesLoading || barangaysLoading;
 
   const handleExport = async () => {
     try {
@@ -63,6 +78,20 @@ export default function AnalyticsPage() {
         { label: "Rejected", value: overview.rejected, color: "text-red-600" },
       ]
     : [];
+
+  if (isInitialLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="mb-6 flex items-center justify-between">
+          <PageHeadingSkeleton withSubtitle={false} />
+          <Skeleton className="h-10 w-28 rounded-md" />
+        </div>
+        <StatsCardsSkeleton count={5} />
+        <ChartPanelsSkeleton />
+        <DataTableSkeleton rows={6} cols={4} className="mt-6" />
+      </div>
+    );
+  }
 
   return (
     <div>

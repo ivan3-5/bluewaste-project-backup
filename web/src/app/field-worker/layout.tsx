@@ -15,6 +15,7 @@ import {
   Bell,
 } from "lucide-react";
 import { useUnreadCount } from "@/hooks/useNotifications";
+import { FieldWorkerLayoutSkeleton } from "@/components/skeletons/page-skeletons";
 
 const navLinks = [
   { href: "/field-worker", label: "Dashboard", icon: LayoutDashboard },
@@ -48,11 +49,7 @@ export default function FieldWorkerLayout({
   }, [user, isLoading, router]);
 
   if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
-      </div>
-    );
+    return <FieldWorkerLayoutSkeleton />;
   }
 
   if (!user || user.role !== "FIELD_WORKER") return null;

@@ -21,6 +21,11 @@ import {
   ChevronRight,
   Inbox,
 } from "lucide-react";
+import {
+  ListCardsSkeleton,
+  PageHeadingSkeleton,
+} from "@/components/skeletons/page-skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const STATUS_FILTERS: { value: ReportStatus | ""; label: string }[] = [
   { value: "", label: "All Tasks" },
@@ -48,6 +53,21 @@ export default function TasksPage() {
 
   const reports = data?.data || [];
   const pagination = data?.pagination;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <PageHeadingSkeleton />
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+          <Skeleton className="h-4 w-4 rounded-full" />
+          {Array.from({ length: 5 }).map((_, idx) => (
+            <Skeleton key={idx} className="h-8 w-24 rounded-full" />
+          ))}
+        </div>
+        <ListCardsSkeleton rows={6} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -81,11 +101,7 @@ export default function TasksPage() {
       </div>
 
       {/* Tasks List */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-16">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-        </div>
-      ) : reports.length === 0 ? (
+      {reports.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-xl border">
           <Inbox className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500 text-sm font-medium">No tasks found</p>

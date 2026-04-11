@@ -25,6 +25,7 @@ import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
 import Image from "next/image";
 import { useAuth } from "@/providers/AuthProvider";
+import { ReportDetailSkeleton } from "@/components/skeletons/page-skeletons";
 
 const WasteMap = dynamic(() => import("@/components/map/WasteMap"), {
   ssr: false,
@@ -156,11 +157,7 @@ export default function ReportDetailPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex h-64 items-center justify-center text-gray-400">
-        Loading report...
-      </div>
-    );
+    return <ReportDetailSkeleton />;
   }
 
   if (!report) {

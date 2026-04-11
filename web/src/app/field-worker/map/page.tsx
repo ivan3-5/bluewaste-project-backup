@@ -16,6 +16,10 @@ import {
 import { StatusBadge } from "@/components/reports/StatusBadge";
 import { Layers, MapPin, X, ArrowRight } from "lucide-react";
 import { timeAgo } from "@/lib/utils";
+import {
+  MapPanelSkeleton,
+  PageHeadingSkeleton,
+} from "@/components/skeletons/page-skeletons";
 
 const WasteMap = dynamic(() => import("@/components/map/WasteMap"), {
   ssr: false,
@@ -59,6 +63,15 @@ export default function FieldWorkerMapPage() {
   const handleReportClick = useCallback((report: MapReport) => {
     setSelectedReport(report);
   }, []);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <PageHeadingSkeleton />
+        <MapPanelSkeleton />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -135,17 +148,11 @@ export default function FieldWorkerMapPage() {
       {/* Map */}
       <div className="bg-white rounded-xl border overflow-hidden relative">
         <div className="h-[500px] sm:h-[600px]">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-            </div>
-          ) : (
-            <WasteMap
-              reports={reports}
-              showHeatmap={showHeatmap}
-              onReportClick={handleReportClick}
-            />
-          )}
+          <WasteMap
+            reports={reports}
+            showHeatmap={showHeatmap}
+            onReportClick={handleReportClick}
+          />
         </div>
 
         {/* Selected Report Panel */}

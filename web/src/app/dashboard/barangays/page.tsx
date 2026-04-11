@@ -5,16 +5,36 @@ import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { Barangay } from "@/types";
 import { Map, AlertCircle, TrendingUp, Info } from "lucide-react";
+import {
+  BarangayCardsSkeleton,
+  PageHeadingSkeleton,
+  StatsCardsSkeleton,
+} from "@/components/skeletons/page-skeletons";
 
 export default function BarangaysPage() {
-  const { data: stats = [] } = useAnalyticsBarangays();
-  const { data: barangays = [] } = useQuery<Barangay[]>({
+  const { data: stats = [], isLoading: isLoadingStats } =
+    useAnalyticsBarangays();
+  const { data: barangays = [], isLoading: isLoadingBarangays } = useQuery<
+    Barangay[]
+  >({
     queryKey: ["barangays"],
     queryFn: async () => {
       const { data } = await api.get("/barangays");
       return data;
     },
   });
+
+  const isInitialLoading = isLoadingStats || isLoadingBarangays;
+
+  if (isInitialLoading) {
+    return (
+      <div className="space-y-8">
+        <PageHeadingSkeleton />
+        <StatsCardsSkeleton count={4} />
+        <BarangayCardsSkeleton cards={6} />
+      </div>
+    );
+  }
 
   const merged = barangays
     .map((b) => {

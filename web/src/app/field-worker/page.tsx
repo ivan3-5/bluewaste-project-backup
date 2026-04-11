@@ -15,6 +15,12 @@ import { StatusBadge } from "@/components/reports/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { WASTE_CATEGORY_LABELS, PRIORITY_LABELS, Report } from "@/types";
 import { timeAgo } from "@/lib/utils";
+import {
+  ListCardsSkeleton,
+  PageHeadingSkeleton,
+  StatsCardsSkeleton,
+} from "@/components/skeletons/page-skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const PRIORITY_COLORS: Record<string, string> = {
   CRITICAL: "text-red-600 bg-red-50 border-red-200",
@@ -74,6 +80,24 @@ export default function FieldWorkerDashboard() {
     },
   ];
 
+  if (loadingAll) {
+    return (
+      <div className="space-y-6">
+        <PageHeadingSkeleton />
+        <StatsCardsSkeleton count={4} />
+        <ListCardsSkeleton rows={5} />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {Array.from({ length: 2 }).map((_, idx) => (
+            <div key={idx} className="rounded-xl border bg-white p-5 space-y-2">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-3 w-48" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -100,9 +124,7 @@ export default function FieldWorkerDashboard() {
                 <Icon className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">
-                  {loadingAll ? "—" : value}
-                </p>
+                <p className="text-2xl font-bold text-gray-900">{value}</p>
                 <p className="text-xs text-gray-500">{label}</p>
               </div>
             </div>
@@ -142,11 +164,7 @@ export default function FieldWorkerDashboard() {
           </Link>
         </div>
 
-        {loadingAll ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-          </div>
-        ) : activeTasks.length === 0 ? (
+        {activeTasks.length === 0 ? (
           <div className="text-center py-12 px-4">
             <CheckCircle2 className="w-12 h-12 text-green-300 mx-auto mb-3" />
             <p className="text-gray-500 text-sm">

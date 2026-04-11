@@ -14,6 +14,11 @@ import { Input } from "@/components/ui/input";
 import { Barangay } from "@/types";
 import api from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
+import {
+  DataTableSkeleton,
+  FilterToolbarSkeleton,
+  PageHeadingSkeleton,
+} from "@/components/skeletons/page-skeletons";
 
 const ROLE_LABELS: Record<string, string> = {
   LGU_ADMIN: "Admin",
@@ -87,6 +92,18 @@ export default function UsersPage() {
 
   const users = data?.data || [];
   const pagination = data?.pagination;
+
+  if (isLoading) {
+    return (
+      <div>
+        <div className="mb-6 flex items-center justify-between">
+          <PageHeadingSkeleton withSubtitle={false} />
+        </div>
+        <FilterToolbarSkeleton blocks={1} />
+        <DataTableSkeleton rows={8} cols={8} />
+      </div>
+    );
+  }
 
   const handleSearch = () => {
     setSearch(searchInput);

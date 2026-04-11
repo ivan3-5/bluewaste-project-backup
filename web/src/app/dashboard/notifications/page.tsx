@@ -8,6 +8,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { formatDateTime, timeAgo } from "@/lib/utils";
 import Link from "next/link";
+import {
+  NotificationListSkeleton,
+  PageHeadingSkeleton,
+} from "@/components/skeletons/page-skeletons";
 
 export default function NotificationsPage() {
   const { data, isLoading } = useNotifications();
@@ -16,6 +20,15 @@ export default function NotificationsPage() {
 
   const notifications = data?.data || [];
   const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <PageHeadingSkeleton />
+        <NotificationListSkeleton rows={6} />
+      </div>
+    );
+  }
 
   const typeIcons: Record<string, string> = {
     NEW_REPORT: "📋",
@@ -46,9 +59,7 @@ export default function NotificationsPage() {
       </div>
 
       <div className="space-y-2">
-        {isLoading ? (
-          <div className="py-10 text-center text-gray-400">Loading...</div>
-        ) : notifications.length === 0 ? (
+        {notifications.length === 0 ? (
           <div className="py-10 text-center text-gray-400">
             No notifications yet
           </div>

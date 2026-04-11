@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useMapData } from "@/hooks/useReports";
-import { useCreateResortArea, useResortAreaes } from "@/hooks/useResortAreaes";
+import { useCreateResortArea, useResortAreaes } from "@/hooks/useResortBoxes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/providers/AuthProvider";
@@ -17,6 +17,7 @@ import {
 import { Layers, MapPin, X, ChevronRight, Square } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const WasteMap = dynamic(() => import("@/components/map/WasteMap"), {
   ssr: false,
@@ -337,10 +338,9 @@ export default function MapPage() {
         {/* Map */}
         <div className="relative flex-1 min-h-0">
           {isLoading ? (
-            <div className="flex h-full items-center justify-center bg-gray-50">
-              <div className="flex flex-col items-center gap-3 text-gray-400">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
-                <span className="text-sm">Loading map data…</span>
+            <div className="h-full bg-gray-50 p-4">
+              <div className="h-full rounded-xl border border-gray-100 bg-white p-3 shadow-sm">
+                <Skeleton className="h-full w-full rounded-lg" />
               </div>
             </div>
           ) : (

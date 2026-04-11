@@ -75,12 +75,12 @@ export default function LoginPage() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-slate-50 text-gray-900">
       <div className="absolute inset-0 auth-eco-gradient" />
-      <div className="absolute inset-0 auth-eco-noise opacity-35" />
+      <div className="absolute inset-0 auth-eco-noise opacity-22" />
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
         <div className="grid w-full overflow-hidden rounded-[32px] border border-sky-100 bg-white/90 shadow-[0_32px_80px_-36px_rgba(2,132,199,0.55)] backdrop-blur-md lg:min-h-[680px] lg:grid-cols-[1.05fr_1fr]">
-          <section className="relative flex flex-col justify-between bg-gradient-to-br from-sky-50 via-cyan-50 to-white px-7 py-8 sm:px-10 sm:py-10 lg:px-12 lg:py-12">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(59,130,246,0.18),transparent_42%),radial-gradient(circle_at_85%_85%,rgba(14,165,233,0.16),transparent_48%)]" />
+          <section className="relative flex flex-col justify-between bg-gradient-to-br from-sky-50/75 via-cyan-50/55 to-white px-7 py-8 sm:px-10 sm:py-10 lg:px-12 lg:py-12">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(59,130,246,0.11),transparent_46%),radial-gradient(circle_at_85%_85%,rgba(14,165,233,0.09),transparent_52%)]" />
             <div className="pointer-events-none absolute inset-0 auth-panel-grid-soft" />
 
             <div className="relative space-y-8">

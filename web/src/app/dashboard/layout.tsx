@@ -7,6 +7,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { SidebarProvider, useSidebar } from "@/contexts/SidebarContext";
 import { cn } from "@/lib/utils";
+import { DashboardLayoutSkeleton } from "@/components/skeletons/page-skeletons";
 
 function DashboardContent({ children }: { children: ReactNode }) {
   const { isCollapsed } = useSidebar();
@@ -66,11 +67,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }, [user, isLoading, router, pathname]);
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <DashboardLayoutSkeleton />;
   }
 
   if (!user || (user.role !== "LGU_ADMIN" && user.role !== "RESORT_ADMIN")) {

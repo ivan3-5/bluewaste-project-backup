@@ -24,6 +24,7 @@ import {
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
+import { AdminOverviewSkeleton } from "@/components/skeletons/page-skeletons";
 
 const TrendChart = dynamic(() => import("@/components/analytics/TrendChart"), {
   ssr: false,
@@ -35,10 +36,25 @@ const CategoryPieChart = dynamic(
 
 export default function DashboardPage() {
   const { data: overview, isLoading: overviewLoading } = useAnalyticsOverview();
-  const { data: trends } = useAnalyticsTrends("daily", 30);
-  const { data: categories } = useAnalyticsCategories();
-  const { data: barangays } = useAnalyticsBarangays();
-  const { data: recentReports } = useReports({ page: 1, limit: 5 });
+  const { data: trends, isLoading: trendsLoading } = useAnalyticsTrends(
+    "daily",
+    30,
+  );
+  const { data: categories, isLoading: categoriesLoading } =
+    useAnalyticsCategories();
+  const { data: barangays, isLoading: barangaysLoading } =
+    useAnalyticsBarangays();
+  const { data: recentReports, isLoading: recentReportsLoading } = useReports({
+    page: 1,
+    limit: 5,
+  });
+
+  const isInitialLoading =
+    overviewLoading ||
+    trendsLoading ||
+    categoriesLoading ||
+    barangaysLoading ||
+    recentReportsLoading;
 
   const stats = [
     {
@@ -91,6 +107,10 @@ export default function DashboardPage() {
       bg: "bg-red-50",
     },
   ];
+
+  if (isInitialLoading) {
+    return <AdminOverviewSkeleton />;
+  }
 
   return (
     <div className="space-y-6">
