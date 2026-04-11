@@ -242,8 +242,12 @@ export function useAnalyzeReportImage() {
           count: number;
           confidence: number | null;
           labels: string[];
+          detections: unknown[];
+          inferenceMs: number | null;
           imageId: string;
           imageUrl: string;
+          annotatedImageUrl: string | null;
+          annotatedImagePublicId: string | null;
           spam: boolean;
           spamMarkedAt: string | null;
           autoDeleteAt: string | null;

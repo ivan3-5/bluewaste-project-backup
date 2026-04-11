@@ -12,6 +12,7 @@ import {
   buildPaginatedResponse,
 } from "../utils/pagination";
 import { NotificationService } from "./notification.service";
+import { CloudinaryService } from "./cloudinary.service";
 import { env } from "../config/env";
 
 type Viewer = {
@@ -74,6 +75,56 @@ function normalizeImageContentType(value: string | null) {
   }
 
   return normalized || "image/jpeg";
+}
+
+function decodeBase64ImageBuffer(value: unknown): Buffer | null {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  const commaIndex = trimmed.indexOf(",");
+  const base64Payload =
+    commaIndex >= 0 ? trimmed.slice(commaIndex + 1).trim() : trimmed;
+
+  if (!base64Payload) {
+    return null;
+  }
+
+  try {
+    const buffer = Buffer.from(base64Payload, "base64");
+    return buffer.length > 0 ? buffer : null;
+  } catch {
+    return null;
+  }
+}
+
+function extractDetectionLabels(payload: unknown): string[] {
+  if (!Array.isArray(payload)) {
+    return [];
+  }
+
+  const labels = payload
+    .map((item) => {
+      if (!item || typeof item !== "object") {
+        return "";
+      }
+
+      const record = item as Record<string, unknown>;
+      const raw =
+        typeof record.class === "string"
+          ? record.class
+          : typeof record.class_name === "string"
+            ? record.class_name
+            : typeof record.label === "string"
+              ? record.label
+              : "";
+
+      return raw.trim().toLowerCase();
+    })
+    .filter((label) => label.length > 0);
+
+  return Array.from(new Set(labels));
 }
 
 export class ReportService {
@@ -248,6 +299,7 @@ export class ReportService {
       new Blob([imageBuffer], { type: contentType }),
       "report-image.jpg",
     );
+    yoloBody.append("return_annotated", "true");
 
     let yoloResponse: Response;
     try {
@@ -274,12 +326,38 @@ export class ReportService {
     }
 
     const count = toNonNegativeInt((yoloJson as any)?.count, 0);
+    const detections = Array.isArray((yoloJson as any)?.detections)
+      ? (yoloJson as any).detections
+      : [];
     const wasteCount = toNonNegativeInt(
       (yoloJson as any)?.waste_count,
-      Array.isArray((yoloJson as any)?.detections)
-        ? (yoloJson as any).detections.length
-        : count,
+      detections.length > 0 ? detections.length : count,
     );
+
+    const annotatedImageBuffer = decodeBase64ImageBuffer(
+      (yoloJson as any)?.annotated_image_base64,
+    );
+    let annotatedImageUpload: { url: string; publicId: string } | null = null;
+
+    if (annotatedImageBuffer) {
+      try {
+        annotatedImageUpload = await CloudinaryService.uploadImage(
+          annotatedImageBuffer,
+          "bluewaste/analysis",
+        );
+      } catch (error) {
+        console.warn("Failed to upload annotated YOLO image:", error);
+      }
+    }
+
+    const labels = Array.isArray((yoloJson as any)?.labels)
+      ? (yoloJson as any).labels
+          .filter(
+            (label: unknown): label is string => typeof label === "string",
+          )
+          .map((label: string) => label.trim().toLowerCase())
+          .filter((label: string) => label.length > 0)
+      : extractDetectionLabels(detections);
 
     return {
       status: normalizeDecisionStatus((yoloJson as any)?.status),
@@ -288,9 +366,11 @@ export class ReportService {
       confidence:
         toFiniteNumberOrNull((yoloJson as any)?.top_confidence) ??
         toFiniteNumberOrNull((yoloJson as any)?.confidence),
-      labels: Array.isArray((yoloJson as any)?.labels)
-        ? (yoloJson as any).labels
-        : [],
+      labels,
+      detections,
+      inferenceMs: toFiniteNumberOrNull((yoloJson as any)?.inference_ms),
+      annotatedImageUrl: annotatedImageUpload?.url ?? null,
+      annotatedImagePublicId: annotatedImageUpload?.publicId ?? null,
     };
   }
 
@@ -939,8 +1019,12 @@ export class ReportService {
         count: analysis.count,
         confidence: analysis.confidence,
         labels: analysis.labels,
+        detections: analysis.detections,
+        inferenceMs: analysis.inferenceMs,
         imageId: targetImage.id,
         imageUrl: targetImage.imageUrl,
+        annotatedImageUrl: analysis.annotatedImageUrl,
+        annotatedImagePublicId: analysis.annotatedImagePublicId,
         spam: shouldMarkSpam,
         spamMarkedAt: shouldMarkSpam ? now : null,
         autoDeleteAt: shouldMarkSpam ? this.getSpamAutoDeleteAt(now) : null,

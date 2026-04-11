@@ -152,5 +152,5 @@ npm run db:studio
 
 ## Deployment Notes
 
-- `vercel.json` routes `/api/*` to the backend serverless function and serves `web` for frontend routes.
+- `vercel.json` rewrites `/api/*` to the backend serverless function while Next.js handles frontend routes directly.
 - In production, set environment variables in your hosting provider (Vercel, Railway, etc.).
