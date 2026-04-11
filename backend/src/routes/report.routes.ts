@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { ReportController } from "../controllers/report.controller";
-import { authenticate } from "../middleware/auth";
+import { authenticate, optionalAuth } from "../middleware/auth";
 import { authorize } from "../middleware/authorize";
 import { validate } from "../middleware/validate";
 import {
@@ -10,24 +10,39 @@ import {
   reportFilterSchema,
   mapFilterSchema,
   heatmapFilterSchema,
+  analyzeReportSchema,
 } from "../validators/report.validator";
 import { upload, validateUploadedImages } from "../middleware/upload";
 
 const router = Router();
 
-// Public / optional auth routes
+// Dashboard routes
 router.get(
   "/",
+  authenticate,
+  authorize("LGU_ADMIN", "RESORT_ADMIN"),
   validate(reportFilterSchema, "query"),
   ReportController.findAll,
 );
+
+router.get(
+  "/spam",
+  authenticate,
+  authorize("LGU_ADMIN"),
+  validate(reportFilterSchema, "query"),
+  ReportController.getSpamReports,
+);
+
+// Public / optional auth routes
 router.get(
   "/map",
+  optionalAuth,
   validate(mapFilterSchema, "query"),
   ReportController.getMapData,
 );
 router.get(
   "/heatmap",
+  optionalAuth,
   validate(heatmapFilterSchema, "query"),
   ReportController.getHeatmapData,
 );
@@ -48,9 +63,17 @@ router.get(
 );
 
 // Single report routes
-router.get("/:id", ReportController.findById);
+router.get("/:id", authenticate, ReportController.findById);
 
 // Admin / Field Worker actions
+router.post(
+  "/:id/analyze",
+  authenticate,
+  authorize("LGU_ADMIN"),
+  validate(analyzeReportSchema),
+  ReportController.analyzeImage,
+);
+
 router.put(
   "/:id/status",
   authenticate,
@@ -70,6 +93,20 @@ router.delete(
   authenticate,
   authorize("LGU_ADMIN"),
   ReportController.deleteReport,
+);
+
+router.put(
+  "/:id/spam/restore",
+  authenticate,
+  authorize("LGU_ADMIN"),
+  ReportController.restoreSpam,
+);
+
+router.delete(
+  "/:id/spam",
+  authenticate,
+  authorize("LGU_ADMIN"),
+  ReportController.deleteSpam,
 );
 
 // Image upload

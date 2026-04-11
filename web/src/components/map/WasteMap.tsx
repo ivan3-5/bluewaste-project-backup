@@ -4,8 +4,11 @@ import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.heat";
+import "leaflet-draw";
+import "leaflet-draw/dist/leaflet.draw.css";
 import {
   MapReport,
+  ResortBox,
   WASTE_CATEGORY_LABELS,
   REPORT_STATUS_LABELS,
   STATUS_COLORS,
@@ -17,7 +20,16 @@ interface WasteMapProps {
   zoom?: number;
   showHeatmap?: boolean;
   onReportClick?: (report: MapReport) => void;
-  onMapReady?: (map: L.Map) => void;
+  onMapReady?: (map: L.Map | null) => void;
+  resortBoxes?: ResortBox[];
+  canDraw?: boolean;
+  drawMode?: boolean;
+  onDrawRectangle?: (bounds: {
+    minLat: number;
+    maxLat: number;
+    minLng: number;
+    maxLng: number;
+  }) => void;
 }
 
 export const CATEGORY_COLORS: Record<string, string> = {
@@ -36,6 +48,8 @@ const PRIORITY_SIZES: Record<string, number> = {
   MEDIUM: 15,
   LOW: 12,
 };
+
+const DEFAULT_CENTER: [number, number] = [7.3132, 125.6844];
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -63,21 +77,43 @@ function createMarkerIcon(category: string, priority: string, status: string) {
 
 export default function WasteMap({
   reports,
-  center = [7.3132, 125.6844],
+  center = DEFAULT_CENTER,
   zoom = 13,
   showHeatmap = false,
   onReportClick,
   onMapReady,
+  resortBoxes = [],
+  canDraw = false,
+  drawMode = false,
+  onDrawRectangle,
 }: WasteMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<L.Marker[]>([]);
+  const boxLayersRef = useRef<L.Rectangle[]>([]);
+  const drawnItemsRef = useRef<L.FeatureGroup | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const drawControlRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const heatLayerRef = useRef<any>(null);
+  const onMapReadyRef = useRef(onMapReady);
+  const onDrawRectangleRef = useRef(onDrawRectangle);
+  const centerRef = useRef(center);
+
+  useEffect(() => {
+    onMapReadyRef.current = onMapReady;
+  }, [onMapReady]);
+
+  useEffect(() => {
+    onDrawRectangleRef.current = onDrawRectangle;
+  }, [onDrawRectangle]);
+
+  useEffect(() => {
+    centerRef.current = center;
+  }, [center]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
-
     const map = L.map(containerRef.current, { zoomControl: false }).setView(
       center,
       zoom,
@@ -102,29 +138,185 @@ export default function WasteMap({
         btn.title = "Recenter on Panabo City";
         L.DomEvent.on(btn, "click", (e) => {
           L.DomEvent.stopPropagation(e);
-          map.setView(center, 13, { animate: true });
+          map.setView(centerRef.current, 13, { animate: false });
         });
         return btn;
       },
     });
     new RecenterControl().addTo(map);
 
-    mapRef.current = map;
-    onMapReady?.(map);
+    const drawnItems = new L.FeatureGroup();
+    map.addLayer(drawnItems);
+    drawnItemsRef.current = drawnItems;
 
-    // Leaflet picks up container dimensions on init. When loaded via
-    // Next.js dynamic(), the container may measure 0×0 at that instant.
-    // A single rAF + a 200ms fallback guarantees a correct resize.
-    requestAnimationFrame(() => map.invalidateSize());
-    const t = setTimeout(() => map.invalidateSize(), 200);
+    const handleDrawCreated = (event: any) => {
+      if (event.layerType !== "rectangle") {
+        return;
+      }
+
+      const layer = event.layer as L.Rectangle;
+      const bounds = layer.getBounds();
+
+      drawnItems.clearLayers();
+      drawnItems.addLayer(layer);
+
+      onDrawRectangleRef.current?.({
+        minLat: bounds.getSouth(),
+        maxLat: bounds.getNorth(),
+        minLng: bounds.getWest(),
+        maxLng: bounds.getEast(),
+      });
+    };
+    map.on("draw:created", handleDrawCreated);
+
+    mapRef.current = map;
+    onMapReadyRef.current?.(map);
+
+    // Delay first resize slightly to avoid running before mount is complete.
+    const rafId = requestAnimationFrame(() => {
+      if (mapRef.current === map) {
+        map.invalidateSize({ pan: false });
+      }
+    });
+    const t = window.setTimeout(() => {
+      if (mapRef.current === map) {
+        map.invalidateSize({ pan: false });
+      }
+    }, 200);
 
     return () => {
-      clearTimeout(t);
+      cancelAnimationFrame(rafId);
+      window.clearTimeout(t);
+      map.off("draw:created", handleDrawCreated);
+
+      if (drawControlRef.current) {
+        map.removeControl(drawControlRef.current);
+        drawControlRef.current = null;
+      }
+
+      if (heatLayerRef.current) {
+        map.removeLayer(heatLayerRef.current);
+        heatLayerRef.current = null;
+      }
+
+      markersRef.current.forEach((marker) => marker.remove());
+      markersRef.current = [];
+
+      boxLayersRef.current.forEach((layer) => layer.remove());
+      boxLayersRef.current = [];
+
+      map.stop();
       map.remove();
       mapRef.current = null;
+      drawnItemsRef.current = null;
+      onMapReadyRef.current?.(null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+    const currentCenter = map.getCenter();
+    const hasCenterChanged =
+      Math.abs(currentCenter.lat - center[0]) > 0.000001 ||
+      Math.abs(currentCenter.lng - center[1]) > 0.000001;
+    const hasZoomChanged = map.getZoom() !== zoom;
+
+    if (hasCenterChanged || hasZoomChanged) {
+      map.setView(center, zoom, { animate: false });
+    }
+  }, [center, zoom]);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+
+    if (drawControlRef.current) {
+      map.removeControl(drawControlRef.current);
+      drawControlRef.current = null;
+    }
+
+    if (!canDraw || !drawMode) {
+      drawnItemsRef.current?.clearLayers();
+      return;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const DrawControl = (L as any).Control?.Draw;
+    if (!DrawControl || !drawnItemsRef.current) {
+      return;
+    }
+
+    drawControlRef.current = new DrawControl({
+      position: "topright",
+      draw: {
+        rectangle: {
+          shapeOptions: {
+            color: "#1d4ed8",
+            weight: 2,
+          },
+        },
+        polyline: false,
+        polygon: false,
+        circle: false,
+        marker: false,
+        circlemarker: false,
+      },
+      edit: {
+        featureGroup: drawnItemsRef.current,
+        edit: false,
+        remove: false,
+      },
+    });
+
+    map.addControl(drawControlRef.current);
+
+    return () => {
+      if (drawControlRef.current) {
+        map.removeControl(drawControlRef.current);
+        drawControlRef.current = null;
+      }
+    };
+  }, [canDraw, drawMode]);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+
+    boxLayersRef.current.forEach((layer) => layer.remove());
+    boxLayersRef.current = [];
+
+    resortBoxes
+      .filter((box) => box.isActive)
+      .forEach((box) => {
+        const rectangle = L.rectangle(
+          [
+            [box.minLat, box.minLng],
+            [box.maxLat, box.maxLng],
+          ],
+          {
+            color: "#1d4ed8",
+            weight: 2,
+            fillColor: "#2563eb",
+            fillOpacity: 0.08,
+          },
+        );
+
+        rectangle
+          .bindTooltip(box.name, {
+            permanent: false,
+            direction: "center",
+            className: "waste-marker-tooltip",
+          })
+          .bindPopup(
+            `<div style="font-size:12px;line-height:1.4;"><strong>${box.name.replace(/</g, "&lt;")}</strong><br/>Owner: ${box.owner.firstName} ${box.owner.lastName}<br/>Reports: ${box._count?.reports ?? 0}</div>`,
+          );
+
+        rectangle.addTo(map);
+        boxLayersRef.current.push(rectangle);
+      });
+  }, [resortBoxes]);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -201,7 +393,7 @@ export default function WasteMap({
     if (reports.length > 0) {
       if (reports.length === 1) {
         map.setView([reports[0].latitude, reports[0].longitude], 15, {
-          animate: true,
+          animate: false,
         });
       } else {
         const bounds = L.latLngBounds(
@@ -210,7 +402,7 @@ export default function WasteMap({
         map.fitBounds(bounds, {
           padding: [60, 60],
           maxZoom: 15,
-          animate: true,
+          animate: false,
         });
       }
     }

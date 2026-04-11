@@ -71,11 +71,16 @@ export const reportFilterSchema = z.object({
     .refine((v) => !Number.isNaN(Date.parse(v)), "Invalid endDate")
     .optional(),
   search: z.string().max(100).optional(),
+  isSpam: z.enum(["true", "false"]).optional(),
   page: z.string().regex(/^\d+$/, "page must be a positive integer").optional(),
   limit: z
     .string()
     .regex(/^\d+$/, "limit must be a positive integer")
     .optional(),
+});
+
+export const analyzeReportSchema = z.object({
+  imageId: z.string().uuid().optional(),
 });
 
 export const mapFilterSchema = z.object({

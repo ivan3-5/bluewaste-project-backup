@@ -38,7 +38,13 @@ export class UserController {
       const search = req.query.search as string | undefined;
 
       const where: any = {};
-      if (roleFilter) where.role = roleFilter;
+      if (roleFilter) {
+        const normalizedRole = roleFilter.toUpperCase() as Role;
+        if (!Object.values(Role).includes(normalizedRole)) {
+          return sendError(res, 400, "Invalid role filter", "VALIDATION_ERROR");
+        }
+        where.role = normalizedRole;
+      }
       if (search) {
         where.OR = [
           { firstName: { contains: search, mode: "insensitive" } },

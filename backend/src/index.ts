@@ -17,6 +17,8 @@ import notificationRoutes from "./routes/notification.routes";
 import analyticsRoutes from "./routes/analytics.routes";
 import uploadRoutes from "./routes/upload.routes";
 import wasteReportRoutes from "./routes/wasteReport.routes";
+import resortBoxRoutes from "./routes/resortBox.routes";
+import { ReportService } from "./services/report.service";
 
 const app = express();
 
@@ -87,14 +89,35 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/waste-reports", wasteReportRoutes);
+app.use("/api/resort-boxes", resortBoxRoutes);
 
 // Error handler
 app.use(errorHandler);
+
+function scheduleSpamCleanup() {
+  const runCleanup = async () => {
+    try {
+      const deletedCount = await ReportService.purgeExpiredSpamReports();
+      if (deletedCount > 0) {
+        console.log(`🧹 Spam cleanup removed ${deletedCount} expired reports`);
+      }
+    } catch (error) {
+      console.error("Spam cleanup failed:", error);
+    }
+  };
+
+  // Run once on boot, then hourly.
+  void runCleanup();
+  const timer = setInterval(runCleanup, 60 * 60 * 1000);
+  timer.unref();
+}
 
 // Start server (only in development, not in serverless)
 const PORT = parseInt(env.PORT, 10);
 
 if (env.NODE_ENV !== "production") {
+  scheduleSpamCleanup();
+
   app.listen(PORT, () => {
     console.log(`🚀 BlueWaste API running on http://localhost:${PORT}`);
     console.log(`📊 Environment: ${env.NODE_ENV}`);

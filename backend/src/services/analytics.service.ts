@@ -4,11 +4,11 @@ import { ReportStatus, Prisma } from "@prisma/client";
 export class AnalyticsService {
   static async getOverview() {
     const [total, groupedByStatus] = await Promise.all([
-      prisma.report.count({ where: { isDeleted: false } }),
+      prisma.report.count({ where: { isDeleted: false, isSpam: false } }),
       prisma.report.groupBy({
         by: ["status"],
         _count: { id: true },
-        where: { isDeleted: false },
+        where: { isDeleted: false, isSpam: false },
       }),
     ]);
 
@@ -47,6 +47,7 @@ export class AnalyticsService {
                COUNT(*)::int AS count
         FROM "Report"
         WHERE "isDeleted" = false
+          AND "isSpam" = false
           AND "createdAt" >= ${startDate}
         GROUP BY bucket
         ORDER BY bucket ASC
@@ -74,7 +75,7 @@ export class AnalyticsService {
     const categories = await prisma.report.groupBy({
       by: ["category"],
       _count: { id: true },
-      where: { isDeleted: false },
+      where: { isDeleted: false, isSpam: false },
       orderBy: { _count: { id: "desc" } },
     });
 
@@ -94,6 +95,7 @@ export class AnalyticsService {
       FROM "Report" r
       LEFT JOIN "Barangay" b ON b."id" = r."barangayId"
       WHERE r."isDeleted" = false
+        AND r."isSpam" = false
         AND r."barangayId" IS NOT NULL
       GROUP BY r."barangayId", b."name"
       ORDER BY count DESC
@@ -108,16 +110,18 @@ export class AnalyticsService {
 
   static async getBarangayDetailedStats(barangayId: string) {
     const [total, byStatus, byCategory] = await Promise.all([
-      prisma.report.count({ where: { barangayId, isDeleted: false } }),
+      prisma.report.count({
+        where: { barangayId, isDeleted: false, isSpam: false },
+      }),
       prisma.report.groupBy({
         by: ["status"],
         _count: { id: true },
-        where: { barangayId, isDeleted: false },
+        where: { barangayId, isDeleted: false, isSpam: false },
       }),
       prisma.report.groupBy({
         by: ["category"],
         _count: { id: true },
-        where: { barangayId, isDeleted: false },
+        where: { barangayId, isDeleted: false, isSpam: false },
       }),
     ]);
 
@@ -137,7 +141,7 @@ export class AnalyticsService {
     status?: string;
     barangayId?: string;
   }) {
-    const where: Prisma.ReportWhereInput = { isDeleted: false };
+    const where: Prisma.ReportWhereInput = { isDeleted: false, isSpam: false };
 
     if (filters?.startDate || filters?.endDate) {
       where.createdAt = {};

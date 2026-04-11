@@ -1,6 +1,11 @@
 import { z } from "zod";
 
-const roleEnum = z.enum(["CITIZEN", "LGU_ADMIN", "FIELD_WORKER"]);
+const roleEnum = z.enum([
+  "CITIZEN",
+  "LGU_ADMIN",
+  "RESORT_ADMIN",
+  "FIELD_WORKER",
+]);
 
 export const createUserSchema = z.object({
   email: z.string().email("Invalid email address"),

@@ -15,6 +15,9 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
+  const isLGUAdmin = user?.role === "LGU_ADMIN";
+  const isResortAdmin = user?.role === "RESORT_ADMIN";
+
   const notifPath = isAdmin
     ? "/dashboard/notifications"
     : "/citizen/my-reports";
@@ -47,7 +50,11 @@ export function Header() {
 
         <div className="hidden md:block">
           <h2 className="text-lg font-semibold text-gray-800">
-            {isAdmin ? "Admin Dashboard" : "Citizen Portal"}
+            {isLGUAdmin
+              ? "Admin Dashboard"
+              : isResortAdmin
+                ? "Resort Admin Dashboard"
+                : "Citizen Portal"}
           </h2>
         </div>
 
@@ -89,7 +96,11 @@ export function Header() {
                     {user?.firstName} {user?.lastName}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    {isAdmin ? "Administrator" : "Citizen"}
+                    {isLGUAdmin
+                      ? "Administrator"
+                      : isResortAdmin
+                        ? "Resort Admin"
+                        : "Citizen"}
                   </p>
                 </div>
                 <button
@@ -114,11 +125,13 @@ export function Header() {
         <div className="md:hidden border-t bg-white py-2 px-4 space-y-1">
           {isAdmin ? (
             <>
-              <MobileLink
-                href="/dashboard"
-                label="Dashboard"
-                onClick={() => setMobileMenuOpen(false)}
-              />
+              {isLGUAdmin && (
+                <MobileLink
+                  href="/dashboard"
+                  label="Dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                />
+              )}
               <MobileLink
                 href="/dashboard/reports"
                 label="Reports"
@@ -129,16 +142,20 @@ export function Header() {
                 label="Waste Map"
                 onClick={() => setMobileMenuOpen(false)}
               />
-              <MobileLink
-                href="/dashboard/analytics"
-                label="Analytics"
-                onClick={() => setMobileMenuOpen(false)}
-              />
-              <MobileLink
-                href="/dashboard/barangays"
-                label="Barangays"
-                onClick={() => setMobileMenuOpen(false)}
-              />
+              {isLGUAdmin && (
+                <MobileLink
+                  href="/dashboard/analytics"
+                  label="Analytics"
+                  onClick={() => setMobileMenuOpen(false)}
+                />
+              )}
+              {isLGUAdmin && (
+                <MobileLink
+                  href="/dashboard/barangays"
+                  label="Barangays"
+                  onClick={() => setMobileMenuOpen(false)}
+                />
+              )}
               <MobileLink
                 href="/dashboard/notifications"
                 label="Notifications"

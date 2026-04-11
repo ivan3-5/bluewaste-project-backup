@@ -7,7 +7,7 @@ export interface UserRecord {
   email: string;
   firstName: string;
   lastName: string;
-  role: "CITIZEN" | "LGU_ADMIN" | "FIELD_WORKER";
+  role: "CITIZEN" | "LGU_ADMIN" | "RESORT_ADMIN" | "FIELD_WORKER";
   phone?: string;
   isActive: boolean;
   barangay?: { id: string; name: string } | null;

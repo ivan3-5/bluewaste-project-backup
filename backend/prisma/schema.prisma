@@ -12,6 +12,7 @@ datasource db {
 enum Role {
   CITIZEN
   LGU_ADMIN
+  RESORT_ADMIN
   FIELD_WORKER
 }
 
@@ -59,6 +60,11 @@ enum AiWasteType {
   ORGANIC
 }
 
+enum AnalysisStatus {
+  DIRTY
+  CLEAN
+}
+
 // ==================== MODELS ====================
 
 model User {
@@ -76,6 +82,11 @@ model User {
 
   barangayId String?
   barangay   Barangay? @relation(fields: [barangayId], references: [id])
+
+  // Resort boxes assigned to this resort admin
+  ownedResortBoxes ResortBox[] @relation("ResortBoxOwner")
+  // Resort boxes created by LGU admin users
+  createdResortBoxes ResortBox[] @relation("ResortBoxCreator")
 
   // Reports submitted by the user
   reports         Report[]        @relation("ReporterReports")
@@ -107,6 +118,13 @@ model Report {
   address     String?
   isAnonymous Boolean       @default(false)
   isDeleted   Boolean       @default(false)
+  isSpam      Boolean       @default(false)
+  spamMarkedAt DateTime?
+  spamReason  String?
+  analysisStatus AnalysisStatus?
+  analysisWasteCount Int?
+  analysisConfidence Float?
+  analyzedAt DateTime?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
@@ -121,6 +139,10 @@ model Report {
   // Barangay
   barangayId String?
   barangay   Barangay? @relation(fields: [barangayId], references: [id])
+
+  // Resort box assignment (auto-routed by map bounds)
+  resortBoxId String?
+  resortBox   ResortBox? @relation(fields: [resortBoxId], references: [id])
 
   // Related records
   images        ReportImage[]
@@ -140,6 +162,35 @@ model Report {
   @@index([isDeleted, barangayId, createdAt])
   @@index([isDeleted, reporterId, createdAt])
   @@index([isDeleted, assignedToId, createdAt])
+  @@index([resortBoxId])
+  @@index([isDeleted, resortBoxId, createdAt])
+  @@index([isDeleted, isSpam, createdAt])
+  @@index([isDeleted, isSpam, spamMarkedAt])
+}
+
+model ResortBox {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  minLat      Float
+  maxLat      Float
+  minLng      Float
+  maxLng      Float
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  ownerId   String
+  owner     User   @relation("ResortBoxOwner", fields: [ownerId], references: [id])
+  createdById String
+  createdBy User   @relation("ResortBoxCreator", fields: [createdById], references: [id])
+
+  reports Report[]
+
+  @@index([ownerId])
+  @@index([ownerId, isActive])
+  @@index([createdById])
+  @@index([isActive, minLat, maxLat, minLng, maxLng])
 }
 
 model ReportImage {

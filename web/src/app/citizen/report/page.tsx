@@ -440,25 +440,6 @@ export default function SubmitReportPage() {
     setDecisionMessage("");
 
     try {
-      const latestAnalysis = await analyzeWasteImage();
-      setAnalysisResult(latestAnalysis);
-      setSelectedCategory(mapAnalysisTypeToCategory(latestAnalysis.wasteType));
-
-      if (latestAnalysis.decision.retakeRecommended) {
-        const message =
-          latestAnalysis.decision.message ||
-          "Uncertain classification. Please retake the image and try again.";
-        setDecisionMessage(message);
-        setSubmitError(message);
-        return;
-      }
-
-      if (latestAnalysis.status === "CLEAN") {
-        setDecisionMessage("No waste detected. Report not saved.");
-        setSubmitError("No waste detected. Report not saved.");
-        return;
-      }
-
       const reportTitle = `Waste report - ${WASTE_CATEGORY_LABELS[selectedCategory]}`;
       const reportDescription =
         trimmedDescription.length > 0
@@ -650,91 +631,9 @@ export default function SubmitReportPage() {
             <section className="rounded-2xl border bg-white p-4 sm:p-6 shadow-sm space-y-4">
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-lg font-semibold text-gray-900">
-                  Report Details
+                  Submission Info
                 </h2>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="gap-2"
-                  onClick={handleAnalyzeWaste}
-                  disabled={isAnalyzing || !imageFile}
-                >
-                  {isAnalyzing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" /> Analyzing...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4" /> Analyze Waste
-                    </>
-                  )}
-                </Button>
               </div>
-
-              {analysisError && (
-                <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                  <AlertCircle className="h-4 w-4" /> {analysisError}
-                </div>
-              )}
-
-              {analysisResult && (
-                <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3 space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
-                    AI Suggestion
-                  </p>
-                  <div className="flex items-center gap-2 text-xs text-emerald-800">
-                    <span
-                      className={`inline-flex rounded-full border px-2 py-0.5 font-semibold ${analysisResult.status === "DIRTY" ? "border-red-200 bg-red-100 text-red-700" : "border-emerald-200 bg-emerald-100 text-emerald-700"}`}
-                    >
-                      {analysisResult.status}
-                    </span>
-                    <span>
-                      Waste objects: {analysisResult.wasteCount} /{" "}
-                      {analysisResult.count}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-700 capitalize">
-                    Detected object:{" "}
-                    <strong>{analysisResult.detectedObject}</strong>
-                  </p>
-                  <div className="flex items-center gap-2 text-sm">
-                    <span
-                      className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${ANALYSIS_TYPE_STYLES[analysisResult.wasteType]}`}
-                    >
-                      {analysisResult.wasteType}
-                    </span>
-                    <span className="text-gray-500">
-                      Confidence: {(analysisResult.confidence * 100).toFixed(1)}
-                      %
-                    </span>
-                    {analysisResult.topConfidence !== null && (
-                      <span className="text-gray-500">
-                        Top box:{" "}
-                        {(analysisResult.topConfidence * 100).toFixed(1)}%
-                      </span>
-                    )}
-                  </div>
-                  {analysisResult.detections.length > 0 && (
-                    <p className="text-xs text-emerald-700">
-                      Bounding boxes: {analysisResult.detections.length}
-                    </p>
-                  )}
-                  {analysisResult.decision.retakeRecommended &&
-                    analysisResult.decision.captureTips.length > 0 && (
-                      <p className="text-xs text-amber-700">
-                        Tips: {analysisResult.decision.captureTips.join(" | ")}
-                      </p>
-                    )}
-                </div>
-              )}
-
-              {decisionMessage && (
-                <p
-                  className={`rounded-lg border px-3 py-2 text-sm ${analysisResult?.decision?.retakeRecommended ? "border-amber-300 bg-amber-50 text-amber-800" : analysisResult?.status === "DIRTY" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-amber-200 bg-amber-50 text-amber-700"}`}
-                >
-                  {decisionMessage}
-                </p>
-              )}
 
               <div className="space-y-1.5">
                 <Label htmlFor="waste-type">

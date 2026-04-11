@@ -57,7 +57,7 @@ export default function LoginPage() {
       const savedUser = localStorage.getItem("bluewaste_user");
       if (savedUser) {
         const user = JSON.parse(savedUser);
-        if (user.role === "LGU_ADMIN") {
+        if (user.role === "LGU_ADMIN" || user.role === "RESORT_ADMIN") {
           router.push("/dashboard");
         } else if (user.role === "FIELD_WORKER") {
           router.push("/field-worker");
@@ -73,101 +73,83 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-white text-gray-900">
+    <main className="relative min-h-screen overflow-hidden bg-slate-50 text-gray-900">
       <div className="absolute inset-0 auth-eco-gradient" />
-      <div className="absolute inset-0 auth-grid-strong" />
-      <div className="absolute inset-0 auth-eco-noise opacity-40" />
-      <div className="absolute -left-32 top-20 h-72 w-72 rounded-full bg-blue-300/30 blur-3xl" />
-      <div className="absolute -right-20 bottom-0 h-80 w-80 rounded-full bg-sky-300/25 blur-3xl" />
+      <div className="absolute inset-0 auth-eco-noise opacity-35" />
 
-      <div className="relative mx-auto flex min-h-screen max-w-7xl items-stretch px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
-        <section className="hidden lg:flex lg:w-1/2 lg:flex-col lg:justify-between rounded-3xl border border-sky-100 bg-white/80 p-10 shadow-2xl shadow-sky-100/70 backdrop-blur-md">
-          <div className="flex items-center gap-3">
-            <Image
-              src="/logo-bluewaste.png"
-              alt="BlueWaste logo"
-              width={44}
-              height={44}
-              quality={100}
-              sizes="44px"
-              className="h-11 w-11 rounded-xl object-contain ring-1 ring-primary/20"
-              priority
-            />
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-blue-700/90">
-                BlueWaste System
-              </p>
-              <h2 className="text-xl font-semibold text-gray-900">
-                Panabo City
-              </h2>
-            </div>
-          </div>
+      <div className="relative mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
+        <div className="grid w-full overflow-hidden rounded-[32px] border border-sky-100 bg-white/90 shadow-[0_32px_80px_-36px_rgba(2,132,199,0.55)] backdrop-blur-md lg:min-h-[680px] lg:grid-cols-[1.05fr_1fr]">
+          <section className="relative flex flex-col justify-between bg-gradient-to-br from-sky-50 via-cyan-50 to-white px-7 py-8 sm:px-10 sm:py-10 lg:px-12 lg:py-12">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(59,130,246,0.18),transparent_42%),radial-gradient(circle_at_85%_85%,rgba(14,165,233,0.16),transparent_48%)]" />
+            <div className="pointer-events-none absolute inset-0 auth-panel-grid-soft" />
 
-          <div className="space-y-8">
-            <div>
-              <p className="mb-3 inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
-                Eco Action Platform
-              </p>
-              <h1 className="text-4xl font-bold leading-tight text-gray-900">
-                Smart Waste,
-                <br />
-                <span className="text-primary">Smarter City.</span>
-              </h1>
-              <p className="mt-4 max-w-md text-sm leading-relaxed text-gray-600">
-                Empowering Panabo City residents to report and track waste,
-                keeping every barangay cleaner through community participation.
-              </p>
-            </div>
+            <div className="relative space-y-8">
+              <div className="flex items-center gap-3">
+                <Image
+                  src="/logo-bluewaste.png"
+                  alt="BlueWaste logo"
+                  width={46}
+                  height={46}
+                  quality={100}
+                  sizes="46px"
+                  className="h-11 w-11 rounded-xl object-contain ring-1 ring-primary/20"
+                  priority
+                />
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-blue-700/90">
+                    BlueWaste System
+                  </p>
+                  <h1 className="text-xl font-semibold text-slate-900">
+                    Panabo City
+                  </h1>
+                </div>
+              </div>
 
-            <ul
-              className="space-y-3"
-              aria-label="BlueWaste platform highlights"
-            >
-              {features.map(({ icon: Icon, label }) => (
-                <li
-                  key={label}
-                  className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-3 py-2.5"
-                >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                    <Icon className="h-4 w-4 text-primary" />
-                  </div>
-                  <span className="text-sm text-gray-700">{label}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <p className="text-xs text-gray-500">
-            © {new Date().getFullYear()} BlueWaste. Cleaner spaces, healthier
-            communities.
-          </p>
-        </section>
-
-        <section className="w-full lg:w-1/2 lg:pl-8">
-          <div className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center py-6 sm:py-10">
-            <div className="mb-8 flex items-center gap-3 lg:hidden">
-              <Image
-                src="/logo-bluewaste.png"
-                alt="BlueWaste logo"
-                width={40}
-                height={40}
-                quality={100}
-                sizes="40px"
-                className="h-10 w-10 rounded-xl object-contain shadow-lg shadow-blue-200/70"
-                priority
-              />
               <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-blue-700/80">
-                  BlueWaste
+                <p className="mb-3 inline-flex items-center rounded-full border border-blue-200 bg-white/80 px-3 py-1 text-xs font-medium text-blue-700 backdrop-blur-sm">
+                  Eco Action Platform
                 </p>
-                <p className="text-sm font-semibold text-gray-900">
-                  Panabo City
+                <h2 className="text-3xl font-bold leading-tight text-slate-900 sm:text-4xl">
+                  Smart Waste,
+                  <br />
+                  <span className="text-primary">Smarter City.</span>
+                </h2>
+                <p className="mt-4 max-w-md text-sm leading-relaxed text-slate-600">
+                  Empowering Panabo City residents to report and track waste,
+                  keeping every barangay cleaner through community
+                  participation.
                 </p>
               </div>
+
+              <ul
+                className="space-y-3"
+                aria-label="BlueWaste platform highlights"
+              >
+                {features.map(({ icon: Icon, label }) => (
+                  <li
+                    key={label}
+                    className="flex items-center gap-3 rounded-xl border border-blue-100/80 bg-white/80 px-3 py-3 backdrop-blur-sm"
+                  >
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                      <Icon className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="text-sm font-medium text-slate-700">
+                      {label}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </div>
 
-            <div className="rounded-3xl border border-sky-100 bg-white/95 p-7 shadow-2xl shadow-sky-100/70 backdrop-blur-md sm:p-8">
-              <div className="mb-7">
+            <p className="relative mt-8 text-xs text-slate-600">
+              © {new Date().getFullYear()} BlueWaste. Cleaner spaces, healthier
+              communities.
+            </p>
+          </section>
+
+          <section className="flex items-center bg-white px-6 py-8 sm:px-10 sm:py-10 lg:px-12 lg:py-12">
+            <div className="mx-auto w-full max-w-md">
+              <div className="mb-7 sm:mb-8">
                 <h2 className="text-3xl font-bold text-slate-900">
                   Welcome back
                 </h2>
@@ -293,8 +275,8 @@ export default function LoginPage() {
                 </p>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </div>
       </div>
     </main>
   );

@@ -3,7 +3,7 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: "CITIZEN" | "LGU_ADMIN" | "FIELD_WORKER";
+  role: "CITIZEN" | "LGU_ADMIN" | "RESORT_ADMIN" | "FIELD_WORKER";
   phone?: string;
   avatarUrl?: string;
   barangayId?: string;
@@ -23,6 +23,13 @@ export interface Report {
   longitude: number;
   address?: string;
   isAnonymous: boolean;
+  isSpam?: boolean;
+  spamMarkedAt?: string | null;
+  spamReason?: string | null;
+  analysisStatus?: "DIRTY" | "CLEAN" | null;
+  analysisWasteCount?: number | null;
+  analysisConfidence?: number | null;
+  analyzedAt?: string | null;
   reporterId?: string;
   reporter?: {
     id: string;
@@ -112,6 +119,35 @@ export interface MapReport {
   createdAt: string;
   barangay?: { id: string; name: string };
   images: { imageUrl: string }[];
+}
+
+export interface ResortBox {
+  id: string;
+  name: string;
+  description?: string | null;
+  minLat: number;
+  maxLat: number;
+  minLng: number;
+  maxLng: number;
+  isActive: boolean;
+  ownerId: string;
+  owner: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  createdById: string;
+  createdBy: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  _count?: {
+    reports: number;
+  };
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface HeatmapPoint {

@@ -13,13 +13,13 @@ import {
   BarChart3,
   Building2,
   Bell,
-  Settings,
   PlusCircle,
   ClipboardList,
   LogOut,
   Menu,
   X,
   Users,
+  ArchiveX,
 } from "lucide-react";
 
 const adminLinks = [
@@ -29,6 +29,13 @@ const adminLinks = [
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/dashboard/barangays", label: "Barangays", icon: Building2 },
   { href: "/dashboard/users", label: "User Management", icon: Users },
+  { href: "/dashboard/spam", label: "Spam", icon: ArchiveX },
+  { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
+];
+
+const resortAdminLinks = [
+  { href: "/dashboard/reports", label: "Reports", icon: FileText },
+  { href: "/dashboard/map", label: "Waste Map", icon: Map },
   { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
 ];
 
@@ -44,7 +51,11 @@ export function Sidebar() {
   const { user, logout, isAdmin } = useAuth();
   const { isCollapsed, toggleSidebar } = useSidebar();
 
-  const links = isAdmin ? adminLinks : citizenLinks;
+  const links = isAdmin
+    ? user?.role === "RESORT_ADMIN"
+      ? resortAdminLinks
+      : adminLinks
+    : citizenLinks;
 
   return (
     <aside
@@ -169,9 +180,11 @@ export function Sidebar() {
               <p className="text-xs text-gray-500 truncate">
                 {user?.role === "LGU_ADMIN"
                   ? "Administrator"
-                  : user?.role === "FIELD_WORKER"
-                    ? "Field Worker"
-                    : "Citizen"}
+                  : user?.role === "RESORT_ADMIN"
+                    ? "Resort Admin"
+                    : user?.role === "FIELD_WORKER"
+                      ? "Field Worker"
+                      : "Citizen"}
               </p>
             </div>
           )}

@@ -1,7 +1,16 @@
 import dotenv from "dotenv";
 import { z } from "zod";
+import path from "path";
+import fs from "fs";
 
-dotenv.config();
+const envLocalPath = path.join(process.cwd(), ".env.local");
+const envPath = path.join(process.cwd(), ".env");
+
+if (fs.existsSync(envLocalPath)) {
+  dotenv.config({ path: envLocalPath });
+} else if (fs.existsSync(envPath)) {
+  dotenv.config({ path: envPath });
+}
 
 const envSchema = z.object({
   DATABASE_URL: z.string().url(),
@@ -16,6 +25,8 @@ const envSchema = z.object({
   WEB_URL: z.string().default("http://localhost:3000"),
   MOBILE_URL: z.string().default("http://localhost:8081"),
   ALLOWED_ORIGINS: z.string().optional(),
+  YOLO_API_URL: z.string().url().default("http://localhost:8000/predict"),
+  SPAM_RETENTION_DAYS: z.coerce.number().int().min(1).default(3),
 });
 
 const parsed = envSchema.safeParse(process.env);

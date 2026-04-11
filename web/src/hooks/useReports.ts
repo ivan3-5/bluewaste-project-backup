@@ -18,6 +18,7 @@ interface ReportFilters {
   startDate?: string;
   endDate?: string;
   search?: string;
+  isSpam?: boolean;
 }
 
 export function useReports(filters: ReportFilters = {}) {
@@ -214,6 +215,78 @@ export function useDeleteReport() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["reports"] });
+      queryClient.invalidateQueries({ queryKey: ["map-data"] });
+    },
+  });
+}
+
+export function useAnalyzeReportImage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      reportId,
+      imageId,
+    }: {
+      reportId: string;
+      imageId?: string;
+    }) => {
+      const { data } = await api.post(`/reports/${reportId}/analyze`, {
+        ...(imageId ? { imageId } : {}),
+      });
+      return data as {
+        report: Report;
+        analysis: {
+          status: "DIRTY" | "CLEAN";
+          wasteCount: number;
+          count: number;
+          confidence: number | null;
+          labels: string[];
+          imageId: string;
+          imageUrl: string;
+          spam: boolean;
+          spamMarkedAt: string | null;
+          autoDeleteAt: string | null;
+        };
+      };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+      queryClient.invalidateQueries({ queryKey: ["report"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
+      queryClient.invalidateQueries({ queryKey: ["map-data"] });
+    },
+  });
+}
+
+export function useRestoreSpamReport() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (reportId: string) => {
+      const { data } = await api.put(`/reports/${reportId}/spam/restore`);
+      return data as Report;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+      queryClient.invalidateQueries({ queryKey: ["report"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
+      queryClient.invalidateQueries({ queryKey: ["map-data"] });
+    },
+  });
+}
+
+export function useDeleteSpamReport() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (reportId: string) => {
+      await api.delete(`/reports/${reportId}/spam`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+      queryClient.invalidateQueries({ queryKey: ["report"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
       queryClient.invalidateQueries({ queryKey: ["map-data"] });
     },
   });

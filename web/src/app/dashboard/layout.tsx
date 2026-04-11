@@ -2,7 +2,7 @@
 
 import { ReactNode, useEffect } from "react";
 import { useAuth } from "@/providers/AuthProvider";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { SidebarProvider, useSidebar } from "@/contexts/SidebarContext";
@@ -30,19 +30,39 @@ function DashboardContent({ children }: { children: ReactNode }) {
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!isLoading && !user) {
       router.push("/login");
     }
-    if (!isLoading && user && user.role !== "LGU_ADMIN") {
+    if (
+      !isLoading &&
+      user &&
+      user.role !== "LGU_ADMIN" &&
+      user.role !== "RESORT_ADMIN"
+    ) {
       if (user.role === "FIELD_WORKER") {
         router.push("/field-worker");
       } else {
         router.push("/citizen/report");
       }
     }
-  }, [user, isLoading, router]);
+
+    if (!isLoading && user?.role === "RESORT_ADMIN") {
+      const allowedPrefixes = [
+        "/dashboard/map",
+        "/dashboard/reports",
+        "/dashboard/notifications",
+      ];
+      const isAllowed = allowedPrefixes.some((prefix) =>
+        pathname.startsWith(prefix),
+      );
+      if (!isAllowed) {
+        router.push("/dashboard/map");
+      }
+    }
+  }, [user, isLoading, router, pathname]);
 
   if (isLoading) {
     return (
@@ -52,7 +72,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!user || user.role !== "LGU_ADMIN") {
+  if (!user || (user.role !== "LGU_ADMIN" && user.role !== "RESORT_ADMIN")) {
     return null;
   }
 

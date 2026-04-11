@@ -21,8 +21,12 @@ import { formatDateTime } from "@/lib/utils";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
+import { useAuth } from "@/providers/AuthProvider";
 
 export default function ReportsPage() {
+  const { user } = useAuth();
+  const canManageReport = user?.role === "LGU_ADMIN";
+
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState<ReportStatus | "">("");
   const [category, setCategory] = useState<WasteCategory | "">("");
@@ -46,6 +50,7 @@ export default function ReportsPage() {
     { id: string; firstName: string; lastName: string }[]
   >({
     queryKey: ["field-workers"],
+    enabled: canManageReport,
     queryFn: async () => {
       const { data } = await api.get("/users/field-workers");
       return data;
@@ -61,7 +66,7 @@ export default function ReportsPage() {
   };
 
   const handleStatusUpdate = async () => {
-    if (!actionReport) return;
+    if (!actionReport || !canManageReport) return;
 
     // Update status
     await updateStatus.mutateAsync({
@@ -103,6 +108,7 @@ export default function ReportsPage() {
             Status
           </label>
           <select
+            title="Filter by status"
             className="rounded-md border px-3 py-2 text-sm"
             value={status}
             onChange={(e) => {
@@ -123,6 +129,7 @@ export default function ReportsPage() {
             Category
           </label>
           <select
+            title="Filter by category"
             className="rounded-md border px-3 py-2 text-sm"
             value={category}
             onChange={(e) => {
@@ -268,19 +275,21 @@ export default function ReportsPage() {
                           View
                         </Button>
                       </Link>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        className="bg-green-600 hover:bg-green-700"
-                        onClick={() => {
-                          setActionReport(report);
-                          setShowStatusModal(true);
-                          setNewStatus(report.status);
-                          setSelectedWorkerId(report.assignedTo?.id || "");
-                        }}
-                      >
-                        Status
-                      </Button>
+                      {canManageReport && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-700"
+                          onClick={() => {
+                            setActionReport(report);
+                            setShowStatusModal(true);
+                            setNewStatus(report.status);
+                            setSelectedWorkerId(report.assignedTo?.id || "");
+                          }}
+                        >
+                          Status
+                        </Button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -318,7 +327,7 @@ export default function ReportsPage() {
       )}
 
       {/* Status Update Modal */}
-      {actionReport && showStatusModal && (
+      {actionReport && showStatusModal && canManageReport && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
           onClick={() => {
@@ -340,6 +349,7 @@ export default function ReportsPage() {
                 New Status
               </label>
               <select
+                title="Select new status"
                 className="w-full rounded-md border px-3 py-2 text-sm"
                 value={newStatus}
                 onChange={(e) => setNewStatus(e.target.value as ReportStatus)}
@@ -356,6 +366,7 @@ export default function ReportsPage() {
                 Assign Field Worker (optional)
               </label>
               <select
+                title="Assign Field Worker"
                 className="w-full rounded-md border px-3 py-2 text-sm"
                 value={selectedWorkerId}
                 onChange={(e) => setSelectedWorkerId(e.target.value)}
@@ -375,6 +386,7 @@ export default function ReportsPage() {
               <textarea
                 className="w-full rounded-md border px-3 py-2 text-sm"
                 rows={3}
+                placeholder="Add notes about this status update..."
                 value={statusNotes}
                 onChange={(e) => setStatusNotes(e.target.value)}
               />

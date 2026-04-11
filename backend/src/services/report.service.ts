@@ -1,19 +1,88 @@
 import prisma from "../config/database";
 import {
+  AnalysisStatus,
   ReportStatus,
   WasteCategory,
   Prisma,
   NotificationType,
+  Role,
 } from "@prisma/client";
 import {
   getPaginationParams,
   buildPaginatedResponse,
-  PaginationParams,
 } from "../utils/pagination";
 import { NotificationService } from "./notification.service";
+import { env } from "../config/env";
+
+type Viewer = {
+  id: string;
+  role: string;
+};
+
+function toNonNegativeInt(value: unknown, fallback = 0) {
+  if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+    return Math.trunc(value);
+  }
+
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed) && parsed >= 0) {
+      return Math.trunc(parsed);
+    }
+  }
+
+  return fallback;
+}
+
+function toFiniteNumberOrNull(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function normalizeDecisionStatus(value: unknown): AnalysisStatus {
+  if (typeof value === "string" && value.trim().toUpperCase() === "DIRTY") {
+    return AnalysisStatus.DIRTY;
+  }
+
+  return AnalysisStatus.CLEAN;
+}
+
+function toSafeJson(text: string) {
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+function normalizeImageContentType(value: string | null) {
+  const normalized = (value || "image/jpeg").split(";")[0].trim().toLowerCase();
+
+  if (normalized === "image/jpg") {
+    return "image/jpeg";
+  }
+
+  return normalized || "image/jpeg";
+}
 
 export class ReportService {
   private static readonly GEO_CACHE_TTL_MS = 20_000;
+  private static readonly RESORT_ADMIN_NEW_REPORT_TITLE = "New Area Report";
+  private static readonly SPAM_RETENTION_MS =
+    env.SPAM_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+  private static readonly SPAM_PURGE_INTERVAL_MS = 60 * 60 * 1000;
+  private static lastSpamPurgeAt = 0;
 
   private static mapDataCache = new Map<
     string,
@@ -23,14 +92,98 @@ export class ReportService {
     }
   >();
 
-  private static heatmapCache: {
-    expiresAt: number;
-    data: Array<{ lat: number; lng: number; intensity: number }>;
-  } | null = null;
+  private static heatmapCache = new Map<
+    string,
+    {
+      expiresAt: number;
+      data: Array<{ lat: number; lng: number; intensity: number }>;
+    }
+  >();
+
+  private static getViewerScopeKey(viewer?: Viewer) {
+    if (!viewer) {
+      return "public";
+    }
+    if (viewer.role === Role.RESORT_ADMIN) {
+      return `resort-admin:${viewer.id}`;
+    }
+    return viewer.role;
+  }
+
+  private static getViewerWhereScope(viewer?: Viewer): Prisma.ReportWhereInput {
+    if (!viewer || viewer.role !== Role.RESORT_ADMIN) {
+      return {};
+    }
+
+    return {
+      resortBox: {
+        is: {
+          ownerId: viewer.id,
+        },
+      },
+    };
+  }
+
+  private static getReportDetailWhere(viewer: Viewer, reportId: string) {
+    if (viewer.role === Role.LGU_ADMIN) {
+      return {
+        id: reportId,
+        isDeleted: false,
+      } satisfies Prisma.ReportWhereInput;
+    }
+
+    if (viewer.role === Role.RESORT_ADMIN) {
+      return {
+        id: reportId,
+        isDeleted: false,
+        ...this.getViewerWhereScope(viewer),
+      } satisfies Prisma.ReportWhereInput;
+    }
+
+    if (viewer.role === Role.FIELD_WORKER) {
+      return {
+        id: reportId,
+        isDeleted: false,
+        assignedToId: viewer.id,
+      } satisfies Prisma.ReportWhereInput;
+    }
+
+    return {
+      id: "__forbidden__",
+      isDeleted: false,
+    };
+  }
+
+  private static async findMatchingResortBox(
+    latitude: number,
+    longitude: number,
+  ) {
+    const matched = await prisma.resortBox.findFirst({
+      where: {
+        isActive: true,
+        minLat: { lte: latitude },
+        maxLat: { gte: latitude },
+        minLng: { lte: longitude },
+        maxLng: { gte: longitude },
+        owner: {
+          role: Role.RESORT_ADMIN,
+          isActive: true,
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        ownerId: true,
+      },
+      orderBy: { createdAt: "asc" },
+    });
+
+    return matched;
+  }
 
   private static invalidateGeoCaches() {
     this.mapDataCache.clear();
-    this.heatmapCache = null;
+    this.heatmapCache.clear();
   }
 
   private static getCachedMapData(cacheKey: string) {
@@ -54,26 +207,109 @@ export class ReportService {
     });
   }
 
-  private static getCachedHeatmapData() {
-    if (!this.heatmapCache) {
+  private static getCachedHeatmapData(cacheKey: string) {
+    const cached = this.heatmapCache.get(cacheKey);
+    if (!cached) {
       return null;
     }
 
-    if (this.heatmapCache.expiresAt < Date.now()) {
-      this.heatmapCache = null;
+    if (cached.expiresAt < Date.now()) {
+      this.heatmapCache.delete(cacheKey);
       return null;
     }
 
-    return this.heatmapCache.data;
+    return cached.data;
   }
 
   private static setCachedHeatmapData(
+    cacheKey: string,
     data: Array<{ lat: number; lng: number; intensity: number }>,
   ) {
-    this.heatmapCache = {
+    this.heatmapCache.set(cacheKey, {
       expiresAt: Date.now() + this.GEO_CACHE_TTL_MS,
       data,
+    });
+  }
+
+  private static async requestYoloAnalysis(imageUrl: string) {
+    const imageResponse = await fetch(imageUrl);
+    if (!imageResponse.ok) {
+      throw new Error("Failed to fetch report image for analysis");
+    }
+
+    const contentType = normalizeImageContentType(
+      imageResponse.headers.get("content-type"),
+    );
+    const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+
+    const yoloBody = new FormData();
+    yoloBody.append(
+      "image",
+      new Blob([imageBuffer], { type: contentType }),
+      "report-image.jpg",
+    );
+
+    let yoloResponse: Response;
+    try {
+      yoloResponse = await fetch(env.YOLO_API_URL, {
+        method: "POST",
+        body: yoloBody,
+      });
+    } catch {
+      throw new Error(
+        "YOLO service is unavailable. Start the YOLO API service and verify YOLO_API_URL.",
+      );
+    }
+
+    const yoloText = await yoloResponse.text();
+    const yoloJson = toSafeJson(yoloText) ?? {};
+
+    if (!yoloResponse.ok) {
+      const message =
+        (yoloJson as any)?.detail ||
+        (yoloJson as any)?.message ||
+        (yoloJson as any)?.error ||
+        "YOLO API request failed";
+      throw new Error(`YOLO API error: ${message}`);
+    }
+
+    const count = toNonNegativeInt((yoloJson as any)?.count, 0);
+    const wasteCount = toNonNegativeInt(
+      (yoloJson as any)?.waste_count,
+      Array.isArray((yoloJson as any)?.detections)
+        ? (yoloJson as any).detections.length
+        : count,
+    );
+
+    return {
+      status: normalizeDecisionStatus((yoloJson as any)?.status),
+      wasteCount,
+      count,
+      confidence:
+        toFiniteNumberOrNull((yoloJson as any)?.top_confidence) ??
+        toFiniteNumberOrNull((yoloJson as any)?.confidence),
+      labels: Array.isArray((yoloJson as any)?.labels)
+        ? (yoloJson as any).labels
+        : [],
     };
+  }
+
+  private static getSpamAutoDeleteAt(spamMarkedAt: Date) {
+    return new Date(spamMarkedAt.getTime() + this.SPAM_RETENTION_MS);
+  }
+
+  private static async purgeExpiredSpamIfDue() {
+    const now = Date.now();
+    if (now - this.lastSpamPurgeAt < this.SPAM_PURGE_INTERVAL_MS) {
+      return;
+    }
+
+    this.lastSpamPurgeAt = now;
+    try {
+      await this.purgeExpiredSpamReports();
+    } catch (error) {
+      console.warn("Failed background spam purge:", error);
+    }
   }
 
   static async create(data: {
@@ -88,6 +324,12 @@ export class ReportService {
     priority?: string;
     reporterId?: string;
   }) {
+    await this.purgeExpiredSpamIfDue();
+    const matchedResortBox = await this.findMatchingResortBox(
+      data.latitude,
+      data.longitude,
+    );
+
     const report = await prisma.$transaction(async (tx) => {
       const created = await tx.report.create({
         data: {
@@ -101,6 +343,7 @@ export class ReportService {
           isAnonymous: data.isAnonymous || false,
           priority: (data.priority as any) || "MEDIUM",
           reporterId: data.isAnonymous ? null : data.reporterId,
+          resortBoxId: matchedResortBox?.id,
         },
         include: {
           reporter: {
@@ -131,6 +374,16 @@ export class ReportService {
         `A new ${data.category.replace("_", " ").toLowerCase()} report has been submitted: "${data.title}"`,
         report.id,
       );
+
+      if (matchedResortBox?.ownerId) {
+        await NotificationService.create({
+          userId: matchedResortBox.ownerId,
+          title: this.RESORT_ADMIN_NEW_REPORT_TITLE,
+          message: `A new report is inside ${matchedResortBox.name}: "${data.title}"`,
+          type: NotificationType.NEW_REPORT,
+          reportId: report.id,
+        });
+      }
     } catch (error) {
       console.warn("Failed to notify admins for new report:", report.id, error);
     }
@@ -140,23 +393,33 @@ export class ReportService {
     return report;
   }
 
-  static async findAll(filters: {
-    status?: ReportStatus;
-    category?: WasteCategory;
-    barangayId?: string;
-    startDate?: string;
-    endDate?: string;
-    search?: string;
-    page?: string;
-    limit?: string;
-  }) {
+  static async findAll(
+    filters: {
+      status?: ReportStatus;
+      category?: WasteCategory;
+      barangayId?: string;
+      startDate?: string;
+      endDate?: string;
+      search?: string;
+      isSpam?: string;
+      page?: string;
+      limit?: string;
+    },
+    viewer?: Viewer,
+  ) {
+    await this.purgeExpiredSpamIfDue();
     const pagination = getPaginationParams({
       page: filters.page,
       limit: filters.limit,
     });
 
+    const wantsSpam =
+      filters.isSpam === "true" && viewer?.role === Role.LGU_ADMIN;
+
     const where: Prisma.ReportWhereInput = {
       isDeleted: false,
+      isSpam: wantsSpam,
+      ...this.getViewerWhereScope(viewer),
     };
 
     if (filters.status) where.status = filters.status;
@@ -201,9 +464,13 @@ export class ReportService {
     return buildPaginatedResponse(reports, total, pagination);
   }
 
-  static async findById(id: string) {
+  static async findById(id: string, viewer?: Viewer) {
+    if (!viewer) {
+      throw new Error("Insufficient permissions.");
+    }
+
     const report = await prisma.report.findFirst({
-      where: { id, isDeleted: false },
+      where: this.getReportDetailWhere(viewer, id),
       include: {
         reporter: {
           select: {
@@ -237,6 +504,23 @@ export class ReportService {
     });
 
     if (!report) {
+      if (
+        viewer.role === Role.RESORT_ADMIN ||
+        viewer.role === Role.FIELD_WORKER
+      ) {
+        const exists = await prisma.report.findFirst({
+          where: { id, isDeleted: false },
+          select: { id: true },
+        });
+        if (exists) {
+          throw new Error("Insufficient permissions.");
+        }
+      }
+
+      if (viewer.role === Role.CITIZEN) {
+        throw new Error("Insufficient permissions.");
+      }
+
       throw new Error("Report not found");
     }
 
@@ -250,7 +534,7 @@ export class ReportService {
     notes?: string,
   ) {
     const report = await prisma.report.findFirst({
-      where: { id: reportId, isDeleted: false },
+      where: { id: reportId, isDeleted: false, isSpam: false },
     });
 
     if (!report) {
@@ -317,7 +601,7 @@ export class ReportService {
     assignedById: string,
   ) {
     const report = await prisma.report.findFirst({
-      where: { id: reportId, isDeleted: false },
+      where: { id: reportId, isDeleted: false, isSpam: false },
     });
 
     if (!report) {
@@ -358,6 +642,7 @@ export class ReportService {
     userId: string,
     filters: { page?: string; limit?: string; status?: ReportStatus },
   ) {
+    await this.purgeExpiredSpamIfDue();
     const pagination = getPaginationParams({
       page: filters.page,
       limit: filters.limit,
@@ -366,6 +651,7 @@ export class ReportService {
     const where: Prisma.ReportWhereInput = {
       reporterId: userId,
       isDeleted: false,
+      isSpam: false,
     };
     if (filters.status) where.status = filters.status;
 
@@ -391,6 +677,7 @@ export class ReportService {
     userId: string,
     filters: { page?: string; limit?: string; status?: ReportStatus },
   ) {
+    await this.purgeExpiredSpamIfDue();
     const pagination = getPaginationParams({
       page: filters.page,
       limit: filters.limit,
@@ -399,6 +686,7 @@ export class ReportService {
     const where: Prisma.ReportWhereInput = {
       assignedToId: userId,
       isDeleted: false,
+      isSpam: false,
     };
     if (filters.status) where.status = filters.status;
 
@@ -421,12 +709,16 @@ export class ReportService {
     return buildPaginatedResponse(reports, total, pagination);
   }
 
-  static async getMapData(filters?: {
-    status?: ReportStatus;
-    category?: WasteCategory;
-    barangayId?: string;
-    limit?: string;
-  }) {
+  static async getMapData(
+    filters?: {
+      status?: ReportStatus;
+      category?: WasteCategory;
+      barangayId?: string;
+      limit?: string;
+    },
+    viewer?: Viewer,
+  ) {
+    await this.purgeExpiredSpamIfDue();
     const parsedLimit = Number.parseInt(filters?.limit || "", 10);
     const limit = Number.isFinite(parsedLimit)
       ? Math.min(Math.max(parsedLimit, 1), 5000)
@@ -437,6 +729,7 @@ export class ReportService {
       category: filters?.category || null,
       barangayId: filters?.barangayId || null,
       limit,
+      scope: this.getViewerScopeKey(viewer),
     });
 
     const cached = this.getCachedMapData(cacheKey);
@@ -444,7 +737,11 @@ export class ReportService {
       return cached;
     }
 
-    const where: Prisma.ReportWhereInput = { isDeleted: false };
+    const where: Prisma.ReportWhereInput = {
+      isDeleted: false,
+      isSpam: false,
+      ...this.getViewerWhereScope(viewer),
+    };
     if (filters?.status) where.status = filters.status;
     if (filters?.category) where.category = filters.category;
     if (filters?.barangayId) where.barangayId = filters.barangayId;
@@ -473,8 +770,15 @@ export class ReportService {
     return reports;
   }
 
-  static async getHeatmapData(filters?: { limit?: string }) {
-    const cached = this.getCachedHeatmapData();
+  static async getHeatmapData(filters?: { limit?: string }, viewer?: Viewer) {
+    await this.purgeExpiredSpamIfDue();
+
+    const cacheKey = JSON.stringify({
+      limit: filters?.limit || null,
+      scope: this.getViewerScopeKey(viewer),
+    });
+
+    const cached = this.getCachedHeatmapData(cacheKey);
     if (cached) {
       return cached;
     }
@@ -485,7 +789,12 @@ export class ReportService {
       : 5000;
 
     const reports = await prisma.report.findMany({
-      where: { isDeleted: false, status: { not: ReportStatus.CLEANED } },
+      where: {
+        isDeleted: false,
+        isSpam: false,
+        status: { not: ReportStatus.CLEANED },
+        ...this.getViewerWhereScope(viewer),
+      },
       select: {
         latitude: true,
         longitude: true,
@@ -508,9 +817,268 @@ export class ReportService {
               : 0.25,
     }));
 
-    this.setCachedHeatmapData(heatmapData);
+    this.setCachedHeatmapData(cacheKey, heatmapData);
 
     return heatmapData;
+  }
+
+  static async analyzeReportImage(
+    reportId: string,
+    changedById: string,
+    imageId?: string,
+  ) {
+    const report = await prisma.report.findFirst({
+      where: { id: reportId, isDeleted: false },
+      include: {
+        images: {
+          orderBy: { createdAt: "asc" },
+        },
+      },
+    });
+
+    if (!report) {
+      throw new Error("Report not found");
+    }
+
+    const reportImages = report.images.filter(
+      (image) => image.type === "REPORT",
+    );
+    const targetImage = imageId
+      ? reportImages.find((image) => image.id === imageId)
+      : reportImages[0];
+
+    if (!targetImage) {
+      throw new Error("No report image found");
+    }
+
+    const analysis = await this.requestYoloAnalysis(targetImage.imageUrl);
+
+    const now = new Date();
+    const shouldMarkSpam = analysis.status === AnalysisStatus.CLEAN;
+    const nextStatus = shouldMarkSpam
+      ? ReportStatus.REJECTED
+      : report.status === ReportStatus.PENDING ||
+          report.status === ReportStatus.REJECTED
+        ? ReportStatus.VERIFIED
+        : report.status;
+
+    const spamReason = shouldMarkSpam
+      ? "No waste detected by image analysis."
+      : null;
+
+    const notes = shouldMarkSpam
+      ? "Admin image analysis: CLEAN. Sent to spam and scheduled for auto-delete in 3 days."
+      : "Admin image analysis: DIRTY. Report validated and kept in active queue.";
+
+    const [updatedReport] = await prisma.$transaction([
+      prisma.report.update({
+        where: { id: reportId },
+        data: {
+          isSpam: shouldMarkSpam,
+          spamMarkedAt: shouldMarkSpam ? now : null,
+          spamReason,
+          analysisStatus: analysis.status,
+          analysisWasteCount: analysis.wasteCount,
+          analysisConfidence: analysis.confidence,
+          analyzedAt: now,
+          status: nextStatus,
+        },
+        include: {
+          reporter: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+            },
+          },
+          assignedTo: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+            },
+          },
+          barangay: { select: { id: true, name: true } },
+          images: { orderBy: { createdAt: "asc" } },
+          statusHistory: {
+            include: {
+              changedBy: {
+                select: { id: true, firstName: true, lastName: true },
+              },
+            },
+            orderBy: { createdAt: "desc" },
+          },
+        },
+      }),
+      ...(report.status !== nextStatus
+        ? [
+            prisma.statusHistory.create({
+              data: {
+                reportId,
+                previousStatus: report.status,
+                newStatus: nextStatus,
+                changedById,
+                notes,
+              },
+            }),
+          ]
+        : []),
+    ]);
+
+    this.invalidateGeoCaches();
+
+    return {
+      report: updatedReport,
+      analysis: {
+        status: analysis.status,
+        wasteCount: analysis.wasteCount,
+        count: analysis.count,
+        confidence: analysis.confidence,
+        labels: analysis.labels,
+        imageId: targetImage.id,
+        imageUrl: targetImage.imageUrl,
+        spam: shouldMarkSpam,
+        spamMarkedAt: shouldMarkSpam ? now : null,
+        autoDeleteAt: shouldMarkSpam ? this.getSpamAutoDeleteAt(now) : null,
+      },
+    };
+  }
+
+  static async getSpamReports(
+    filters: {
+      status?: ReportStatus;
+      category?: WasteCategory;
+      barangayId?: string;
+      startDate?: string;
+      endDate?: string;
+      search?: string;
+      page?: string;
+      limit?: string;
+    },
+    viewer?: Viewer,
+  ) {
+    return this.findAll({ ...filters, isSpam: "true" }, viewer);
+  }
+
+  static async restoreFromSpam(reportId: string, changedById: string) {
+    const report = await prisma.report.findFirst({
+      where: { id: reportId, isDeleted: false, isSpam: true },
+    });
+
+    if (!report) {
+      throw new Error("Spam report not found");
+    }
+
+    const nextStatus =
+      report.status === ReportStatus.REJECTED
+        ? ReportStatus.PENDING
+        : report.status;
+
+    const [updatedReport] = await prisma.$transaction([
+      prisma.report.update({
+        where: { id: reportId },
+        data: {
+          isSpam: false,
+          spamMarkedAt: null,
+          spamReason: null,
+          status: nextStatus,
+        },
+        include: {
+          reporter: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+            },
+          },
+          assignedTo: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+            },
+          },
+          barangay: { select: { id: true, name: true } },
+          images: { orderBy: { createdAt: "asc" } },
+          statusHistory: {
+            include: {
+              changedBy: {
+                select: { id: true, firstName: true, lastName: true },
+              },
+            },
+            orderBy: { createdAt: "desc" },
+          },
+        },
+      }),
+      ...(report.status !== nextStatus
+        ? [
+            prisma.statusHistory.create({
+              data: {
+                reportId,
+                previousStatus: report.status,
+                newStatus: nextStatus,
+                changedById,
+                notes: "Restored from spam queue by admin.",
+              },
+            }),
+          ]
+        : []),
+    ]);
+
+    this.invalidateGeoCaches();
+
+    return updatedReport;
+  }
+
+  static async deleteSpamReport(reportId: string) {
+    const report = await prisma.report.findFirst({
+      where: { id: reportId, isDeleted: false, isSpam: true },
+    });
+
+    if (!report) {
+      throw new Error("Spam report not found");
+    }
+
+    const deletedReport = await prisma.report.update({
+      where: { id: reportId },
+      data: { isDeleted: true },
+    });
+
+    this.invalidateGeoCaches();
+
+    return deletedReport;
+  }
+
+  static async purgeExpiredSpamReports() {
+    const cutoff = new Date(Date.now() - this.SPAM_RETENTION_MS);
+
+    const result = await prisma.report.updateMany({
+      where: {
+        isDeleted: false,
+        isSpam: true,
+        spamMarkedAt: {
+          not: null,
+          lte: cutoff,
+        },
+      },
+      data: {
+        isDeleted: true,
+      },
+    });
+
+    if (result.count > 0) {
+      this.invalidateGeoCaches();
+    }
+
+    return result.count;
   }
 
   static async softDelete(reportId: string) {

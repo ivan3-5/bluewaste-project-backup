@@ -17,17 +17,19 @@ import { formatDateTime } from "@/lib/utils";
 
 const ROLE_LABELS: Record<string, string> = {
   LGU_ADMIN: "Admin",
+  RESORT_ADMIN: "Resort Admin",
   FIELD_WORKER: "Field Worker",
   CITIZEN: "Citizen",
 };
 
 const ROLE_BADGE_CLASSES: Record<string, string> = {
   LGU_ADMIN: "bg-blue-100 text-blue-800",
+  RESORT_ADMIN: "bg-indigo-100 text-indigo-800",
   FIELD_WORKER: "bg-green-100 text-green-800",
   CITIZEN: "bg-gray-100 text-gray-700",
 };
 
-const ROLES = ["LGU_ADMIN", "FIELD_WORKER", "CITIZEN"] as const;
+const ROLES = ["LGU_ADMIN", "RESORT_ADMIN", "FIELD_WORKER", "CITIZEN"] as const;
 
 type Role = (typeof ROLES)[number];
 

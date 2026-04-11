@@ -256,20 +256,6 @@ export default function MyReportsPage() {
                     </div>
                   )}
                 </div>
-
-                {report.statusHistory && report.statusHistory.length > 0 && (
-                  <div className="mt-3 border-t pt-3">
-                    <p className="text-xs text-gray-400">
-                      Latest update:{" "}
-                      <StatusBadge status={report.statusHistory[0].newStatus} />
-                      {report.statusHistory[0].notes && (
-                        <span className="ml-1 text-gray-500">
-                          — {report.statusHistory[0].notes}
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                )}
               </div>
             );
           })

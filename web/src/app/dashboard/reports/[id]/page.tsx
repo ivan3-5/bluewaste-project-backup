@@ -7,6 +7,9 @@ import {
   useUpdateReportStatus,
   useAssignWorker,
   useUploadReportImages,
+  useAnalyzeReportImage,
+  useRestoreSpamReport,
+  useDeleteSpamReport,
 } from "@/hooks/useReports";
 import { StatusBadge } from "@/components/reports/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -21,12 +24,16 @@ import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
 import Image from "next/image";
+import { useAuth } from "@/providers/AuthProvider";
 
 const WasteMap = dynamic(() => import("@/components/map/WasteMap"), {
   ssr: false,
 });
 
 export default function ReportDetailPage() {
+  const { user } = useAuth();
+  const canManageReport = user?.role === "LGU_ADMIN";
+
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
@@ -34,6 +41,9 @@ export default function ReportDetailPage() {
   const updateStatus = useUpdateReportStatus();
   const assignWorker = useAssignWorker();
   const uploadImages = useUploadReportImages();
+  const analyzeReport = useAnalyzeReportImage();
+  const restoreSpam = useRestoreSpamReport();
+  const deleteSpam = useDeleteSpamReport();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -41,11 +51,14 @@ export default function ReportDetailPage() {
   const [statusNotes, setStatusNotes] = useState("");
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedWorkerId, setSelectedWorkerId] = useState("");
+  const [analysisMessage, setAnalysisMessage] = useState("");
+  const [analysisError, setAnalysisError] = useState("");
 
   const { data: workers } = useQuery<
     { id: string; firstName: string; lastName: string }[]
   >({
     queryKey: ["field-workers"],
+    enabled: canManageReport,
     queryFn: async () => {
       const { data } = await api.get("/users/field-workers");
       return data;
@@ -53,6 +66,8 @@ export default function ReportDetailPage() {
   });
 
   const handleStatusUpdate = async () => {
+    if (!canManageReport) return;
+
     await updateStatus.mutateAsync({
       id,
       status: newStatus,
@@ -63,7 +78,7 @@ export default function ReportDetailPage() {
   };
 
   const handleAssign = async () => {
-    if (!selectedWorkerId) return;
+    if (!selectedWorkerId || !canManageReport) return;
     await assignWorker.mutateAsync({
       reportId: id,
       assignedToId: selectedWorkerId,
@@ -72,7 +87,61 @@ export default function ReportDetailPage() {
     setSelectedWorkerId("");
   };
 
+  const handleAnalyze = async () => {
+    if (!canManageReport) return;
+
+    setAnalysisMessage("");
+    setAnalysisError("");
+
+    try {
+      const result = await analyzeReport.mutateAsync({ reportId: id });
+      if (result.analysis.spam) {
+        setAnalysisMessage(
+          "Analysis result: CLEAN. Report moved to spam and will auto-delete in 3 days.",
+        );
+      } else {
+        setAnalysisMessage(
+          "Analysis result: DIRTY. Report kept in active queue.",
+        );
+      }
+    } catch (error: any) {
+      setAnalysisError(
+        error?.response?.data?.message || "Failed to analyze report image.",
+      );
+    }
+  };
+
+  const handleRestoreSpam = async () => {
+    if (!canManageReport) return;
+    setAnalysisMessage("");
+    setAnalysisError("");
+    try {
+      await restoreSpam.mutateAsync(id);
+      setAnalysisMessage("Spam report restored to active queue.");
+    } catch (error: any) {
+      setAnalysisError(
+        error?.response?.data?.message || "Failed to restore spam report.",
+      );
+    }
+  };
+
+  const handleDeleteSpam = async () => {
+    if (!canManageReport) return;
+    setAnalysisMessage("");
+    setAnalysisError("");
+    try {
+      await deleteSpam.mutateAsync(id);
+      router.push("/dashboard/spam");
+    } catch (error: any) {
+      setAnalysisError(
+        error?.response?.data?.message || "Failed to delete spam report.",
+      );
+    }
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!canManageReport) return;
+
     const files = e.target.files;
     if (!files || files.length === 0) return;
     await uploadImages.mutateAsync({
@@ -109,6 +178,25 @@ export default function ReportDetailPage() {
         <StatusBadge status={report.status} />
       </div>
 
+      {report.isSpam && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          This report is in spam and is scheduled for automatic deletion after 3
+          days from spam marking.
+        </div>
+      )}
+
+      {analysisMessage && (
+        <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {analysisMessage}
+        </div>
+      )}
+
+      {analysisError && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {analysisError}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Main Info */}
         <div className="lg:col-span-2 space-y-6">
@@ -129,24 +217,29 @@ export default function ReportDetailPage() {
                 Images ({report.images.length})
               </h2>
               <div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={handleImageUpload}
-                />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadImages.isPending}
-                >
-                  {uploadImages.isPending
-                    ? "Uploading..."
-                    : "Add Cleanup Photos"}
-                </Button>
+                {canManageReport && (
+                  <>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      title="Upload cleanup photos"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadImages.isPending}
+                    >
+                      {uploadImages.isPending
+                        ? "Uploading..."
+                        : "Add Cleanup Photos"}
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
             {report.images.length === 0 ? (
@@ -224,24 +317,62 @@ export default function ReportDetailPage() {
             <h2 className="mb-3 text-lg font-semibold text-gray-800">
               Actions
             </h2>
-            <div className="space-y-2">
-              <Button
-                className="w-full"
-                onClick={() => {
-                  setShowStatusModal(true);
-                  setNewStatus(report.status);
-                }}
-              >
-                Update Status
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => setShowAssignModal(true)}
-              >
-                Assign Worker
-              </Button>
-            </div>
+            {canManageReport ? (
+              <div className="space-y-2">
+                <Button
+                  className="w-full bg-indigo-600 hover:bg-indigo-700"
+                  onClick={handleAnalyze}
+                  disabled={analyzeReport.isPending}
+                >
+                  {analyzeReport.isPending
+                    ? "Analyzing..."
+                    : "Analyze Report Image"}
+                </Button>
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    setShowStatusModal(true);
+                    setNewStatus(report.status);
+                  }}
+                  disabled={report.isSpam}
+                >
+                  Update Status
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setShowAssignModal(true)}
+                  disabled={report.isSpam}
+                >
+                  Assign Worker
+                </Button>
+                {report.isSpam && (
+                  <>
+                    <Button
+                      variant="outline"
+                      className="w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                      onClick={handleRestoreSpam}
+                      disabled={restoreSpam.isPending || deleteSpam.isPending}
+                    >
+                      {restoreSpam.isPending
+                        ? "Restoring..."
+                        : "Restore From Spam"}
+                    </Button>
+                    <Button
+                      className="w-full bg-red-600 hover:bg-red-700"
+                      onClick={handleDeleteSpam}
+                      disabled={restoreSpam.isPending || deleteSpam.isPending}
+                    >
+                      {deleteSpam.isPending ? "Deleting..." : "Delete Spam Now"}
+                    </Button>
+                  </>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">
+                Read-only access for this account.
+              </p>
+            )}
           </div>
 
           {/* Details */}
@@ -301,6 +432,24 @@ export default function ReportDetailPage() {
                 </dd>
               </div>
               <div>
+                <dt className="text-gray-500">Analysis Status</dt>
+                <dd className="font-medium text-gray-800">
+                  {report.analysisStatus || "Not analyzed"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-gray-500">Detected Waste Count</dt>
+                <dd className="font-medium text-gray-800">
+                  {report.analysisWasteCount ?? "-"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-gray-500">Spam Queue</dt>
+                <dd className="font-medium text-gray-800">
+                  {report.isSpam ? "In spam" : "Active"}
+                </dd>
+              </div>
+              <div>
                 <dt className="text-gray-500">Last Updated</dt>
                 <dd className="font-medium text-gray-800">
                   {formatDateTime(report.updatedAt)}
@@ -326,7 +475,7 @@ export default function ReportDetailPage() {
       </div>
 
       {/* Status Update Modal */}
-      {showStatusModal && (
+      {showStatusModal && canManageReport && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
           onClick={() => setShowStatusModal(false)}
@@ -341,6 +490,7 @@ export default function ReportDetailPage() {
                 New Status
               </label>
               <select
+                title="Select new status"
                 className="w-full rounded-md border px-3 py-2 text-sm"
                 value={newStatus}
                 onChange={(e) => setNewStatus(e.target.value as ReportStatus)}
@@ -357,6 +507,8 @@ export default function ReportDetailPage() {
                 Notes (optional)
               </label>
               <textarea
+                title="Status notes"
+                placeholder="Optional notes"
                 className="w-full rounded-md border px-3 py-2 text-sm"
                 rows={3}
                 value={statusNotes}
@@ -382,7 +534,7 @@ export default function ReportDetailPage() {
       )}
 
       {/* Assign Modal */}
-      {showAssignModal && (
+      {showAssignModal && canManageReport && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
           onClick={() => setShowAssignModal(false)}
@@ -397,6 +549,7 @@ export default function ReportDetailPage() {
                 Select Worker
               </label>
               <select
+                title="Select field worker"
                 className="w-full rounded-md border px-3 py-2 text-sm"
                 value={selectedWorkerId}
                 onChange={(e) => setSelectedWorkerId(e.target.value)}

@@ -66,6 +66,14 @@
   background-size: 64px 64px;
 }
 
+/* Auth split-panel: subtle blue grid for light panels */
+.auth-panel-grid-soft {
+  background-image:
+    linear-gradient(rgba(14, 116, 144, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(14, 116, 144, 0.08) 1px, transparent 1px);
+  background-size: 34px 34px;
+}
+
 /* Auth split-panel: corner vignette overlay */
 .auth-panel-vignette {
   background: radial-gradient(

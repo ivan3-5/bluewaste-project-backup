@@ -46,7 +46,7 @@ class Detection(BaseModel):
     confidence: float
     bbox: BoundingBox
     is_waste: bool = True
-
+    
 
 class Decision(BaseModel):
     is_uncertain: bool

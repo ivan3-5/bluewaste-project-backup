@@ -165,34 +165,6 @@ export default function ReportScreen() {
     setAnalysisMessage("");
     setAnalysisStatus(null);
     try {
-      if (images.length > 0) {
-        let totalWasteCount = 0;
-        let totalDetections = 0;
-        let hasDirtyImage = false;
-
-        for (const image of images) {
-          const decision = await analyzeWasteImage(image);
-          totalWasteCount += decision.wasteCount;
-          totalDetections += decision.count;
-          if (decision.status === "DIRTY") {
-            hasDirtyImage = true;
-          }
-        }
-
-        setAnalysisStatus(hasDirtyImage ? "DIRTY" : "CLEAN");
-
-        if (!hasDirtyImage) {
-          const cleanMessage = "No waste detected. Report not saved.";
-          setAnalysisMessage(cleanMessage);
-          Alert.alert("No Waste Detected", cleanMessage);
-          return;
-        }
-
-        setAnalysisMessage(
-          `Waste detected (${totalWasteCount}/${totalDetections}). Proceeding to save report.`,
-        );
-      }
-
       const { data: report } = await api.post("/reports", {
         title: title.trim(),
         description: description.trim(),

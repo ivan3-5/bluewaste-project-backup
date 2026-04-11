@@ -105,6 +105,24 @@ async function main() {
   });
   console.log(`✅ Field worker created: ${fieldWorker.email}`);
 
+  // Create resort admin user
+  console.log("🏝️ Creating resort admin...");
+  const resortAdminPassword = await bcrypt.hash("resort123", 12);
+  const resortAdmin = await prisma.user.upsert({
+    where: { email: "resort@bluewaste.ph" },
+    update: {},
+    create: {
+      email: "resort@bluewaste.ph",
+      password: resortAdminPassword,
+      firstName: "Resort",
+      lastName: "Admin",
+      role: Role.RESORT_ADMIN,
+      phone: "+639222333444",
+      barangayId: createdBarangays[7].id,
+    },
+  });
+  console.log(`✅ Resort admin created: ${resortAdmin.email}`);
+
   // Create citizen user
   console.log("👤 Creating citizen user...");
   const citizenPassword = await bcrypt.hash("citizen123", 12);
@@ -243,9 +261,26 @@ async function main() {
   }
   console.log(`✅ Created ${sampleReports.length} sample reports`);
 
+  await prisma.resortBox.upsert({
+    where: { name: "Resort Mr Suave" },
+    update: {},
+    create: {
+      name: "Resort Mr Suave",
+      description: "Sample managed area for resort admin account",
+      minLat: 7.302,
+      maxLat: 7.314,
+      minLng: 125.682,
+      maxLng: 125.695,
+      ownerId: resortAdmin.id,
+      createdById: adminUser.id,
+    },
+  });
+  console.log("✅ Sample resort box created: Resort Mr Suave");
+
   console.log("🎉 Database seeding completed!");
   console.log("\n📌 Default Accounts:");
   console.log("   Admin:   admin@bluewaste.ph / admin123");
+  console.log("   Resort:  resort@bluewaste.ph / resort123");
   console.log("   Worker:  worker@bluewaste.ph / worker123");
   console.log("   Citizen: citizen@bluewaste.ph / citizen123");
 }
