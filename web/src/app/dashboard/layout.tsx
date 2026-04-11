@@ -53,6 +53,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       const allowedPrefixes = [
         "/dashboard/map",
         "/dashboard/reports",
+        "/dashboard/report",
         "/dashboard/notifications",
       ];
       const isAllowed = allowedPrefixes.some((prefix) =>

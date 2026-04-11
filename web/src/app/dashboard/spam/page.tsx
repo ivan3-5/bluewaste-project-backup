@@ -228,7 +228,7 @@ export default function SpamReportsPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-2">
-                      <Link href={`/dashboard/reports/${report.id}`}>
+                      <Link href={`/dashboard/report?id=${report.id}`}>
                         <Button size="sm" variant="outline">
                           View
                         </Button>

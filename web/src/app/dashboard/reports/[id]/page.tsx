@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import {
   useReport,
@@ -35,8 +35,11 @@ export default function ReportDetailPage() {
   const canManageReport = user?.role === "LGU_ADMIN";
 
   const params = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
-  const id = params.id as string;
+  const routeId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const queryId = searchParams.get("id") || searchParams.get("reportId");
+  const id = (routeId || queryId || "") as string;
   const { data: report, isLoading } = useReport(id);
   const updateStatus = useUpdateReportStatus();
   const assignWorker = useAssignWorker();

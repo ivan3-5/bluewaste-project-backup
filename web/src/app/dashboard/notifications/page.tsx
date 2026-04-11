@@ -75,7 +75,7 @@ export default function NotificationsPage() {
                 <p className="mt-0.5 text-sm text-gray-500">{n.message}</p>
                 <div className="mt-3 flex items-center gap-2">
                   {n.reportId && (
-                    <Link href={`/dashboard/reports/${n.reportId}`}>
+                    <Link href={`/dashboard/report?id=${n.reportId}`}>
                       <Button
                         size="sm"
                         variant="default"

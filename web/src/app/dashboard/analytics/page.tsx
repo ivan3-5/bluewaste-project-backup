@@ -108,6 +108,7 @@ export default function AnalyticsPage() {
           ))}
         </div>
         <select
+          title="Select time range"
           className="rounded-md border px-3 py-2 text-sm"
           value={days}
           onChange={(e) => setDays(Number(e.target.value))}

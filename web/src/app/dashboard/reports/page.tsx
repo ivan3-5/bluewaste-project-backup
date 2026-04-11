@@ -234,7 +234,7 @@ export default function ReportsPage() {
                 <tr key={report.id} className="hover:bg-gray-50">
                   <td className="max-w-[200px] truncate px-4 py-3 text-sm font-medium text-gray-800">
                     <Link
-                      href={`/dashboard/reports/${report.id}`}
+                      href={`/dashboard/report?id=${report.id}`}
                       className="hover:text-blue-600 hover:underline"
                     >
                       {report.title}
@@ -266,7 +266,7 @@ export default function ReportsPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
-                      <Link href={`/dashboard/reports/${report.id}`}>
+                      <Link href={`/dashboard/report?id=${report.id}`}>
                         <Button
                           variant="default"
                           size="sm"
