@@ -9,18 +9,8 @@ import {
 } from "@/hooks/useAnalytics";
 import { useReports } from "@/hooks/useReports";
 import { StatusBadge } from "@/components/reports/StatusBadge";
-import { WASTE_CATEGORY_LABELS } from "@/types";
 import { formatDateTime } from "@/lib/utils";
-import {
-  FileText,
-  Clock,
-  CheckCircle,
-  AlertTriangle,
-  TrendingUp,
-  XCircle,
-  Truck,
-  ClipboardCheck,
-} from "lucide-react";
+import { FileText, Clock, CheckCircle, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
@@ -61,50 +51,29 @@ export default function DashboardPage() {
       label: "Total Reports",
       value: overview?.total || 0,
       icon: FileText,
-      color: "text-blue-600",
-      bg: "bg-blue-50",
+      subtitle: "All submitted reports",
+      cardBg: "from-blue-500 to-indigo-500",
     },
     {
       label: "Pending",
       value: overview?.pending || 0,
       icon: Clock,
-      color: "text-yellow-600",
-      bg: "bg-yellow-50",
-    },
-    {
-      label: "Verified",
-      value: overview?.verified || 0,
-      icon: ClipboardCheck,
-      color: "text-blue-600",
-      bg: "bg-blue-50",
-    },
-    {
-      label: "Scheduled",
-      value: overview?.cleanupScheduled || 0,
-      icon: Truck,
-      color: "text-purple-600",
-      bg: "bg-purple-50",
+      subtitle: "Needs review",
+      cardBg: "from-orange-400 to-amber-400",
     },
     {
       label: "In Progress",
       value: overview?.inProgress || 0,
       icon: TrendingUp,
-      color: "text-orange-600",
-      bg: "bg-orange-50",
+      subtitle: "Currently being handled",
+      cardBg: "from-violet-500 to-purple-500",
     },
     {
       label: "Cleaned",
       value: overview?.cleaned || 0,
       icon: CheckCircle,
-      color: "text-green-600",
-      bg: "bg-green-50",
-    },
-    {
-      label: "Rejected",
-      value: overview?.rejected || 0,
-      icon: XCircle,
-      color: "text-red-600",
-      bg: "bg-red-50",
+      subtitle: "Successfully resolved",
+      cardBg: "from-emerald-500 to-green-500",
     },
   ];
 
@@ -122,19 +91,27 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <Card key={stat.label}>
+            <Card
+              key={stat.label}
+              className={`relative overflow-hidden border-0 rounded-2xl bg-gradient-to-br ${stat.cardBg} shadow-[0_14px_26px_rgba(15,23,42,0.20)]`}
+            >
+              <div className="pointer-events-none absolute -right-7 -top-9 h-28 w-28 rounded-full bg-white/15" />
+              <div className="pointer-events-none absolute -right-4 -bottom-10 h-32 w-32 rounded-full bg-white/10" />
               <CardContent className="p-4">
-                <div
-                  className={`w-10 h-10 ${stat.bg} rounded-lg flex items-center justify-center mb-3`}
-                >
-                  <Icon className={`w-5 h-5 ${stat.color}`} />
+                <div className="absolute right-4 top-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/40 bg-white/12 backdrop-blur-sm">
+                  <Icon className="h-6 w-6 text-white" />
                 </div>
-                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                <p className="text-xs text-gray-500">{stat.label}</p>
+                <p className="text-sm font-semibold text-white/90">
+                  {stat.label}
+                </p>
+                <p className="mt-10 text-4xl font-extrabold leading-none text-white">
+                  {stat.value}
+                </p>
+                <p className="mt-3 text-sm text-white/80">{stat.subtitle}</p>
               </CardContent>
             </Card>
           );

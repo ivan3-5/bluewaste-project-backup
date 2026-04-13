@@ -17,6 +17,7 @@ import {
   StatsCardsSkeleton,
 } from "@/components/skeletons/page-skeletons";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FileText, Clock, TrendingUp, CheckCircle } from "lucide-react";
 
 const TrendChart = dynamic(() => import("@/components/analytics/TrendChart"), {
   ssr: false,
@@ -66,16 +67,31 @@ export default function AnalyticsPage() {
         {
           label: "Total Reports",
           value: overview.total,
-          color: "text-gray-800",
+          icon: FileText,
+          subtitle: "All submitted reports",
+          cardBg: "from-blue-500 to-indigo-500",
         },
-        { label: "Pending", value: overview.pending, color: "text-yellow-600" },
+        {
+          label: "Pending",
+          value: overview.pending,
+          icon: Clock,
+          subtitle: "Needs review",
+          cardBg: "from-orange-400 to-amber-400",
+        },
         {
           label: "In Progress",
           value: overview.inProgress,
-          color: "text-orange-600",
+          icon: TrendingUp,
+          subtitle: "Currently being handled",
+          cardBg: "from-violet-500 to-purple-500",
         },
-        { label: "Cleaned", value: overview.cleaned, color: "text-green-600" },
-        { label: "Rejected", value: overview.rejected, color: "text-red-600" },
+        {
+          label: "Cleaned",
+          value: overview.cleaned,
+          icon: CheckCircle,
+          subtitle: "Successfully resolved",
+          cardBg: "from-emerald-500 to-green-500",
+        },
       ]
     : [];
 
@@ -86,7 +102,7 @@ export default function AnalyticsPage() {
           <PageHeadingSkeleton withSubtitle={false} />
           <Skeleton className="h-10 w-28 rounded-md" />
         </div>
-        <StatsCardsSkeleton count={5} />
+        <StatsCardsSkeleton count={4} />
         <ChartPanelsSkeleton />
         <DataTableSkeleton rows={6} cols={4} className="mt-6" />
       </div>
@@ -110,16 +126,28 @@ export default function AnalyticsPage() {
 
       {/* Stats */}
       {overview && (
-        <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-5">
-          {stats.map((s) => (
-            <div
-              key={s.label}
-              className="rounded-lg border bg-white p-4 shadow-sm"
-            >
-              <p className="text-sm text-gray-500">{s.label}</p>
-              <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
-            </div>
-          ))}
+        <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+          {stats.map((s) => {
+            const Icon = s.icon;
+
+            return (
+              <div
+                key={s.label}
+                className={`relative overflow-hidden rounded-2xl border-0 bg-gradient-to-br ${s.cardBg} p-4 shadow-[0_14px_26px_rgba(15,23,42,0.20)]`}
+              >
+                <div className="pointer-events-none absolute -right-7 -top-9 h-28 w-28 rounded-full bg-white/15" />
+                <div className="pointer-events-none absolute -right-4 -bottom-10 h-32 w-32 rounded-full bg-white/10" />
+                <div className="absolute right-4 top-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/40 bg-white/12 backdrop-blur-sm">
+                  <Icon className="h-6 w-6 text-white" />
+                </div>
+                <p className="text-sm font-semibold text-white/90">{s.label}</p>
+                <p className="mt-10 text-4xl font-extrabold leading-none text-white">
+                  {s.value}
+                </p>
+                <p className="mt-3 text-sm text-white/80">{s.subtitle}</p>
+              </div>
+            );
+          })}
         </div>
       )}
 

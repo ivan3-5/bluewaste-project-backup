@@ -17,7 +17,6 @@ import {
   ClipboardList,
   LogOut,
   Menu,
-  X,
   Users,
   ArchiveX,
 } from "lucide-react";
@@ -60,17 +59,17 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "hidden md:flex md:flex-col md:fixed md:inset-y-0 bg-white border-r transition-all duration-300 ease-in-out z-40",
+        "hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 border-r border-white/70 bg-white/65 [background-image:linear-gradient(rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.08)_1px,transparent_1px)] [background-size:30px_30px] shadow-[0_16px_40px_rgba(15,23,42,0.12)] backdrop-blur-xl transition-all duration-300 ease-in-out z-40",
         isCollapsed ? "md:w-20" : "md:w-64",
       )}
     >
       {/* Logo & Toggle */}
       <div
         className={cn(
-          "flex items-center h-16 border-b",
+          "flex items-center border-b border-white/70",
           isCollapsed
-            ? "justify-center px-2 flex-col gap-2"
-            : "justify-between px-4",
+            ? "h-24 justify-center px-2 flex-col gap-2"
+            : "h-16 justify-between px-4",
         )}
       >
         {!isCollapsed && (
@@ -94,7 +93,7 @@ export function Sidebar() {
         {isCollapsed && (
           <Link
             href={isAdmin ? "/dashboard" : "/citizen/report"}
-            className="w-9 h-9 rounded-lg overflow-hidden"
+            className="flex h-9 w-9 items-center justify-center rounded-lg"
           >
             <Image
               src="/logo-bluewaste.png"
@@ -110,13 +109,11 @@ export function Sidebar() {
 
         <button
           onClick={toggleSidebar}
-          className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+          aria-label="Toggle sidebar"
+          title="Toggle sidebar"
+          className="p-1.5 rounded-lg text-gray-600 transition-colors hover:bg-gray-100/80"
         >
-          {isCollapsed ? (
-            <Menu className="w-5 h-5 text-gray-600" />
-          ) : (
-            <X className="w-5 h-5 text-gray-600" />
-          )}
+          <Menu className="w-5 h-5 text-gray-600" />
         </button>
       </div>
 
@@ -133,8 +130,8 @@ export function Sidebar() {
               className={cn(
                 "flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200",
                 isActive
-                  ? "bg-primary text-white"
-                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900",
+                  ? "border border-white/60 bg-primary text-white shadow-[0_6px_18px_rgba(37,99,235,0.35)] backdrop-blur-md"
+                  : "text-gray-700 hover:bg-white/50 hover:text-gray-900",
                 isCollapsed && "justify-center",
               )}
               title={isCollapsed ? link.label : undefined}
@@ -154,7 +151,7 @@ export function Sidebar() {
       </nav>
 
       {/* User info */}
-      <div className="p-4 border-t">
+      <div className="p-4 border-t border-white/70">
         <div
           className={cn(
             "flex items-center",
@@ -163,7 +160,7 @@ export function Sidebar() {
         >
           <div
             className={cn(
-              "bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0",
+              "rounded-full border border-white/80 bg-white/75 shadow-sm backdrop-blur-md flex items-center justify-center flex-shrink-0",
               isCollapsed ? "w-10 h-10" : "w-9 h-9",
             )}
           >
@@ -194,7 +191,7 @@ export function Sidebar() {
               router.push("/");
             }}
             className={cn(
-              "text-gray-400 hover:text-red-500 transition-colors",
+              "text-gray-400 transition-colors hover:text-red-500",
               isCollapsed && "mx-auto",
             )}
             title="Logout"

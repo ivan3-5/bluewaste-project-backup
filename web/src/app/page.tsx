@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import type { MapReport } from "@/types";
 import {
   MapPin,
   BarChart3,
@@ -20,11 +22,70 @@ import {
   X,
 } from "lucide-react";
 
-const stats = [
-  { value: "4,200+", label: "Reports Filed" },
-  { value: "38", label: "Barangays Covered" },
-  { value: "92%", label: "Cleanup Rate" },
-  { value: "< 48h", label: "Avg. Response Time" },
+const WasteMapPreview = dynamic(() => import("@/components/map/WasteMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full w-full items-center justify-center bg-slate-50 text-sm text-slate-500">
+      Loading map preview...
+    </div>
+  ),
+});
+
+const HERO_MAP_CENTER: [number, number] = [7.3132, 125.6844];
+
+const heroMapPreviewReports: MapReport[] = [
+  {
+    id: "hero-map-1",
+    title: "Overflowing garbage near market road",
+    category: "SOLID_WASTE",
+    status: "PENDING",
+    priority: "HIGH",
+    latitude: 7.3069,
+    longitude: 125.6831,
+    address: "Market Road, Panabo City",
+    createdAt: "2026-04-12T08:20:00.000Z",
+    barangay: { id: "brgy-1", name: "A. O. Floirendo" },
+    images: [],
+  },
+  {
+    id: "hero-map-2",
+    title: "Mixed waste beside drainage line",
+    category: "HAZARDOUS",
+    status: "VERIFIED",
+    priority: "CRITICAL",
+    latitude: 7.3145,
+    longitude: 125.688,
+    address: "Purok 3 drainage line",
+    createdAt: "2026-04-11T14:05:00.000Z",
+    barangay: { id: "brgy-2", name: "Gredu" },
+    images: [],
+  },
+  {
+    id: "hero-map-3",
+    title: "Illegal dump site near creek",
+    category: "ORGANIC",
+    status: "CLEANUP_SCHEDULED",
+    priority: "MEDIUM",
+    latitude: 7.3194,
+    longitude: 125.6762,
+    address: "Creekside pathway",
+    createdAt: "2026-04-10T09:50:00.000Z",
+    barangay: { id: "brgy-3", name: "Kasilak" },
+    images: [],
+  },
+  {
+    id: "hero-map-4",
+    title: "Scattered recyclables near terminal",
+    category: "RECYCLABLE",
+    status: "IN_PROGRESS",
+    priority: "LOW",
+    latitude: 7.3101,
+    longitude: 125.6915,
+    address: "City terminal frontage",
+    createdAt: "2026-04-12T11:35:00.000Z",
+    barangay: { id: "brgy-4", name: "San Francisco" },
+    images: [],
+  },
 ];
 
 const steps = [
@@ -228,13 +289,9 @@ export default function HomePage() {
 
       {/* ── Hero ── */}
       <section className="relative overflow-hidden py-20 sm:py-24 lg:py-28">
-        <div className="absolute inset-0 bg-gradient-to-b from-sky-50/70 via-white to-white" />
-        <div className="absolute inset-0 hero-grid" />
-        <div className="absolute inset-0 pointer-events-none hero-tint" />
-        <div className="absolute inset-0 pointer-events-none hero-vignette" />
-        <div className="absolute -top-20 left-[8%] w-72 h-72 rounded-full hero-glow-one" />
-        <div className="absolute -bottom-24 right-[6%] w-80 h-80 rounded-full hero-glow-two" />
-        <div className="absolute inset-0 pointer-events-none hero-noise opacity-40" />
+        <div className="absolute inset-0 bg-white" />
+        <div className="absolute inset-0 opacity-70 [background-image:linear-gradient(rgba(148,163,184,0.14)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.14)_1px,transparent_1px)] [background-size:64px_64px]" />
+        <div className="absolute inset-0 pointer-events-none hero-noise opacity-25" />
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
@@ -288,52 +345,16 @@ export default function HomePage() {
             </div>
 
             <div className="lg:col-span-5">
-              <div className="rounded-3xl border border-sky-100 bg-white/85 backdrop-blur-md p-6 sm:p-7 shadow-2xl shadow-sky-100/60">
-                <p className="text-xs uppercase tracking-[0.2em] text-gray-500 font-semibold mb-4">
-                  Live City Impact
-                </p>
-                <div className="grid grid-cols-2 gap-3 mb-5">
-                  {stats.map(({ value, label }) => (
-                    <div
-                      key={label}
-                      className="rounded-2xl border border-gray-100 bg-white p-4"
-                    >
-                      <p className="text-2xl font-extrabold text-primary leading-none">
-                        {value}
-                      </p>
-                      <p className="mt-2 text-xs text-gray-500 font-medium">
-                        {label}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-                <div className="rounded-2xl bg-gradient-to-r from-sky-50 to-blue-50 border border-sky-100 px-4 py-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm text-gray-700 font-medium">
-                    <MapPin className="w-4 h-4 text-primary" />
-                    Waste map updates in real time
-                  </div>
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-200/70">
+                <div className="h-[320px] sm:h-[360px]">
+                  <WasteMapPreview
+                    reports={heroMapPreviewReports}
+                    center={HERO_MAP_CENTER}
+                    zoom={13}
+                  />
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Stats Bar ── */}
-      <section className="border-y bg-gray-50/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
-            {stats.map(({ value, label }) => (
-              <div key={label}>
-                <p className="text-3xl sm:text-4xl font-extrabold text-primary">
-                  {value}
-                </p>
-                <p className="mt-1 text-sm text-gray-500 font-medium">
-                  {label}
-                </p>
-              </div>
-            ))}
           </div>
         </div>
       </section>
