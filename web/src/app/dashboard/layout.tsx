@@ -7,7 +7,10 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { SidebarProvider, useSidebar } from "@/contexts/SidebarContext";
 import { cn } from "@/lib/utils";
-import { DashboardLayoutSkeleton } from "@/components/skeletons/page-skeletons";
+import {
+  AdminOverviewSkeleton,
+  DashboardLayoutSkeleton,
+} from "@/components/skeletons/page-skeletons";
 
 function DashboardContent({ children }: { children: ReactNode }) {
   const { isCollapsed } = useSidebar();
@@ -67,7 +70,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }, [user, isLoading, router, pathname]);
 
   if (isLoading) {
-    return <DashboardLayoutSkeleton />;
+    const isAdminOverviewRoute = pathname === "/dashboard";
+
+    return (
+      <DashboardLayoutSkeleton>
+        {isAdminOverviewRoute && <AdminOverviewSkeleton />}
+      </DashboardLayoutSkeleton>
+    );
   }
 
   if (!user || (user.role !== "LGU_ADMIN" && user.role !== "RESORT_ADMIN")) {

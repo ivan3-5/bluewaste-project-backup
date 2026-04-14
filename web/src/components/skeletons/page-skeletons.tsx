@@ -261,21 +261,39 @@ export function AdminOverviewSkeleton() {
   return (
     <div className="space-y-6">
       <PageHeadingSkeleton />
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-        {Array.from({ length: 7 }).map((_, idx) => (
-          <div key={idx} className="rounded-lg border bg-white p-4">
-            <Skeleton className="mb-3 h-10 w-10 rounded-lg" />
-            <Skeleton className="mb-2 h-7 w-12" />
-            <Skeleton className="h-3 w-16" />
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, idx) => (
+          <div
+            key={idx}
+            className="relative overflow-hidden rounded-2xl border bg-white p-4 shadow-sm"
+          >
+            <div className="flex items-start justify-between">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-12 w-12 rounded-2xl" />
+            </div>
+            <Skeleton className="mt-7 h-10 w-12" />
+            <Skeleton className="mt-3 h-4 w-28" />
           </div>
         ))}
       </div>
-      <ChartPanelsSkeleton />
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {Array.from({ length: 2 }).map((_, idx) => (
+          <div key={idx} className="rounded-lg border bg-white p-6 shadow-sm">
+            <Skeleton className="mb-4 h-6 w-52" />
+            <Skeleton className="h-[280px] w-full rounded-lg" />
+          </div>
+        ))}
+      </div>
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-lg border bg-white p-6 shadow-sm space-y-3">
-          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-6 w-36" />
           {Array.from({ length: 5 }).map((_, idx) => (
-            <div key={idx} className="flex items-center justify-between">
+            <div
+              key={idx}
+              className="flex items-center justify-between rounded-lg border px-3 py-3"
+            >
               <div className="space-y-2">
                 <Skeleton className="h-4 w-44" />
                 <Skeleton className="h-3 w-32" />
@@ -285,7 +303,7 @@ export function AdminOverviewSkeleton() {
           ))}
         </div>
         <div className="rounded-lg border bg-white p-6 shadow-sm space-y-3">
-          <Skeleton className="h-5 w-48" />
+          <Skeleton className="h-6 w-48" />
           {Array.from({ length: 6 }).map((_, idx) => (
             <div key={idx} className="flex items-center justify-between">
               <div className="flex items-center gap-3">

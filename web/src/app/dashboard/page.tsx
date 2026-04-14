@@ -15,13 +15,18 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
 import { AdminOverviewSkeleton } from "@/components/skeletons/page-skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const TrendChart = dynamic(() => import("@/components/analytics/TrendChart"), {
   ssr: false,
+  loading: () => <Skeleton className="h-[280px] w-full rounded-lg" />,
 });
 const CategoryPieChart = dynamic(
   () => import("@/components/analytics/CategoryPieChart"),
-  { ssr: false },
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[280px] w-full rounded-lg" />,
+  },
 );
 
 export default function DashboardPage() {
