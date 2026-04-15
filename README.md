@@ -4,14 +4,14 @@ BlueWaste is a smart waste management platform for Panabo City with:
 
 - Backend API (Express + Prisma + PostgreSQL)
 - Web app (Next.js)
-- Mobile app (Expo/React Native)
+- Mobile app (Flutter)
 - Optional YOLO inference API (FastAPI)
 
 ## Project Structure
 
 - `backend` - Express API, Prisma schema, seed data
 - `web` - Next.js web dashboard and citizen reporting UI
-- `mobile` - Expo mobile app
+- `mobile_flutter` - Flutter mobile app
 - `yolo-fastapi-sample` - optional local YOLO inference service
 
 ## Prerequisites
@@ -39,7 +39,6 @@ Create environment files from the examples:
 ```powershell
 Copy-Item backend/.env.example backend/.env
 Copy-Item web/.env.example web/.env.local
-Copy-Item mobile/.env.example mobile/.env
 ```
 
 ### Bash (macOS/Linux)
@@ -47,7 +46,6 @@ Copy-Item mobile/.env.example mobile/.env
 ```bash
 cp backend/.env.example backend/.env
 cp web/.env.example web/.env.local
-cp mobile/.env.example mobile/.env
 ```
 
 Then update the values in each file.
@@ -75,11 +73,12 @@ BACKEND_API_URL="http://localhost:5000/api"
 YOLO_API_URL="http://localhost:8000/predict"
 ```
 
-### Mobile env (`mobile/.env`)
+### Mobile runtime config (Flutter)
 
-```dotenv
-EXPO_PUBLIC_API_URL="http://localhost:5000/api"
-EXPO_PUBLIC_YOLO_API_URL="http://localhost:8000/predict"
+Use `--dart-define` when launching the mobile app:
+
+```bash
+flutter run --dart-define=API_BASE_URL=http://localhost:5000/api
 ```
 
 ## 3) Prepare Database
@@ -116,8 +115,7 @@ npm run web:dev
 Mobile app:
 
 ```bash
-cd mobile
-npm run start
+npm run mobile:run:android
 ```
 
 ## Optional: Run YOLO Locally
@@ -135,7 +133,7 @@ pip install -r requirements.txt
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-If you deploy YOLO to Railway, set `YOLO_API_URL` and `EXPO_PUBLIC_YOLO_API_URL` to your deployed `/predict` endpoint.
+If you deploy YOLO to Railway, set `YOLO_API_URL` to your deployed `/predict` endpoint.
 
 ## Useful Commands
 
@@ -145,6 +143,7 @@ From root:
 npm run backend:typecheck
 npm run web:typecheck
 npm run mobile:typecheck
+npm run mobile:run:android
 npm run backend:build
 npm run web:build
 npm run db:studio

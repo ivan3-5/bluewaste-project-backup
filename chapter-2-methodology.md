@@ -426,7 +426,7 @@ After feature extraction, the model produces object-level predictions and confid
 
 ### 2.4.3 Technologies Used in Development
 
-BlueWaste uses Node.js with Express for backend services, PostgreSQL with Prisma ORM for data management, the Next.js framework for the web application, and Expo React Native for mobile access. For geospatial and dashboard features, the system uses Leaflet.js with OpenStreetMap, heatmap and clustering plugins, and Chart.js for analytics visualization. Cloudinary manages uploaded images, while a YOLO inference API supports AI-assisted image analysis and moderation. Table 4 summarizes the major technologies, definitions, interface snapshots, and actual utilization in the project.
+BlueWaste uses Node.js with Express for backend services, PostgreSQL with Prisma ORM for data management, the Next.js framework for the web application, and Flutter for mobile access. For geospatial and dashboard features, the system uses Leaflet.js with OpenStreetMap, heatmap and clustering plugins, and Chart.js for analytics visualization. Cloudinary manages uploaded images, while a YOLO inference API supports AI-assisted image analysis and moderation. Table 4 summarizes the major technologies, definitions, interface snapshots, and actual utilization in the project.
 
 Table 4. Development Technologies for BlueWaste
 
@@ -434,7 +434,7 @@ Table 4. Development Technologies for BlueWaste
 | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | Node.js with Express                   | JavaScript runtime and backend web framework for API services.                                                    | Figure 3           | Implemented RESTful backend endpoints, middleware, and business logic for reporting, assignment, notifications, and analytics.               |
 | Next.js with Tailwind CSS              | The Next.js framework is a React-based web framework with utility-first CSS styling support through Tailwind CSS. | Figure 4           | Built the web application interfaces for citizens and administrators, including maps, report views, and dashboard pages.                     |
-| Expo React Native                      | Cross-platform framework for mobile app development.                                                              | Figure 5           | Developed the mobile client for citizen submissions and worker-side status updates in field operations.                                      |
+| Flutter                                | Cross-platform framework for mobile app development.                                                              | Figure 5           | Developed the mobile client for citizen submissions and worker-side status updates in field operations.                                      |
 | PostgreSQL with Prisma ORM             | Relational database and type-safe ORM for schema and query management.                                            | Figure 6           | Stored and managed core entities such as users, reports, images, status history, and notifications through structured models and migrations. |
 | Leaflet.js and Heatmap/Cluster Plugins | Web mapping library and visualization plugins for spatial data rendering.                                         | Figure 7           | Rendered report markers, clustering, and heatmap overlays for location-based incident monitoring.                                            |
 | Chart.js                               | Data visualization library for analytical charts.                                                                 | Figure 8           | Displayed trends, category distributions, and barangay-level summaries in decision-support dashboards.                                       |
@@ -448,7 +448,7 @@ Insert the following interface snapshots in the manuscript to support Table 4:
 
 1. Figure 3. Backend API module and endpoint testing interface.
 2. Figure 4. BlueWaste web dashboard and reporting interface.
-3. Figure 5. BlueWaste mobile report submission screen.
+3. Figure 5. BlueWaste Flutter mobile report submission screen.
 4. Figure 6. Prisma schema or Prisma Studio database view.
 5. Figure 7. Leaflet map with markers and heatmap overlay.
 6. Figure 8. Analytics dashboard charts generated using Chart.js.

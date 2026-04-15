@@ -1,0 +1,46 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "BlueWaste: Backend (dev)",
+      "type": "shell",
+      "command": "npm run backend:dev",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "bluewaste-stack",
+        "clear": true
+      }
+    },
+    {
+      "label": "BlueWaste: Mobile Flutter (Android)",
+      "type": "shell",
+      "command": "flutter run --dart-define=API_BASE_URL=http://10.0.2.2:5000/api",
+      "options": {
+        "cwd": "${workspaceFolder}/mobile_flutter"
+      },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "bluewaste-stack",
+        "clear": true
+      }
+    },
+    {
+      "label": "BlueWaste: Run Backend + Flutter",
+      "dependsOrder": "parallel",
+      "dependsOn": [
+        "BlueWaste: Backend (dev)",
+        "BlueWaste: Mobile Flutter (Android)"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}

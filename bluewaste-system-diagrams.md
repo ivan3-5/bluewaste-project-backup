@@ -7,14 +7,14 @@ This analysis is based on the current implementation in:
 - Backend routes and controllers in `backend/src`
 - Prisma schema in `backend/prisma/schema.prisma`
 - Prisma migration SQL files in `backend/prisma/migrations/*/migration.sql`
-- Web and mobile route structure in `web/src/app` and `mobile/app`
+- Web route structure in `web/src/app` and Flutter mobile feature structure in `mobile_flutter/lib/src/features`
 
 ### 1.1 Core Components
 
 1. Client Applications
 
 - Web app (Next.js): citizen portal, LGU/resort dashboard, field worker dashboard
-- Mobile app (Expo): citizen and field worker flows
+- Mobile app (Flutter): citizen and field worker flows
 
 2. API Layer
 
