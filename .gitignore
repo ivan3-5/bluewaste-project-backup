@@ -52,6 +52,7 @@ coverage/
 
 # Documentation
 *.md
+!/README.md
 
 # Prisma schema and seed files
 **/schema.prisma
