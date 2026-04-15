@@ -56,6 +56,7 @@ coverage/
 
 # Prisma schema and seed files
 **/schema.prisma
+!/backend/prisma/schema.prisma
 **/seed.ts
 
 # Please put here any additional files or directories that should be ignored by Git.
