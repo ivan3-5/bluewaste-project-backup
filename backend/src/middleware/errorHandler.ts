@@ -44,5 +44,17 @@ export const errorHandler = (
     return sendError(res, 400, err.message, "UPLOAD_VALIDATION");
   }
 
+  if (
+    err.message?.startsWith("CORS_ORIGIN_BLOCKED:") ||
+    err.message === "Not allowed by CORS"
+  ) {
+    return sendError(
+      res,
+      403,
+      "Request origin is not allowed.",
+      "CORS_ORIGIN_BLOCKED",
+    );
+  }
+
   return sendError(res, 500, "Internal server error.", "INTERNAL_ERROR");
 };

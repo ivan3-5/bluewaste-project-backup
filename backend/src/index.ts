@@ -22,18 +22,56 @@ import { ReportService } from "./services/report.service";
 
 const app = express();
 
+const normalizeOrigin = (origin: string) => origin.trim().replace(/\/+$/, "");
+
 const additionalOrigins = (env.ALLOWED_ORIGINS || "")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
 
-const allowedOrigins = new Set([
-  env.WEB_URL,
-  env.MOBILE_URL,
-  "http://localhost:3000",
-  "http://localhost:8081",
-  ...additionalOrigins,
-]);
+const vercelOrigins = [
+  process.env.VERCEL_URL,
+  process.env.VERCEL_BRANCH_URL,
+  process.env.VERCEL_PROJECT_PRODUCTION_URL,
+]
+  .filter((value): value is string => Boolean(value && value.trim()))
+  .flatMap((value) => {
+    const trimmed = value.trim();
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+      return [trimmed];
+    }
+    return [`https://${trimmed}`];
+  });
+
+const allowedOrigins = new Set(
+  [
+    normalizeOrigin(env.WEB_URL),
+    normalizeOrigin(env.MOBILE_URL),
+    "http://localhost:3000",
+    "http://localhost:8081",
+    "https://bluewaste-management-system.vercel.app",
+    "https://bluewaste-system.vercel.app",
+    ...additionalOrigins,
+    ...vercelOrigins,
+  ].map(normalizeOrigin),
+);
+
+const isTrustedVercelPreviewOrigin = (origin: string): boolean => {
+  try {
+    const url = new URL(origin);
+    if (url.protocol !== "https:") {
+      return false;
+    }
+
+    return (
+      /^bluewaste-management-system(?:-[a-z0-9-]+)?\.vercel\.app$/i.test(
+        url.hostname,
+      ) || /^bluewaste-system(?:-[a-z0-9-]+)?\.vercel\.app$/i.test(url.hostname)
+    );
+  } catch {
+    return false;
+  }
+};
 
 const corsOptions: cors.CorsOptions = {
   origin(origin, callback) {
@@ -43,12 +81,17 @@ const corsOptions: cors.CorsOptions = {
       return;
     }
 
-    if (allowedOrigins.has(origin)) {
+    const normalizedOrigin = normalizeOrigin(origin);
+
+    if (
+      allowedOrigins.has(normalizedOrigin) ||
+      isTrustedVercelPreviewOrigin(normalizedOrigin)
+    ) {
       callback(null, true);
       return;
     }
 
-    callback(new Error("Not allowed by CORS"));
+    callback(new Error(`CORS_ORIGIN_BLOCKED:${normalizedOrigin}`));
   },
   credentials: true,
 };
