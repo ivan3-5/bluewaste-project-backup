@@ -15,10 +15,6 @@ out/
 logs/
 *.log
 
-# git-ignored files
-.gitignore
-.vercelignore
-
 # Database files (if any)
 *.db
 
@@ -33,14 +29,6 @@ uploads/
 # OS files
 .DS_Store
 Thumbs.db
-
-# Mobile app build files
-android/
-ios/
-!mobile_flutter/android/
-!mobile_flutter/android/**
-!mobile_flutter/ios/
-!mobile_flutter/ios/**
 
 # Flutter generated files
 mobile_flutter/.dart_tool/
@@ -61,25 +49,6 @@ mobile_flutter/build/
 # Testing
 coverage/
 .vercel
-
-# MD files but remain the README.md to allow it to be visible on GitHub
-*.md
-!README.md
-!README-YOLO.md
-!bluewaste-system-diagram.md
-!YOLO.md
-!YOLO-update.md
-!mobile_flutter/README.md
-!mobile_flutter/MIGRATION_PLAN.md
-!mobile_flutter/CUTOVER_CHECKLIST.md
-
-# prisma
-prisma/migrations/
-*.prisma
-*.prisma.*
-*.schema
-*.schema.*
-*seed.ts
 
 # Please put here any additional files or directories that should be ignored by Git.
 
