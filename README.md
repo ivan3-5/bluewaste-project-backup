@@ -93,7 +93,7 @@ npm run db:seed
 
 Default seed accounts:
 
-- Admin: `admin@bluewaste.ph` / `admin123`
+- Admin: `admin@bluewaste.ph` / `@Admin123*`
 - Worker: `worker@bluewaste.ph` / `worker123`
 - Citizen: `citizen@bluewaste.ph` / `citizen123`
 
