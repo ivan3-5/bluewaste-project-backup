@@ -95,6 +95,8 @@ export default function MapPage() {
   const createResortArea = useCreateResortArea();
 
   const { data: resortBoxes = [] } = useResortAreaes(false, canViewBoxes);
+  const showCurrentBoxes = false;
+  const visibleResortBoxes = showCurrentBoxes ? resortBoxes : [];
 
   const {
     data: resortAdmins = [],
@@ -325,9 +327,10 @@ export default function MapPage() {
             Heatmap
           </Button>
 
-          {canViewBoxes && (
+          {showCurrentBoxes && canViewBoxes && (
             <span className="rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700">
-              {resortBoxes.length} box{resortBoxes.length !== 1 ? "es" : ""}
+              {visibleResortBoxes.length} box
+              {visibleResortBoxes.length !== 1 ? "es" : ""}
             </span>
           )}
         </div>
@@ -349,7 +352,7 @@ export default function MapPage() {
               showHeatmap={showHeatmap}
               onReportClick={handleReportClick}
               onMapReady={setMapInstance}
-              resortBoxes={resortBoxes}
+              resortBoxes={visibleResortBoxes}
               canDraw={isLGUAdmin}
               drawMode={drawMode}
               onDrawRectangle={handleDrawRectangle}

@@ -10,6 +10,7 @@ import {
 } from "@/hooks/useAnalytics";
 import { Button } from "@/components/ui/button";
 import api from "@/lib/api";
+import { filterAdminBarangayStats } from "@/lib/adminBarangays";
 import {
   ChartPanelsSkeleton,
   DataTableSkeleton,
@@ -38,8 +39,16 @@ export default function AnalyticsPage() {
   );
   const { data: categories = [], isLoading: categoriesLoading } =
     useAnalyticsCategories();
-  const { data: barangays = [], isLoading: barangaysLoading } =
+  const { data: barangayStats = [], isLoading: barangaysLoading } =
     useAnalyticsBarangays();
+  const filteredBarangays = filterAdminBarangayStats(barangayStats);
+  const sortedBarangays = [...filteredBarangays].sort(
+    (a, b) => b.count - a.count,
+  );
+  const totalBarangayReports = filteredBarangays.reduce(
+    (sum, stat) => sum + stat.count,
+    0,
+  );
 
   const isInitialLoading =
     overviewLoading || trendsLoading || categoriesLoading || barangaysLoading;
@@ -225,7 +234,7 @@ export default function AnalyticsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {barangays.length === 0 ? (
+              {sortedBarangays.length === 0 ? (
                 <tr>
                   <td
                     colSpan={4}
@@ -235,42 +244,36 @@ export default function AnalyticsPage() {
                   </td>
                 </tr>
               ) : (
-                barangays
-                  .sort((a, b) => b.count - a.count)
-                  .map((b, i) => {
-                    const total = barangays.reduce(
-                      (sum, x) => sum + x.count,
-                      0,
-                    );
-                    const pct =
-                      total > 0 ? ((b.count / total) * 100).toFixed(1) : "0";
-                    return (
-                      <tr key={b.barangayId} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm text-gray-500">
-                          {i + 1}
-                        </td>
-                        <td className="px-4 py-3 text-sm font-medium text-gray-800">
-                          {b.barangayName}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-600">
-                          {b.count}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-100">
-                              <div
-                                className="h-full rounded-full bg-blue-500"
-                                style={{ width: `${pct}%` }}
-                              />
-                            </div>
-                            <span className="text-xs text-gray-500">
-                              {pct}%
-                            </span>
+                sortedBarangays.map((b, i) => {
+                  const pct =
+                    totalBarangayReports > 0
+                      ? ((b.count / totalBarangayReports) * 100).toFixed(1)
+                      : "0";
+                  return (
+                    <tr key={b.barangayId} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-sm text-gray-500">
+                        {i + 1}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-800">
+                        {b.barangayName}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {b.count}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-100">
+                            <div
+                              className="h-full rounded-full bg-blue-500"
+                              style={{ width: `${pct}%` }}
+                            />
                           </div>
-                        </td>
-                      </tr>
-                    );
-                  })
+                          <span className="text-xs text-gray-500">{pct}%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

@@ -10,6 +10,7 @@ import {
 import { useReports } from "@/hooks/useReports";
 import { StatusBadge } from "@/components/reports/StatusBadge";
 import { formatDateTime } from "@/lib/utils";
+import { filterAdminBarangayStats } from "@/lib/adminBarangays";
 import { FileText, Clock, CheckCircle, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,7 @@ export default function DashboardPage() {
   );
   const { data: categories, isLoading: categoriesLoading } =
     useAnalyticsCategories();
-  const { data: barangays, isLoading: barangaysLoading } =
+  const { data: barangayStats, isLoading: barangaysLoading } =
     useAnalyticsBarangays();
   const { data: recentReports, isLoading: recentReportsLoading } = useReports({
     page: 1,
@@ -50,6 +51,8 @@ export default function DashboardPage() {
     categoriesLoading ||
     barangaysLoading ||
     recentReportsLoading;
+
+  const filteredBarangays = filterAdminBarangayStats(barangayStats ?? []);
 
   const stats = [
     {
@@ -198,7 +201,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {barangays?.slice(0, 10).map((brgy, idx) => (
+              {filteredBarangays.slice(0, 10).map((brgy, idx) => (
                 <div
                   key={brgy.barangayId}
                   className="flex items-center justify-between"
@@ -222,7 +225,7 @@ export default function DashboardPage() {
                   </span>
                 </div>
               ))}
-              {(!barangays || barangays.length === 0) && (
+              {filteredBarangays.length === 0 && (
                 <p className="text-sm text-gray-500 text-center py-4">
                   No data
                 </p>

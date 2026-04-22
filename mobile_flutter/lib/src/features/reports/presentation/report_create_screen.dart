@@ -5,6 +5,9 @@ import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:geolocator/geolocator.dart";
 import "package:image_picker/image_picker.dart";
 
+import "../../../core/theme/app_colors.dart";
+import "../../../core/theme/app_spacing.dart";
+import "../../../core/ui/app_components.dart";
 import "../data/report_service.dart";
 import "../domain/report_models.dart";
 
@@ -29,6 +32,10 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
   double? _longitude;
   bool _isSubmitting = false;
 
+  bool get _hasLocation => _latitude != null && _longitude != null;
+
+  int get _remainingImageSlots => 5 - _images.length;
+
   @override
   void dispose() {
     _titleController.dispose();
@@ -44,7 +51,7 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
       return;
     }
 
-    if (_images.length >= 5) {
+    if (_remainingImageSlots <= 0) {
       _showMessage("Maximum of 5 images allowed.");
       return;
     }
@@ -55,7 +62,7 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
   }
 
   Future<void> _pickFromGallery() async {
-    final remaining = 5 - _images.length;
+    final remaining = _remainingImageSlots;
     if (remaining <= 0) {
       _showMessage("Maximum of 5 images allowed.");
       return;
@@ -175,146 +182,418 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
   @override
   Widget build(BuildContext context) {
     final categories = wasteCategoryLabels.entries.toList(growable: false);
+    final missingRequirements = <String>[
+      if (_titleController.text.trim().length < 5) "Title",
+      if (_descriptionController.text.trim().length < 20) "Description",
+      if (!_hasLocation) "Location",
+    ];
+    final canSubmit = !_isSubmitting && missingRequirements.isEmpty;
+    final hasPhotoSlots = _remainingImageSlots > 0;
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: AppSpacing.screen,
       children: [
-        TextField(
-          controller: _titleController,
-          decoration: const InputDecoration(
-            labelText: "Title",
-            border: OutlineInputBorder(),
+        AppSectionCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _FormSectionHeader(
+                icon: Icons.edit_note,
+                title: "Submit Waste Report",
+                subtitle:
+                    "Provide clear details, location, and photos for faster validation.",
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Wrap(
+                spacing: AppSpacing.xs,
+                runSpacing: AppSpacing.xs,
+                children: const [
+                  _StepChip(number: "1", label: "Details"),
+                  _StepChip(number: "2", label: "Location"),
+                  _StepChip(number: "3", label: "Photos"),
+                ],
+              ),
+            ],
           ),
-          maxLength: 100,
         ),
-        const SizedBox(height: 10),
-        TextField(
-          controller: _descriptionController,
-          decoration: const InputDecoration(
-            labelText: "Description",
-            border: OutlineInputBorder(),
-            alignLabelWithHint: true,
-          ),
-          minLines: 4,
-          maxLines: 6,
-        ),
-        const SizedBox(height: 10),
-        DropdownButtonFormField<String>(
-          initialValue: _category,
-          decoration: const InputDecoration(
-            labelText: "Category",
-            border: OutlineInputBorder(),
-          ),
-          items: categories
-              .map(
-                (entry) => DropdownMenuItem<String>(
-                  value: entry.key,
-                  child: Text(entry.value),
+        const SizedBox(height: AppSpacing.sm),
+        AppSectionCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Report Details",
+                style: Theme.of(context)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                "Required: title (5+) and description (20+ characters).",
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.mutedForeground,
+                    ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              TextField(
+                controller: _titleController,
+                onChanged: (_) => setState(() {}),
+                decoration: const InputDecoration(
+                  labelText: "Title",
+                  prefixIcon: Icon(Icons.title_outlined),
                 ),
-              )
-              .toList(growable: false),
-          onChanged: (value) {
-            if (value == null) {
-              return;
-            }
-            setState(() => _category = value);
-          },
-        ),
-        const SizedBox(height: 10),
-        TextField(
-          controller: _addressController,
-          decoration: const InputDecoration(
-            labelText: "Address / Landmark",
-            border: OutlineInputBorder(),
-          ),
-        ),
-        const SizedBox(height: 12),
-        SwitchListTile(
-          title: const Text("Submit anonymously"),
-          contentPadding: EdgeInsets.zero,
-          value: _isAnonymous,
-          onChanged: (value) => setState(() => _isAnonymous = value),
-        ),
-        const SizedBox(height: 8),
-        OutlinedButton.icon(
-          onPressed: _getCurrentLocation,
-          icon: const Icon(Icons.my_location),
-          label: Text(
-            _latitude == null || _longitude == null
-                ? "Capture Location"
-                : "Location: ${_latitude!.toStringAsFixed(5)}, ${_longitude!.toStringAsFixed(5)}",
-          ),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: _pickFromCamera,
-                icon: const Icon(Icons.photo_camera_outlined),
-                label: const Text("Camera"),
+                maxLength: 100,
               ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: _pickFromGallery,
-                icon: const Icon(Icons.image_outlined),
-                label: const Text("Gallery"),
+              const SizedBox(height: AppSpacing.sm),
+              TextField(
+                controller: _descriptionController,
+                onChanged: (_) => setState(() {}),
+                decoration: const InputDecoration(
+                  labelText: "Description",
+                  alignLabelWithHint: true,
+                  prefixIcon: Icon(Icons.description_outlined),
+                ),
+                minLines: 4,
+                maxLines: 6,
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        if (_images.isNotEmpty)
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _images
-                .asMap()
-                .entries
-                .map(
-                  (entry) => Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.file(
-                          File(entry.value.path),
-                          width: 86,
-                          height: 86,
-                          fit: BoxFit.cover,
-                        ),
+              const SizedBox(height: AppSpacing.sm),
+              DropdownButtonFormField<String>(
+                initialValue: _category,
+                decoration: const InputDecoration(
+                  labelText: "Category",
+                  prefixIcon: Icon(Icons.category_outlined),
+                ),
+                items: categories
+                    .map(
+                      (entry) => DropdownMenuItem<String>(
+                        value: entry.key,
+                        child: Text(entry.value),
                       ),
-                      Positioned(
-                        top: -8,
-                        right: -8,
-                        child: InkWell(
-                          onTap: () {
-                            setState(() {
-                              _images.removeAt(entry.key);
-                            });
-                          },
-                          child: const CircleAvatar(
-                            radius: 11,
-                            backgroundColor: Colors.red,
-                            child: Icon(Icons.close,
-                                size: 14, color: Colors.white),
-                          ),
-                        ),
-                      ),
-                    ],
+                    )
+                    .toList(growable: false),
+                onChanged: (value) {
+                  if (value == null) {
+                    return;
+                  }
+                  setState(() => _category = value);
+                },
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              TextField(
+                controller: _addressController,
+                onChanged: (_) => setState(() {}),
+                decoration: const InputDecoration(
+                  labelText: "Address / Landmark",
+                  prefixIcon: Icon(Icons.place_outlined),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.secondary,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: SwitchListTile(
+                  title: const Text("Submit anonymously"),
+                  subtitle: const Text("Hide your identity from public view"),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
                   ),
-                )
-                .toList(growable: false),
+                  value: _isAnonymous,
+                  onChanged: (value) => setState(() => _isAnonymous = value),
+                ),
+              ),
+            ],
           ),
-        const SizedBox(height: 18),
-        FilledButton(
-          onPressed: _isSubmitting ? null : _submitReport,
-          child: Text(_isSubmitting ? "Submitting..." : "Submit Report"),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: AppSpacing.sm),
+        AppSectionCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _FormSectionHeader(
+                icon: Icons.my_location,
+                title: "Location",
+                subtitle: _hasLocation
+                    ? "Location captured. You can update it anytime."
+                    : "Capture your current location before submitting.",
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: _hasLocation
+                      ? AppColors.tint(AppColors.success, opacity: 0.1)
+                      : AppColors.secondary,
+                  border: Border.all(
+                    color: _hasLocation ? AppColors.success : AppColors.border,
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      _hasLocation
+                          ? Icons.check_circle_outline
+                          : Icons.location_off_outlined,
+                      color: _hasLocation
+                          ? AppColors.success
+                          : AppColors.mutedForeground,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Expanded(
+                      child: Text(
+                        _hasLocation
+                            ? "${_latitude!.toStringAsFixed(5)}, ${_longitude!.toStringAsFixed(5)}"
+                            : "No location captured yet.",
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: _hasLocation
+                                  ? AppColors.success
+                                  : AppColors.mutedForeground,
+                              fontWeight: _hasLocation
+                                  ? FontWeight.w600
+                                  : FontWeight.w500,
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              FilledButton.tonalIcon(
+                onPressed: _getCurrentLocation,
+                icon: const Icon(Icons.my_location),
+                label:
+                    Text(_hasLocation ? "Update Location" : "Capture Location"),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        AppSectionCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _FormSectionHeader(
+                icon: Icons.photo_library_outlined,
+                title: "Photos",
+                subtitle: "Attach up to 5 clear images.",
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Row(
+                children: [
+                  AppStatusPill(
+                    label: "${_images.length}/5 selected",
+                    color: _images.isEmpty
+                        ? AppColors.mutedForeground
+                        : AppColors.info,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    hasPhotoSlots
+                        ? "$_remainingImageSlots slot(s) left"
+                        : "Maximum reached",
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.mutedForeground,
+                        ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: hasPhotoSlots ? _pickFromCamera : null,
+                      icon: const Icon(Icons.photo_camera_outlined),
+                      label: const Text("Camera"),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: hasPhotoSlots ? _pickFromGallery : null,
+                      icon: const Icon(Icons.image_outlined),
+                      label: const Text("Gallery"),
+                    ),
+                  ),
+                ],
+              ),
+              if (_images.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Wrap(
+                  spacing: AppSpacing.xs,
+                  runSpacing: AppSpacing.xs,
+                  children: _images
+                      .asMap()
+                      .entries
+                      .map(
+                        (entry) => Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.file(
+                                File(entry.value.path),
+                                width: 94,
+                                height: 94,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            Positioned(
+                              top: -8,
+                              right: -8,
+                              child: InkWell(
+                                onTap: () {
+                                  setState(() {
+                                    _images.removeAt(entry.key);
+                                  });
+                                },
+                                child: const CircleAvatar(
+                                  radius: 12,
+                                  backgroundColor: AppColors.destructive,
+                                  child: Icon(
+                                    Icons.close,
+                                    size: 14,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                      .toList(growable: false),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        AppSectionCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              FilledButton.icon(
+                onPressed: canSubmit ? _submitReport : null,
+                icon: const Icon(Icons.send_outlined),
+                label: Text(_isSubmitting ? "Submitting..." : "Submit Report"),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                missingRequirements.isEmpty
+                    ? "Ready to submit. Please review details before sending."
+                    : "Complete required fields: ${missingRequirements.join(", ")}",
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.mutedForeground,
+                    ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xxl),
       ],
+    );
+  }
+}
+
+class _FormSectionHeader extends StatelessWidget {
+  const _FormSectionHeader({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CircleAvatar(
+          radius: 15,
+          backgroundColor: AppColors.tint(AppColors.primary),
+          child: Icon(icon, size: 16, color: AppColors.primary),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(context)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: AppSpacing.xxs),
+              Text(
+                subtitle,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.mutedForeground,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StepChip extends StatelessWidget {
+  const _StepChip({required this.number, required this.label});
+
+  final String number;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xs,
+        vertical: AppSpacing.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.secondary,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 18,
+            height: 18,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.tint(AppColors.primary),
+            ),
+            child: Text(
+              number,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.xs),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: AppColors.secondaryForeground,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+        ],
+      ),
     );
   }
 }

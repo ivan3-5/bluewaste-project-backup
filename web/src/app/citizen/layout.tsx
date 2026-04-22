@@ -9,9 +9,7 @@ import { Menu, X, LogOut } from "lucide-react";
 
 const citizenLinks = [
   { href: "/citizen/report", label: "Submit Report", icon: "📝" },
-  { href: "/report-waste", label: "AI Report", icon: "🤖" },
   { href: "/citizen/my-reports", label: "My Reports", icon: "📋" },
-  { href: "/my-reports", label: "AI History", icon: "🧾" },
   { href: "/citizen/map", label: "Map View", icon: "🗺️" },
 ];
 

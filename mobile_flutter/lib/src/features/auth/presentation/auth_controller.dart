@@ -146,6 +146,7 @@ class AuthController extends StateNotifier<AuthState> {
     required String firstName,
     required String lastName,
     String? phone,
+    String? avatarUrl,
   }) async {
     if (!state.isAuthenticated) {
       return;
@@ -157,6 +158,39 @@ class AuthController extends StateNotifier<AuthState> {
         firstName: firstName,
         lastName: lastName,
         phone: phone,
+        avatarUrl: avatarUrl,
+      );
+
+      await _storage.writeSession(token: state.token!, user: updated.toJson());
+
+      state = state.copyWith(
+        isLoading: false,
+        user: updated,
+      );
+    } catch (error) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: error.toString(),
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> uploadAvatar({required String filePath}) async {
+    if (!state.isAuthenticated || state.user == null) {
+      return;
+    }
+
+    final currentUser = state.user!;
+
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final avatarUrl = await _authService.uploadImage(filePath: filePath);
+      final updated = await _authService.updateProfile(
+        firstName: currentUser.firstName,
+        lastName: currentUser.lastName,
+        phone: currentUser.phone,
+        avatarUrl: avatarUrl,
       );
 
       await _storage.writeSession(token: state.token!, user: updated.toJson());

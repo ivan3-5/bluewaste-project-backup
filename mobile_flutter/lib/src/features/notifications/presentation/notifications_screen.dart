@@ -3,6 +3,9 @@ import "dart:async";
 import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 
+import "../../../core/theme/app_colors.dart";
+import "../../../core/theme/app_spacing.dart";
+import "../../../core/ui/app_components.dart";
 import "../data/notification_service.dart";
 import "../domain/app_notification.dart";
 
@@ -122,11 +125,19 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       children: [
         if (unreadCount > 0)
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 10, 14, 2),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.sm,
+              AppSpacing.md,
+              AppSpacing.xs,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("$unreadCount unread"),
+                AppStatusPill(
+                  label: "$unreadCount unread",
+                  color: AppColors.primary,
+                ),
                 TextButton(
                   onPressed: _markAllAsRead,
                   child: const Text("Mark all read"),
@@ -140,22 +151,48 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             child: _notifications.isEmpty
                 ? ListView(
                     children: const [
-                      SizedBox(height: 180),
-                      Center(child: Text("No notifications.")),
+                      SizedBox(height: 140),
+                      AppEmptyState(
+                        icon: Icons.notifications_none,
+                        title: "No notifications",
+                        subtitle: "You are all caught up.",
+                      ),
                     ],
                   )
                 : ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      0,
+                      AppSpacing.md,
+                      AppSpacing.md,
+                    ),
                     itemCount: _notifications.length,
                     itemBuilder: (context, index) {
                       final item = _notifications[index];
                       return Card(
-                        margin: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 6,
-                        ),
-                        color: item.isRead ? null : const Color(0xFFEFF6FF),
+                        margin: const EdgeInsets.only(bottom: AppSpacing.xs),
+                        color: item.isRead
+                            ? AppColors.card
+                            : AppColors.tint(AppColors.primary, opacity: 0.1),
                         child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.sm,
+                            vertical: AppSpacing.xs,
+                          ),
                           onTap: () => _markAsRead(item),
+                          leading: CircleAvatar(
+                            backgroundColor: item.isRead
+                                ? AppColors.secondary
+                                : AppColors.tint(AppColors.primary),
+                            child: Icon(
+                              item.isRead
+                                  ? Icons.notifications_none
+                                  : Icons.notifications_active_outlined,
+                              color: item.isRead
+                                  ? AppColors.mutedForeground
+                                  : AppColors.primary,
+                            ),
+                          ),
                           title: Text(
                             item.title,
                             style: TextStyle(
@@ -167,7 +204,12 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                           subtitle: Text(item.message),
                           trailing: Text(
                             _timeAgo(item.createdAt),
-                            style: Theme.of(context).textTheme.labelSmall,
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(
+                                  color: AppColors.mutedForeground,
+                                ),
                           ),
                         ),
                       );

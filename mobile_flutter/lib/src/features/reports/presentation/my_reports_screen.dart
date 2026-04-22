@@ -4,6 +4,9 @@ import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:intl/intl.dart";
 
+import "../../../core/theme/app_colors.dart";
+import "../../../core/theme/app_spacing.dart";
+import "../../../core/ui/app_components.dart";
 import "../data/report_service.dart";
 import "../domain/report_models.dart";
 
@@ -73,21 +76,42 @@ class _MyReportsScreenState extends ConsumerState<MyReportsScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-          child: DropdownButtonFormField<String>(
-            initialValue: _statusFilter,
-            items: statuses,
-            decoration: const InputDecoration(
-              labelText: "Filter",
-              border: OutlineInputBorder(),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.md,
+            AppSpacing.sm,
+            AppSpacing.md,
+            AppSpacing.xs,
+          ),
+          child: AppSectionCard(
+            child: Column(
+              children: [
+                DropdownButtonFormField<String>(
+                  initialValue: _statusFilter,
+                  items: statuses,
+                  decoration: const InputDecoration(
+                    labelText: "Filter by status",
+                    prefixIcon: Icon(Icons.filter_list),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _statusFilter = value ?? "";
+                      _loading = true;
+                    });
+                    _loadReports();
+                  },
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "${_reports.length} report(s)",
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.mutedForeground,
+                        ),
+                  ),
+                ),
+              ],
             ),
-            onChanged: (value) {
-              setState(() {
-                _statusFilter = value ?? "";
-                _loading = true;
-              });
-              _loadReports();
-            },
           ),
         ),
         Expanded(
@@ -96,25 +120,88 @@ class _MyReportsScreenState extends ConsumerState<MyReportsScreen> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : _reports.isEmpty
-                    ? const Center(child: Text("No reports found."))
-                    : ListView.builder(
+                    ? ListView(
+                        children: const [
+                          SizedBox(height: 140),
+                          AppEmptyState(
+                            icon: Icons.assignment_outlined,
+                            title: "No reports found",
+                            subtitle:
+                                "Try changing your filter or create your first report.",
+                          ),
+                        ],
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.md,
+                          0,
+                          AppSpacing.md,
+                          AppSpacing.md,
+                        ),
                         itemCount: _reports.length,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: AppSpacing.xs),
                         itemBuilder: (context, index) {
                           final report = _reports[index];
+                          final statusColor =
+                              AppColors.statusColor(report.status);
+                          final categoryColor =
+                              AppColors.categoryColor(report.category);
+
                           return Card(
-                            margin: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 6,
-                            ),
-                            child: ListTile(
-                              title: Text(report.title),
-                              subtitle: Text(
-                                "${statusLabels[report.status] ?? report.status}  •  ${_dateFormat.format(report.createdAt)}",
-                              ),
-                              trailing: Text(
-                                wasteCategoryLabels[report.category] ??
-                                    report.category,
-                                style: Theme.of(context).textTheme.labelSmall,
+                            child: Padding(
+                              padding: const EdgeInsets.all(AppSpacing.md),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    report.title,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.w700),
+                                  ),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  Text(
+                                    report.description,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: AppColors.mutedForeground,
+                                        ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.sm),
+                                  Wrap(
+                                    spacing: AppSpacing.xs,
+                                    runSpacing: AppSpacing.xs,
+                                    children: [
+                                      AppStatusPill(
+                                        label: statusLabels[report.status] ??
+                                            report.status,
+                                        color: statusColor,
+                                      ),
+                                      AppStatusPill(
+                                        label: wasteCategoryLabels[
+                                                report.category] ??
+                                            report.category,
+                                        color: categoryColor,
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: AppSpacing.sm),
+                                  Text(
+                                    "Created ${_dateFormat.format(report.createdAt)}",
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall
+                                        ?.copyWith(
+                                          color: AppColors.mutedForeground,
+                                        ),
+                                  ),
+                                ],
                               ),
                             ),
                           );

@@ -3,6 +3,7 @@
 import { useAnalyticsBarangays } from "@/hooks/useAnalytics";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
+import { filterAdminBarangaysByName } from "@/lib/adminBarangays";
 import { Barangay } from "@/types";
 import { Map, AlertCircle, TrendingUp, Info } from "lucide-react";
 import {
@@ -36,7 +37,9 @@ export default function BarangaysPage() {
     );
   }
 
-  const merged = barangays
+  const filteredBarangays = filterAdminBarangaysByName(barangays);
+
+  const merged = filteredBarangays
     .map((b) => {
       const stat = stats.find((s) => s.barangayId === b.id);
       return { ...b, reportCount: stat?.count || b._count?.reports || 0 };
@@ -52,7 +55,7 @@ export default function BarangaysPage() {
           Barangay Monitoring
         </h1>
         <p className="text-sm text-gray-500 mt-1">
-          {barangays.length} barangays in Panabo City
+          {filteredBarangays.length} barangays in Panabo City
         </p>
       </div>
 
@@ -65,7 +68,7 @@ export default function BarangaysPage() {
           <div className="relative z-10">
             <p className="text-sm font-medium text-gray-500">Total Barangays</p>
             <p className="mt-1 text-3xl font-bold text-gray-800">
-              {barangays.length}
+              {filteredBarangays.length}
             </p>
           </div>
         </div>

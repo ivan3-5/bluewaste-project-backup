@@ -82,17 +82,46 @@ class AuthService {
     required String firstName,
     required String lastName,
     String? phone,
+    String? avatarUrl,
   }) async {
     try {
+      final payload = <String, dynamic>{
+        "firstName": firstName,
+        "lastName": lastName,
+        "phone": phone,
+      };
+      if (avatarUrl != null) {
+        payload["avatarUrl"] = avatarUrl;
+      }
+
       final response = await _dio.put<Map<String, dynamic>>(
         "/auth/profile",
-        data: {
-          "firstName": firstName,
-          "lastName": lastName,
-          "phone": phone,
-        },
+        data: payload,
       );
       return AppUser.fromJson(response.data ?? <String, dynamic>{});
+    } on DioException catch (error) {
+      throw ApiException.fromDioError(error);
+    }
+  }
+
+  Future<String> uploadImage({required String filePath}) async {
+    try {
+      final formData = FormData.fromMap({
+        "image": await MultipartFile.fromFile(filePath),
+      });
+
+      final response = await _dio.post<Map<String, dynamic>>(
+        "/upload",
+        data: formData,
+        options: Options(contentType: "multipart/form-data"),
+      );
+
+      final imageUrl = (response.data?["url"] ?? "").toString().trim();
+      if (imageUrl.isEmpty) {
+        throw ApiException("Upload failed. Please try again.");
+      }
+
+      return imageUrl;
     } on DioException catch (error) {
       throw ApiException.fromDioError(error);
     }

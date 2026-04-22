@@ -52,6 +52,7 @@ class AppUser {
     String? firstName,
     String? lastName,
     String? phone,
+    String? avatarUrl,
   }) {
     return AppUser(
       id: id,
@@ -60,7 +61,7 @@ class AppUser {
       lastName: lastName ?? this.lastName,
       role: role,
       phone: phone ?? this.phone,
-      avatarUrl: avatarUrl,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
       barangayId: barangayId,
     );
   }

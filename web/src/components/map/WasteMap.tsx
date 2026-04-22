@@ -2,10 +2,16 @@
 
 import { useEffect, useRef } from "react";
 import L from "leaflet";
+import type { FeatureCollection, Polygon } from "geojson";
 import "leaflet/dist/leaflet.css";
 import "leaflet.heat";
 import "leaflet-draw";
 import "leaflet-draw/dist/leaflet.draw.css";
+import {
+  PANABO_BARANGAY_BOUNDARIES,
+  type BarangayBoundaryProperties,
+} from "@/components/map/data/panaboBarangayBoundaries";
+import { createBarangayBoundaryLayer } from "@/components/map/layers/barangayBoundaryLayer";
 import {
   MapReport,
   ResortArea,
@@ -30,6 +36,11 @@ interface WasteMapProps {
     minLng: number;
     maxLng: number;
   }) => void;
+  showBarangayBoundaries?: boolean;
+  barangayBoundaryGeoJson?: FeatureCollection<
+    Polygon,
+    BarangayBoundaryProperties
+  >;
 }
 
 export const CATEGORY_COLORS: Record<string, string> = {
@@ -86,6 +97,8 @@ export default function WasteMap({
   canDraw = false,
   drawMode = false,
   onDrawRectangle,
+  showBarangayBoundaries = true,
+  barangayBoundaryGeoJson = PANABO_BARANGAY_BOUNDARIES,
 }: WasteMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -96,6 +109,8 @@ export default function WasteMap({
   const drawControlRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const heatLayerRef = useRef<any>(null);
+  const boundaryLayerRef = useRef<L.GeoJSON | null>(null);
+  const boundaryBoundsRef = useRef<L.LatLngBounds | null>(null);
   const onMapReadyRef = useRef(onMapReady);
   const onDrawRectangleRef = useRef(onDrawRectangle);
   const centerRef = useRef(center);
@@ -199,6 +214,12 @@ export default function WasteMap({
         heatLayerRef.current = null;
       }
 
+      if (boundaryLayerRef.current) {
+        boundaryLayerRef.current.remove();
+        boundaryLayerRef.current = null;
+        boundaryBoundsRef.current = null;
+      }
+
       markersRef.current.forEach((marker) => marker.remove());
       markersRef.current = [];
 
@@ -227,6 +248,68 @@ export default function WasteMap({
       map.setView(center, zoom, { animate: false });
     }
   }, [center, zoom]);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+
+    if (boundaryLayerRef.current) {
+      boundaryLayerRef.current.remove();
+      boundaryLayerRef.current = null;
+    }
+    boundaryBoundsRef.current = null;
+
+    if (!showBarangayBoundaries) {
+      return;
+    }
+
+    const { layer, bounds } = createBarangayBoundaryLayer({
+      geoJson: barangayBoundaryGeoJson,
+    });
+    layer.addTo(map);
+
+    boundaryLayerRef.current = layer;
+    boundaryBoundsRef.current = bounds;
+
+    return () => {
+      if (boundaryLayerRef.current === layer) {
+        layer.remove();
+        boundaryLayerRef.current = null;
+        boundaryBoundsRef.current = null;
+      }
+    };
+  }, [showBarangayBoundaries, barangayBoundaryGeoJson]);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+
+    let combinedBounds: L.LatLngBounds | null = null;
+
+    if (boundaryBoundsRef.current?.isValid()) {
+      combinedBounds = L.latLngBounds(
+        boundaryBoundsRef.current.getSouthWest(),
+        boundaryBoundsRef.current.getNorthEast(),
+      );
+    }
+
+    if (reports.length > 0) {
+      const reportBounds = L.latLngBounds(
+        reports.map((r) => [r.latitude, r.longitude] as [number, number]),
+      );
+      combinedBounds = combinedBounds
+        ? combinedBounds.extend(reportBounds)
+        : reportBounds;
+    }
+
+    if (combinedBounds?.isValid()) {
+      map.fitBounds(combinedBounds, {
+        padding: [60, 60],
+        maxZoom: 15,
+        animate: false,
+      });
+    }
+  }, [reports, showBarangayBoundaries, barangayBoundaryGeoJson]);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -388,24 +471,6 @@ export default function WasteMap({
       marker.addTo(map);
       markersRef.current.push(marker);
     });
-
-    // Auto-fit all visible markers into view
-    if (reports.length > 0) {
-      if (reports.length === 1) {
-        map.setView([reports[0].latitude, reports[0].longitude], 15, {
-          animate: false,
-        });
-      } else {
-        const bounds = L.latLngBounds(
-          reports.map((r) => [r.latitude, r.longitude] as [number, number]),
-        );
-        map.fitBounds(bounds, {
-          padding: [60, 60],
-          maxZoom: 15,
-          animate: false,
-        });
-      }
-    }
   }, [reports, onReportClick]);
 
   // ── Heatmap layer ─────────────────────────────────────────────────────────

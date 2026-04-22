@@ -5,6 +5,9 @@ import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:image_picker/image_picker.dart";
 import "package:intl/intl.dart";
 
+import "../../../core/theme/app_colors.dart";
+import "../../../core/theme/app_spacing.dart";
+import "../../../core/ui/app_components.dart";
 import "../data/report_service.dart";
 import "../domain/report_models.dart";
 
@@ -141,8 +144,12 @@ class _WorkerTasksScreenState extends ConsumerState<WorkerTasksScreen> {
         onRefresh: _loadTasks,
         child: ListView(
           children: const [
-            SizedBox(height: 180),
-            Center(child: Text("No assigned tasks.")),
+            SizedBox(height: 140),
+            AppEmptyState(
+              icon: Icons.assignment_outlined,
+              title: "No assigned tasks",
+              subtitle: "New assignments will appear here.",
+            ),
           ],
         ),
       );
@@ -151,15 +158,23 @@ class _WorkerTasksScreenState extends ConsumerState<WorkerTasksScreen> {
     return RefreshIndicator(
       onRefresh: _loadTasks,
       child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md,
+          AppSpacing.sm,
+          AppSpacing.md,
+          AppSpacing.md,
+        ),
         itemCount: _tasks.length,
         itemBuilder: (context, index) {
           final task = _tasks[index];
           final actions = _actionsForStatus(task.status);
+          final statusColor = AppColors.statusColor(task.status);
+          final categoryColor = AppColors.categoryColor(task.category);
 
           return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            margin: const EdgeInsets.only(bottom: AppSpacing.xs),
             child: Padding(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(AppSpacing.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -169,28 +184,44 @@ class _WorkerTasksScreenState extends ConsumerState<WorkerTasksScreen> {
                           fontWeight: FontWeight.w700,
                         ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(task.description,
                       maxLines: 3, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 8),
-                  Text(
-                    "Status: ${statusLabels[task.status] ?? task.status}",
-                    style: Theme.of(context).textTheme.bodyMedium,
+                  const SizedBox(height: AppSpacing.sm),
+                  Wrap(
+                    spacing: AppSpacing.xs,
+                    runSpacing: AppSpacing.xs,
+                    children: [
+                      AppStatusPill(
+                        label: statusLabels[task.status] ?? task.status,
+                        color: statusColor,
+                      ),
+                      AppStatusPill(
+                        label:
+                            wasteCategoryLabels[task.category] ?? task.category,
+                        color: categoryColor,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
                     "Created: ${_dateFormat.format(task.createdAt)}",
-                    style: Theme.of(context).textTheme.bodySmall,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.mutedForeground,
+                        ),
                   ),
                   if ((task.address ?? "").isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text("Address: ${task.address}"),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      "Address: ${task.address}",
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                   ],
                   if (actions.isNotEmpty || task.status == "IN_PROGRESS")
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.sm),
                   if (actions.isNotEmpty)
                     Wrap(
-                      spacing: 8,
+                      spacing: AppSpacing.xs,
                       children: actions
                           .map(
                             (action) => FilledButton.tonal(
@@ -202,7 +233,7 @@ class _WorkerTasksScreenState extends ConsumerState<WorkerTasksScreen> {
                           .toList(growable: false),
                     ),
                   if (task.status == "IN_PROGRESS") ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.xs),
                     OutlinedButton.icon(
                       onPressed: () => _uploadCleanupPhoto(task.id),
                       icon: const Icon(Icons.photo_camera_outlined),

@@ -105,7 +105,8 @@ export class AuthService {
     data: {
       firstName?: string;
       lastName?: string;
-      phone?: string;
+      phone?: string | null;
+      avatarUrl?: string | null;
       barangayId?: string;
     },
   ) {

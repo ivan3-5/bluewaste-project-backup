@@ -4,10 +4,11 @@ import "package:flutter_secure_storage/flutter_secure_storage.dart";
 
 class SessionStorage {
   SessionStorage({FlutterSecureStorage? secureStorage})
-    : _secureStorage = secureStorage ?? const FlutterSecureStorage();
+      : _secureStorage = secureStorage ?? const FlutterSecureStorage();
 
   static const String tokenKey = "bluewaste_token";
   static const String userKey = "bluewaste_user";
+  static const String onboardingSeenKey = "bluewaste_onboarding_seen";
 
   final FlutterSecureStorage _secureStorage;
 
@@ -30,6 +31,18 @@ class SessionStorage {
     } catch (_) {
       return null;
     }
+  }
+
+  Future<bool> readOnboardingSeen() async {
+    final seen = await _secureStorage.read(key: onboardingSeenKey);
+    return seen == "true";
+  }
+
+  Future<void> writeOnboardingSeen({bool seen = true}) {
+    return _secureStorage.write(
+      key: onboardingSeenKey,
+      value: seen ? "true" : "false",
+    );
   }
 
   Future<void> writeSession({

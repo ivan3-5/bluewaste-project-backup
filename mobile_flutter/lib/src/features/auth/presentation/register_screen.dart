@@ -1,6 +1,9 @@
 import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 
+import "../../../core/theme/app_colors.dart";
+import "../../../core/theme/app_spacing.dart";
+import "../../../core/ui/app_components.dart";
 import "auth_controller.dart";
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -95,76 +98,114 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Create Account")),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _firstNameController,
-                    decoration: const InputDecoration(
-                      labelText: "First Name",
-                      border: OutlineInputBorder(),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppColors.secondary, AppColors.background],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: AppSpacing.screen,
+          child: Column(
+            children: [
+              AppSectionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Create your BlueWaste account",
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge
+                          ?.copyWith(fontWeight: FontWeight.w700),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _lastNameController,
-                    decoration: const InputDecoration(
-                      labelText: "Last Name",
-                      border: OutlineInputBorder(),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      "Register as a citizen to submit and monitor reports.",
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.mutedForeground,
+                          ),
                     ),
-                  ),
+                    const SizedBox(height: AppSpacing.md),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _firstNameController,
+                            textInputAction: TextInputAction.next,
+                            decoration: const InputDecoration(
+                              labelText: "First Name",
+                              prefixIcon: Icon(Icons.person_outline),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: TextField(
+                            controller: _lastNameController,
+                            textInputAction: TextInputAction.next,
+                            decoration: const InputDecoration(
+                              labelText: "Last Name",
+                              prefixIcon: Icon(Icons.badge_outlined),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    TextField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: "Email",
+                        prefixIcon: Icon(Icons.email_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    TextField(
+                      controller: _phoneController,
+                      keyboardType: TextInputType.phone,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: "Phone (optional)",
+                        prefixIcon: Icon(Icons.phone_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    TextField(
+                      controller: _passwordController,
+                      obscureText: true,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: "Password",
+                        prefixIcon: Icon(Icons.lock_outline),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    TextField(
+                      controller: _confirmPasswordController,
+                      obscureText: true,
+                      onSubmitted: (_) => _handleRegister(),
+                      decoration: const InputDecoration(
+                        labelText: "Confirm Password",
+                        prefixIcon: Icon(Icons.verified_user_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    FilledButton(
+                      onPressed: _isSubmitting ? null : _handleRegister,
+                      child: Text(
+                        _isSubmitting ? "Creating..." : "Create Account",
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: "Email",
-                border: OutlineInputBorder(),
               ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                labelText: "Phone (optional)",
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: "Password",
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _confirmPasswordController,
-              obscureText: true,
-              onSubmitted: (_) => _handleRegister(),
-              decoration: const InputDecoration(
-                labelText: "Confirm Password",
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 18),
-            FilledButton(
-              onPressed: _isSubmitting ? null : _handleRegister,
-              child: Text(_isSubmitting ? "Creating..." : "Create Account"),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

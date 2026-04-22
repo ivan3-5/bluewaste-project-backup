@@ -17,6 +17,7 @@ export const loginSchema = z.object({
 export const updateProfileSchema = z.object({
   firstName: z.string().min(1).max(50).optional(),
   lastName: z.string().min(1).max(50).optional(),
-  phone: z.string().optional(),
+  phone: z.string().nullable().optional(),
+  avatarUrl: z.string().url().nullable().optional(),
   barangayId: z.string().uuid().optional(),
 });

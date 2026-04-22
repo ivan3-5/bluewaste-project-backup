@@ -1,5 +1,6 @@
 import "package:flutter/material.dart";
 
+import "core/theme/app_theme.dart";
 import "features/auth/presentation/root_switcher_screen.dart";
 
 class BlueWasteApp extends StatelessWidget {
@@ -10,10 +11,7 @@ class BlueWasteApp extends StatelessWidget {
     return MaterialApp(
       title: "BlueWaste",
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1D4ED8)),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.light,
       home: const RootSwitcherScreen(),
     );
   }

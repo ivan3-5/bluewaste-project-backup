@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Barangay } from "@/types";
 import api from "@/lib/api";
+import { filterAdminBarangaysByName } from "@/lib/adminBarangays";
 import { formatDateTime } from "@/lib/utils";
 import {
   DataTableSkeleton,
@@ -85,6 +86,7 @@ export default function UsersPage() {
       return data;
     },
   });
+  const filteredBarangays = filterAdminBarangaysByName(barangays);
 
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
@@ -483,7 +485,7 @@ export default function UsersPage() {
                   }
                 >
                   <option value="">— None —</option>
-                  {barangays.map((b) => (
+                  {filteredBarangays.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.name}
                     </option>
@@ -566,7 +568,7 @@ export default function UsersPage() {
                   }
                 >
                   <option value="">— None —</option>
-                  {barangays.map((b) => (
+                  {filteredBarangays.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.name}
                     </option>
