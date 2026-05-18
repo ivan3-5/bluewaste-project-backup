@@ -401,7 +401,6 @@ export class ReportService {
     address?: string;
     barangayId?: string;
     isAnonymous?: boolean;
-    priority?: string;
     reporterId?: string;
   }) {
     await this.purgeExpiredSpamIfDue();
@@ -421,7 +420,6 @@ export class ReportService {
           address: data.address,
           barangayId: data.barangayId,
           isAnonymous: data.isAnonymous || false,
-          priority: (data.priority as any) || "MEDIUM",
           reporterId: data.isAnonymous ? null : data.reporterId,
           resortAreaId: matchedResortArea?.id,
         },
@@ -833,7 +831,6 @@ export class ReportService {
         title: true,
         category: true,
         status: true,
-        priority: true,
         latitude: true,
         longitude: true,
         address: true,
@@ -878,7 +875,6 @@ export class ReportService {
       select: {
         latitude: true,
         longitude: true,
-        priority: true,
       },
       orderBy: { createdAt: "desc" },
       take: limit,
@@ -887,14 +883,7 @@ export class ReportService {
     const heatmapData = reports.map((r) => ({
       lat: r.latitude,
       lng: r.longitude,
-      intensity:
-        r.priority === "CRITICAL"
-          ? 1.0
-          : r.priority === "HIGH"
-            ? 0.75
-            : r.priority === "MEDIUM"
-              ? 0.5
-              : 0.25,
+      intensity: 0.5,
     }));
 
     this.setCachedHeatmapData(cacheKey, heatmapData);

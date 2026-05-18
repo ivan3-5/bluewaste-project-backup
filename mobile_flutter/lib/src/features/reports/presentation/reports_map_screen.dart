@@ -29,12 +29,8 @@ class _ReportsMapScreenState extends ConsumerState<ReportsMapScreen>
   static const LatLng _panaboCenter = LatLng(7.3132, 125.6844);
   static const double _defaultZoom = 13;
   static const double _markerCanvasSize = 92;
-  static const Map<String, double> _priorityCoreSizes = {
-    "CRITICAL": 22,
-    "HIGH": 18,
-    "MEDIUM": 15,
-    "LOW": 12,
-  };
+  static const double _fixedMarkerDiameter = 23;
+  static const double _fixedDotSize = 5;
 
   final MapController _mapController = MapController();
   late final AnimationController _markerPulseController;
@@ -168,8 +164,8 @@ class _ReportsMapScreenState extends ConsumerState<ReportsMapScreen>
     final isPending = report.status == "PENDING";
     final categoryColor = AppColors.categoryColor(report.category);
     final statusColor = _pinColor(report.status);
-    final markerDiameter = _markerDiameter(report.priority);
-    final dotSize = _statusDotSize(report.priority);
+    final markerDiameter = _fixedMarkerDiameter;
+    final dotSize = _fixedDotSize;
     final pulse = _pulseGlow(
       phase: _markerPhase(intense: isPending),
       intense: isPending,
@@ -259,7 +255,6 @@ class _ReportsMapScreenState extends ConsumerState<ReportsMapScreen>
       builder: (context) {
         final statusColor = _pinColor(report.status);
         final categoryColor = AppColors.categoryColor(report.category);
-        final priorityColor = _priorityColor(report.priority);
         final mediaQuery = MediaQuery.of(context);
 
         return SafeArea(
@@ -323,11 +318,6 @@ class _ReportsMapScreenState extends ConsumerState<ReportsMapScreen>
                                   label: wasteCategoryLabels[report.category] ??
                                       report.category,
                                   color: categoryColor,
-                                ),
-                                AppStatusPill(
-                                  label:
-                                      "${_priorityLabel(report.priority)} Priority",
-                                  color: priorityColor,
                                 ),
                               ],
                             ),

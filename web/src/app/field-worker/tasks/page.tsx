@@ -9,7 +9,6 @@ import {
   ReportStatus,
   WASTE_CATEGORY_LABELS,
   REPORT_STATUS_LABELS,
-  PRIORITY_LABELS,
   Report,
 } from "@/types";
 import { timeAgo } from "@/lib/utils";
@@ -34,13 +33,6 @@ const STATUS_FILTERS: { value: ReportStatus | ""; label: string }[] = [
   { value: "IN_PROGRESS", label: "In Progress" },
   { value: "CLEANED", label: "Completed" },
 ];
-
-const PRIORITY_COLORS: Record<string, string> = {
-  CRITICAL: "text-red-600 bg-red-50 border-red-200",
-  HIGH: "text-orange-600 bg-orange-50 border-orange-200",
-  MEDIUM: "text-yellow-600 bg-yellow-50 border-yellow-200",
-  LOW: "text-green-600 bg-green-50 border-green-200",
-};
 
 export default function TasksPage() {
   const [page, setPage] = useState(1);
@@ -119,18 +111,8 @@ export default function TasksPage() {
               href={`/field-worker/tasks/${report.id}`}
               className="flex items-start gap-4 px-5 py-4 hover:bg-gray-50 transition-colors"
             >
-              {/* Priority dot */}
-              <div
-                className={`mt-1.5 w-2.5 h-2.5 rounded-full flex-shrink-0 ${
-                  report.priority === "CRITICAL"
-                    ? "bg-red-500"
-                    : report.priority === "HIGH"
-                      ? "bg-orange-500"
-                      : report.priority === "MEDIUM"
-                        ? "bg-yellow-500"
-                        : "bg-green-500"
-                }`}
-              />
+              {/* Status dot */}
+              <div className="mt-1.5 w-2.5 h-2.5 rounded-full flex-shrink-0 bg-gray-400" />
 
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2 mb-1.5">
@@ -152,11 +134,6 @@ export default function TasksPage() {
                     {report.barangay?.name || report.address || "No address"}
                   </span>
                   <span>{WASTE_CATEGORY_LABELS[report.category]}</span>
-                  <span
-                    className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border ${PRIORITY_COLORS[report.priority]}`}
-                  >
-                    {PRIORITY_LABELS[report.priority]}
-                  </span>
                   <span>{timeAgo(report.createdAt)}</span>
                   {report.images?.length > 0 && (
                     <span>{report.images.length} photo(s)</span>

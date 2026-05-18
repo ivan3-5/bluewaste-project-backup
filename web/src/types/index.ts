@@ -18,7 +18,6 @@ export interface Report {
   description: string;
   category: WasteCategory;
   status: ReportStatus;
-  priority: Priority;
   latitude: number;
   longitude: number;
   address?: string;
@@ -112,7 +111,6 @@ export interface MapReport {
   title: string;
   category: WasteCategory;
   status: ReportStatus;
-  priority: Priority;
   latitude: number;
   longitude: number;
   address?: string;
@@ -148,6 +146,20 @@ export interface ResortArea {
   };
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ZonePoint {
+  lat: number;
+  lng: number;
+}
+
+export interface ReportingZone {
+  id: string;
+  name: string;
+  coordinates: ZonePoint[];
+  isActive: boolean;
+  createdAt: string;
+  createdBy?: { id: string; firstName: string; lastName: string };
 }
 
 export interface HeatmapPoint {
@@ -207,7 +219,6 @@ export type ReportStatus =
   | "IN_PROGRESS"
   | "CLEANED"
   | "REJECTED";
-export type Priority = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
 export const WASTE_CATEGORY_LABELS: Record<WasteCategory, string> = {
   SOLID_WASTE: "Solid Waste",
@@ -235,11 +246,4 @@ export const STATUS_COLORS: Record<ReportStatus, string> = {
   IN_PROGRESS: "#f97316",
   CLEANED: "#22c55e",
   REJECTED: "#ef4444",
-};
-
-export const PRIORITY_LABELS: Record<Priority, string> = {
-  LOW: "Low",
-  MEDIUM: "Medium",
-  HIGH: "High",
-  CRITICAL: "Critical",
 };

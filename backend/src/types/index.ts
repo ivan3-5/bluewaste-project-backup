@@ -2,19 +2,11 @@ import {
   Role,
   ReportStatus,
   WasteCategory,
-  Priority,
   NotificationType,
   ImageType,
 } from "@prisma/client";
 
-export {
-  Role,
-  ReportStatus,
-  WasteCategory,
-  Priority,
-  NotificationType,
-  ImageType,
-};
+export { Role, ReportStatus, WasteCategory, NotificationType, ImageType };
 
 export interface UserPayload {
   id: string;
@@ -33,7 +25,6 @@ export interface CreateReportInput {
   address?: string;
   barangayId?: string;
   isAnonymous?: boolean;
-  priority?: Priority;
 }
 
 export interface UpdateStatusInput {

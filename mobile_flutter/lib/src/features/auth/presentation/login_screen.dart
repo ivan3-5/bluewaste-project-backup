@@ -18,6 +18,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isSubmitting = false;
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -77,10 +78,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const SizedBox(height: AppSpacing.md),
-                    Image.asset(
-                      "assets/images/logo-bluewaste.png",
-                      height: 72,
-                      fit: BoxFit.contain,
+                    Hero(
+                      tag: 'app_logo',
+                      child: Image.asset(
+                        "assets/images/logo-bluewaste.png",
+                        height: 80,
+                        fit: BoxFit.contain,
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
@@ -124,39 +128,124 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
                             textInputAction: TextInputAction.next,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: "Email",
-                              prefixIcon: Icon(Icons.email_outlined),
+                              prefixIcon: const Icon(Icons.email_outlined),
+                              filled: true,
+                              fillColor: AppColors.background,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide:
+                                    const BorderSide(color: AppColors.border),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide:
+                                    const BorderSide(color: AppColors.border),
+                              ),
                             ),
                           ),
                           const SizedBox(height: AppSpacing.sm),
                           TextField(
                             controller: _passwordController,
-                            obscureText: true,
+                            obscureText: _obscurePassword,
                             onSubmitted: (_) => _handleLogin(),
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: "Password",
-                              prefixIcon: Icon(Icons.lock_outline),
+                              prefixIcon: const Icon(Icons.lock_outline),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                  color: AppColors.mutedForeground,
+                                ),
+                                onPressed: () => setState(
+                                    () => _obscurePassword = !_obscurePassword),
+                              ),
+                              filled: true,
+                              fillColor: AppColors.background,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide:
+                                    const BorderSide(color: AppColors.border),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide:
+                                    const BorderSide(color: AppColors.border),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text(
+                                          "Reset password not implemented yet.")),
+                                );
+                              },
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 4, vertical: 2),
+                                minimumSize: Size.zero,
+                              ),
+                              child: const Text("Forgot password?",
+                                  style:
+                                      TextStyle(fontWeight: FontWeight.w600)),
                             ),
                           ),
                           const SizedBox(height: AppSpacing.md),
                           FilledButton(
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                            ),
                             onPressed: _isSubmitting ? null : _handleLogin,
-                            child: Text(
-                                _isSubmitting ? "Signing in..." : "Sign In"),
+                            child: _isSubmitting
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2, color: Colors.white))
+                                : const Text("Sign In",
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold)),
                           ),
-                          const SizedBox(height: AppSpacing.xs),
-                          OutlinedButton(
-                            onPressed: _isSubmitting
-                                ? null
-                                : () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute<void>(
-                                        builder: (_) => const RegisterScreen(),
-                                      ),
-                                    );
-                                  },
-                            child: const Text("Create Account"),
+                          const SizedBox(height: AppSpacing.lg),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                "Don't have an account?",
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: AppColors.mutedForeground,
+                                    ),
+                              ),
+                              TextButton(
+                                onPressed: _isSubmitting
+                                    ? null
+                                    : () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute<void>(
+                                            builder: (_) =>
+                                                const RegisterScreen(),
+                                          ),
+                                        );
+                                      },
+                                child: const Text("Sign up",
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold)),
+                              ),
+                            ],
                           ),
                         ],
                       ),

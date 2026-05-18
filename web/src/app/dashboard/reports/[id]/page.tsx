@@ -16,7 +16,6 @@ import { Button } from "@/components/ui/button";
 import {
   WASTE_CATEGORY_LABELS,
   REPORT_STATUS_LABELS,
-  PRIORITY_LABELS,
   ReportStatus,
 } from "@/types";
 import { formatDateTime } from "@/lib/utils";
@@ -385,12 +384,6 @@ export default function ReportDetailPage() {
                 <dt className="text-gray-500">Category</dt>
                 <dd className="font-medium text-gray-800">
                   {WASTE_CATEGORY_LABELS[report.category]}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-gray-500">Priority</dt>
-                <dd className="font-medium text-gray-800">
-                  {PRIORITY_LABELS[report.priority]}
                 </dd>
               </div>
               <div>

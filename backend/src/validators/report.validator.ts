@@ -20,7 +20,6 @@ export const createReportSchema = z.object({
   address: z.string().max(500).optional(),
   barangayId: z.string().uuid().optional(),
   isAnonymous: z.boolean().default(false),
-  priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]).default("MEDIUM"),
 });
 
 export const updateStatusSchema = z.object({

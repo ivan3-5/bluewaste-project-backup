@@ -15,6 +15,8 @@ import { createBarangayBoundaryLayer } from "@/components/map/layers/barangayBou
 import {
   MapReport,
   ResortArea,
+  ReportingZone,
+  ZonePoint,
   WASTE_CATEGORY_LABELS,
   REPORT_STATUS_LABELS,
   STATUS_COLORS,
@@ -41,6 +43,10 @@ interface WasteMapProps {
     Polygon,
     BarangayBoundaryProperties
   >;
+  reportingZones?: ReportingZone[];
+  canDrawZone?: boolean;
+  drawZoneMode?: boolean;
+  onDrawZone?: (points: ZonePoint[]) => void;
 }
 
 export const CATEGORY_COLORS: Record<string, string> = {
@@ -51,13 +57,6 @@ export const CATEGORY_COLORS: Record<string, string> = {
   ORGANIC: "#84cc16",
   ELECTRONIC: "#8b5cf6",
   OTHER: "#6b7280",
-};
-
-const PRIORITY_SIZES: Record<string, number> = {
-  CRITICAL: 22,
-  HIGH: 18,
-  MEDIUM: 15,
-  LOW: 12,
 };
 
 const DEFAULT_CENTER: [number, number] = [7.3132, 125.6844];
@@ -71,11 +70,11 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-function createMarkerIcon(category: string, priority: string, status: string) {
+function createMarkerIcon(category: string, status: string) {
   const color = CATEGORY_COLORS[category] || "#6b7280";
   const statusColor =
     (STATUS_COLORS as Record<string, string>)[status] || "#6b7280";
-  const size = PRIORITY_SIZES[priority] || 15;
+  const size = 15;
   const isPending = status === "PENDING";
 
   return L.divIcon({
@@ -99,12 +98,24 @@ export default function WasteMap({
   onDrawRectangle,
   showBarangayBoundaries = true,
   barangayBoundaryGeoJson = PANABO_BARANGAY_BOUNDARIES,
+  reportingZones = [],
+  canDrawZone = false,
+  drawZoneMode = false,
+  onDrawZone,
 }: WasteMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<L.Marker[]>([]);
   const boxLayersRef = useRef<L.Rectangle[]>([]);
+  const zoneLayersRef = useRef<L.Polygon[]>([]);
   const drawnItemsRef = useRef<L.FeatureGroup | null>(null);
+  const zoneDrawControlRef = useRef<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const zoneDrawnItemsRef = useRef<L.FeatureGroup | null>(null);
+  const onDrawZoneRef = useRef(onDrawZone);
+
+  useEffect(() => {
+    onDrawZoneRef.current = onDrawZone;
+  }, [onDrawZone]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const drawControlRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -164,23 +175,35 @@ export default function WasteMap({
     map.addLayer(drawnItems);
     drawnItemsRef.current = drawnItems;
 
+    const zoneDrawnItems = new L.FeatureGroup();
+    map.addLayer(zoneDrawnItems);
+    zoneDrawnItemsRef.current = zoneDrawnItems;
+
     const handleDrawCreated = (event: any) => {
-      if (event.layerType !== "rectangle") {
+      // eslint-disable-line @typescript-eslint/no-explicit-any
+      if (event.layerType === "rectangle") {
+        const layer = event.layer as L.Rectangle;
+        const bounds = layer.getBounds();
+        drawnItems.clearLayers();
+        drawnItems.addLayer(layer);
+        onDrawRectangleRef.current?.({
+          minLat: bounds.getSouth(),
+          maxLat: bounds.getNorth(),
+          minLng: bounds.getWest(),
+          maxLng: bounds.getEast(),
+        });
         return;
       }
-
-      const layer = event.layer as L.Rectangle;
-      const bounds = layer.getBounds();
-
-      drawnItems.clearLayers();
-      drawnItems.addLayer(layer);
-
-      onDrawRectangleRef.current?.({
-        minLat: bounds.getSouth(),
-        maxLat: bounds.getNorth(),
-        minLng: bounds.getWest(),
-        maxLng: bounds.getEast(),
-      });
+      if (event.layerType === "polygon") {
+        const layer = event.layer as L.Polygon;
+        zoneDrawnItems.clearLayers();
+        zoneDrawnItems.addLayer(layer);
+        const latlngs = (layer.getLatLngs()[0] as L.LatLng[]).map((ll) => ({
+          lat: ll.lat,
+          lng: ll.lng,
+        }));
+        onDrawZoneRef.current?.(latlngs);
+      }
     };
     map.on("draw:created", handleDrawCreated);
 
@@ -225,6 +248,14 @@ export default function WasteMap({
 
       boxLayersRef.current.forEach((layer) => layer.remove());
       boxLayersRef.current = [];
+
+      zoneLayersRef.current.forEach((layer) => layer.remove());
+      zoneLayersRef.current = [];
+
+      if (zoneDrawControlRef.current) {
+        map.removeControl(zoneDrawControlRef.current);
+        zoneDrawControlRef.current = null;
+      }
 
       map.stop();
       map.remove();
@@ -335,10 +366,7 @@ export default function WasteMap({
       position: "topright",
       draw: {
         rectangle: {
-          shapeOptions: {
-            color: "#1d4ed8",
-            weight: 2,
-          },
+          shapeOptions: { color: "#1d4ed8", weight: 2 },
         },
         polyline: false,
         polygon: false,
@@ -362,6 +390,96 @@ export default function WasteMap({
       }
     };
   }, [canDraw, drawMode]);
+
+  // ── Zone polygon draw control ─────────────────────────────────────────────
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+
+    if (zoneDrawControlRef.current) {
+      map.removeControl(zoneDrawControlRef.current);
+      zoneDrawControlRef.current = null;
+    }
+
+    if (!canDrawZone || !drawZoneMode) {
+      zoneDrawnItemsRef.current?.clearLayers();
+      return;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const DrawControl = (L as any).Control?.Draw;
+    if (!DrawControl || !zoneDrawnItemsRef.current) return;
+
+    zoneDrawControlRef.current = new DrawControl({
+      position: "topright",
+      draw: {
+        polygon: {
+          allowIntersection: false,
+          showArea: true,
+          shapeOptions: {
+            color: "#2563eb",
+            fillColor: "#3b82f6",
+            fillOpacity: 0.2,
+            weight: 2,
+          },
+          icon: new L.DivIcon({
+            iconSize: new L.Point(8, 8),
+            className: "leaflet-div-icon leaflet-editing-icon",
+          }),
+        },
+        rectangle: false,
+        polyline: false,
+        circle: false,
+        marker: false,
+        circlemarker: false,
+      },
+      edit: {
+        featureGroup: zoneDrawnItemsRef.current,
+        edit: false,
+        remove: false,
+      },
+    });
+
+    map.addControl(zoneDrawControlRef.current);
+
+    return () => {
+      if (zoneDrawControlRef.current) {
+        map.removeControl(zoneDrawControlRef.current);
+        zoneDrawControlRef.current = null;
+      }
+    };
+  }, [canDrawZone, drawZoneMode]);
+
+  // ── Reporting zone polygons ───────────────────────────────────────────────
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+
+    zoneLayersRef.current.forEach((l) => l.remove());
+    zoneLayersRef.current = [];
+
+    reportingZones
+      .filter((z) => z.isActive)
+      .forEach((zone) => {
+        const latlngs = zone.coordinates.map(
+          (p) => [p.lat, p.lng] as [number, number],
+        );
+        const polygon = L.polygon(latlngs, {
+          color: "#2563eb",
+          weight: 2,
+          fillColor: "#3b82f6",
+          fillOpacity: 0.15,
+          dashArray: undefined,
+        });
+        polygon.bindTooltip(zone.name, {
+          permanent: false,
+          direction: "center",
+          className: "waste-marker-tooltip",
+        });
+        polygon.addTo(map);
+        zoneLayersRef.current.push(polygon);
+      });
+  }, [reportingZones]);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -411,7 +529,7 @@ export default function WasteMap({
 
     reports.forEach((report) => {
       const marker = L.marker([report.latitude, report.longitude], {
-        icon: createMarkerIcon(report.category, report.priority, report.status),
+        icon: createMarkerIcon(report.category, report.status),
       });
 
       const catColor = CATEGORY_COLORS[report.category] || "#6b7280";
@@ -425,7 +543,7 @@ export default function WasteMap({
         <div class="waste-popup">
           <div class="waste-popup-header" style="background:${catColor};">
             <span class="waste-popup-cat">${(WASTE_CATEGORY_LABELS as Record<string, string>)[report.category]}</span>
-            <span class="waste-popup-priority">${report.priority}</span>
+
           </div>
           <div class="waste-popup-body">
             ${imgHtml}
@@ -486,17 +604,10 @@ export default function WasteMap({
 
     if (!showHeatmap || reports.length === 0) return;
 
-    const PRIORITY_WEIGHT: Record<string, number> = {
-      CRITICAL: 1.0,
-      HIGH: 0.75,
-      MEDIUM: 0.5,
-      LOW: 0.25,
-    };
-
     const heatData: [number, number, number][] = reports.map((r) => [
       r.latitude,
       r.longitude,
-      PRIORITY_WEIGHT[r.priority] ?? 0.5,
+      0.5,
     ]);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

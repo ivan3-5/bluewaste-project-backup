@@ -18,6 +18,7 @@ import {
   ImagePlus,
   Sparkles,
 } from "lucide-react";
+import { useReportingZones, isPointInAnyZone } from "@/hooks/useReportingZones";
 
 interface AnalyzeWasteResult {
   detectedObject: string;
@@ -47,6 +48,8 @@ const MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024;
 export default function ReportWastePage() {
   const router = useRouter();
   const { user, token, isLoading } = useAuth();
+  const { data: reportingZones = [] } = useReportingZones(true);
+  const [outsideZone, setOutsideZone] = useState(false);
 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -58,6 +61,23 @@ export default function ReportWastePage() {
   const [locationStatus, setLocationStatus] = useState<string>("");
   const [address, setAddress] = useState<string>("");
   const [decisionNotice, setDecisionNotice] = useState<string>("");
+
+  // Re-validate zone membership whenever location OR zones change (fixes race condition)
+  useEffect(() => {
+    if (
+      latitude === null ||
+      longitude === null ||
+      reportingZones.length === 0
+    ) {
+      setOutsideZone(false);
+      return;
+    }
+    const inside = isPointInAnyZone(latitude, longitude, reportingZones);
+    setOutsideZone(!inside);
+    if (!inside) {
+      setLocationStatus("Location is outside the designated coastal zone.");
+    }
+  }, [latitude, longitude, reportingZones]);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -118,7 +138,8 @@ export default function ReportWastePage() {
       (position) => {
         setLatitude(position.coords.latitude);
         setLongitude(position.coords.longitude);
-        setLocationStatus("Location added.");
+        // outsideZone is computed reactively by the useEffect above
+        setLocationStatus("Location captured.");
       },
       () => {
         setLocationStatus("Unable to access your location.");
@@ -138,6 +159,17 @@ export default function ReportWastePage() {
 
     if (!token) {
       setError("Please login to analyze and save reports.");
+      return;
+    }
+
+    // Hard zone guard — catches any bypass (e.g. zones loaded after button render)
+    if (
+      latitude !== null &&
+      longitude !== null &&
+      reportingZones.length > 0 &&
+      !isPointInAnyZone(latitude, longitude, reportingZones)
+    ) {
+      setError("Reporting is only allowed within the designated coastal zone.");
       return;
     }
 
@@ -274,6 +306,11 @@ export default function ReportWastePage() {
                   </span>
                 )}
               </div>
+              {outsideZone && (
+                <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-800">
+                  Reporting is only allowed within the designated coastal zone.
+                </p>
+              )}
             </div>
 
             {previewUrl && (
@@ -295,7 +332,7 @@ export default function ReportWastePage() {
               type="button"
               className="w-full md:w-auto"
               onClick={handleAnalyzeWaste}
-              disabled={isAnalyzing || !imageFile}
+              disabled={isAnalyzing || !imageFile || outsideZone}
             >
               {isAnalyzing ? (
                 <>

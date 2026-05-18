@@ -14,7 +14,6 @@ import {
   WasteCategory,
   WASTE_CATEGORY_LABELS,
   REPORT_STATUS_LABELS,
-  PRIORITY_LABELS,
   Report,
 } from "@/types";
 import { formatDateTime } from "@/lib/utils";
@@ -211,9 +210,6 @@ export default function ReportsPage() {
                 Status
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">
-                Priority
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">
                 Reporter
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">
@@ -231,7 +227,7 @@ export default function ReportsPage() {
             {isLoading ? (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={7}
                   className="px-4 py-10 text-center text-gray-400"
                 >
                   Loading...
@@ -240,7 +236,7 @@ export default function ReportsPage() {
             ) : reports.length === 0 ? (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={7}
                   className="px-4 py-10 text-center text-gray-400"
                 >
                   No reports found
@@ -262,9 +258,6 @@ export default function ReportsPage() {
                   </td>
                   <td className="px-4 py-3">
                     <StatusBadge status={report.status} />
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {PRIORITY_LABELS[report.priority]}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">
                     {report.isAnonymous

@@ -35,13 +35,6 @@ enum WasteCategory {
   OTHER
 }
 
-enum Priority {
-  LOW
-  MEDIUM
-  HIGH
-  CRITICAL
-}
-
 enum ImageType {
   REPORT
   CLEANUP
@@ -100,6 +93,8 @@ model User {
   activityLogs    ActivityLog[]
   // AI-assisted waste detections
   wasteReports    WasteReport[]
+  // Reporting zones created by admin
+  reportingZones  ReportingZone[]
 
   @@index([role])
   @@index([role, isActive])
@@ -112,7 +107,6 @@ model Report {
   description String
   category    WasteCategory
   status      ReportStatus  @default(PENDING)
-  priority    Priority      @default(MEDIUM)
   latitude    Float
   longitude   Float
   address     String?
@@ -292,4 +286,20 @@ model WasteReport {
   @@index([createdAt])
   @@index([reporterId])
   @@index([reporterId, createdAt])
+}
+
+model ReportingZone {
+  id          String   @id @default(uuid())
+  name        String
+  // GeoJSON-style ring: array of {lat, lng} objects
+  coordinates Json
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  @@index([isActive])
+  @@index([createdById])
 }

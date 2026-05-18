@@ -18,6 +18,7 @@ import analyticsRoutes from "./routes/analytics.routes";
 import uploadRoutes from "./routes/upload.routes";
 import wasteReportRoutes from "./routes/wasteReport.routes";
 import resortBoxRoutes from "./routes/resortBox.routes";
+import reportingZoneRoutes from "./routes/reportingZone.routes";
 import { ReportService } from "./services/report.service";
 
 const app = express();
@@ -133,6 +134,7 @@ app.use("/api/analytics", analyticsRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/waste-reports", wasteReportRoutes);
 app.use("/api/resort-boxes", resortBoxRoutes);
+app.use("/api/reporting-zones", reportingZoneRoutes);
 
 // Error handler
 app.use(errorHandler);

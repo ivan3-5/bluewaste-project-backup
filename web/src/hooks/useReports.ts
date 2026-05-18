@@ -115,7 +115,6 @@ export function useCreateReport() {
       address?: string;
       barangayId?: string;
       isAnonymous?: boolean;
-      priority?: string;
     }) => {
       const { data } = await api.post("/reports", reportData);
       return data;

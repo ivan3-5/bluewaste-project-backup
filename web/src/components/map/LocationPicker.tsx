@@ -7,6 +7,7 @@ import "leaflet/dist/leaflet.css";
 interface LocationPickerProps {
   value: { lat: number; lng: number } | null;
   onChange: (loc: { lat: number; lng: number }) => void;
+  zones?: Array<{ coordinates: Array<{ lat: number; lng: number }> }>;
 }
 
 const PANABO: [number, number] = [7.3132, 125.6844];
@@ -32,10 +33,12 @@ function buildMarkerIcon() {
 export default function LocationPicker({
   value,
   onChange,
+  zones = [],
 }: LocationPickerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
+  const zoneLayersRef = useRef<L.Polygon[]>([]);
   // Stable ref so closures inside useEffect always call the latest onChange
   const onChangeRef = useRef(onChange);
   // Ref to the placeMarker fn so handleGps can call it after effect teardown
@@ -110,9 +113,35 @@ export default function LocationPicker({
       mapRef.current = null;
       markerRef.current = null;
       placeMarkerRef.current = null;
+      zoneLayersRef.current = [];
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── Render zone polygons ─────────────────────────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    // Remove previous zone layers
+    zoneLayersRef.current.forEach((l) => l.remove());
+    zoneLayersRef.current = [];
+
+    zones.forEach((zone) => {
+      const latlngs = zone.coordinates.map(
+        (p) => [p.lat, p.lng] as [number, number],
+      );
+      const polygon = L.polygon(latlngs, {
+        color: "#2563eb",
+        weight: 2,
+        fillColor: "#3b82f6",
+        fillOpacity: 0.12,
+        dashArray: "6 4",
+      });
+      polygon.addTo(map);
+      zoneLayersRef.current.push(polygon);
+    });
+  }, [zones]);
 
   // ── GPS handler ─────────────────────────────────────────────────────────
   const handleGps = () => {

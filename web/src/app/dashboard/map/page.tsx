@@ -4,6 +4,11 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useMapData } from "@/hooks/useReports";
 import { useCreateResortArea, useResortAreaes } from "@/hooks/useResortBoxes";
+import {
+  useReportingZones,
+  useCreateReportingZone,
+  useDeleteReportingZone,
+} from "@/hooks/useReportingZones";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/providers/AuthProvider";
@@ -13,8 +18,19 @@ import {
   WASTE_CATEGORY_LABELS,
   REPORT_STATUS_LABELS,
   MapReport,
+  ZonePoint,
 } from "@/types";
-import { Layers, MapPin, X, ChevronRight, Square } from "lucide-react";
+import {
+  Layers,
+  MapPin,
+  X,
+  ChevronRight,
+  Square,
+  PenLine,
+  Trash2,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,28 +38,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 const WasteMap = dynamic(() => import("@/components/map/WasteMap"), {
   ssr: false,
 });
-
-const PRIORITY_STYLES: Record<
-  string,
-  { bg: string; text: string; border: string }
-> = {
-  CRITICAL: {
-    bg: "bg-red-50",
-    text: "text-red-600",
-    border: "border-red-200",
-  },
-  HIGH: {
-    bg: "bg-orange-50",
-    text: "text-orange-600",
-    border: "border-orange-200",
-  },
-  MEDIUM: {
-    bg: "bg-yellow-50",
-    text: "text-yellow-700",
-    border: "border-yellow-200",
-  },
-  LOW: { bg: "bg-gray-50", text: "text-gray-600", border: "border-gray-200" },
-};
 
 const STATUS_PILL_LIST: Array<{
   value: ReportStatus | "";
@@ -78,6 +72,14 @@ export default function MapPage() {
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [selectedReport, setSelectedReport] = useState<MapReport | null>(null);
   const [drawMode, setDrawMode] = useState(false);
+  const [drawZoneMode, setDrawZoneMode] = useState(false);
+  const [hiddenZoneIds, setHiddenZoneIds] = useState<Set<string>>(new Set());
+  const [pendingZonePoints, setPendingZonePoints] = useState<
+    ZonePoint[] | null
+  >(null);
+  const [showZoneModal, setShowZoneModal] = useState(false);
+  const [zoneName, setZoneName] = useState("");
+  const [zoneSaveError, setZoneSaveError] = useState("");
   const [pendingBounds, setPendingBounds] = useState<{
     minLat: number;
     maxLat: number;
@@ -93,6 +95,9 @@ export default function MapPage() {
   const [mapInstance, setMapInstance] = useState<any>(null);
 
   const createResortArea = useCreateResortArea();
+  const { data: reportingZones = [] } = useReportingZones(false);
+  const createZone = useCreateReportingZone();
+  const deleteZone = useDeleteReportingZone();
 
   const { data: resortBoxes = [] } = useResortAreaes(false, canViewBoxes);
   const showCurrentBoxes = false;
@@ -174,6 +179,46 @@ export default function MapPage() {
     },
     [ownerId, resortAdmins],
   );
+
+  const handleDrawZone = useCallback((points: ZonePoint[]) => {
+    setPendingZonePoints(points);
+    setZoneName("");
+    setZoneSaveError("");
+    setShowZoneModal(true);
+  }, []);
+
+  const resetZoneForm = () => {
+    setPendingZonePoints(null);
+    setZoneName("");
+    setZoneSaveError("");
+    setShowZoneModal(false);
+    setDrawZoneMode(false);
+  };
+
+  const handleSaveZone = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!zoneName.trim()) {
+      setZoneSaveError("Please provide a zone name.");
+      return;
+    }
+    if (!pendingZonePoints || pendingZonePoints.length < 3) {
+      setZoneSaveError("Draw a polygon on the map first.");
+      return;
+    }
+    try {
+      await createZone.mutateAsync({
+        name: zoneName.trim(),
+        coordinates: pendingZonePoints,
+      });
+      resetZoneForm();
+    } catch (error: any) {
+      setZoneSaveError(
+        error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          "Failed to save zone.",
+      );
+    }
+  };
 
   const resetBoxForm = () => {
     setPendingBounds(null);
@@ -280,23 +325,43 @@ export default function MapPage() {
 
         <div className="ml-auto flex items-center gap-2">
           {isLGUAdmin && (
-            <Button
-              variant={drawMode ? "default" : "outline"}
-              size="sm"
-              className="h-7 gap-1.5 text-xs"
-              onClick={() => {
-                setDrawMode((prev) => {
-                  const next = !prev;
-                  if (!next) {
+            <>
+              <Button
+                variant={drawMode ? "default" : "outline"}
+                size="sm"
+                className="h-7 gap-1.5 text-xs"
+                onClick={() => {
+                  setDrawMode((prev) => {
+                    const next = !prev;
+                    if (!next) resetBoxForm();
+                    return next;
+                  });
+                  if (drawZoneMode) setDrawZoneMode(false);
+                }}
+              >
+                <Square className="h-3.5 w-3.5" />
+                {drawMode ? "Cancel" : "Draw Box"}
+              </Button>
+              <Button
+                variant={drawZoneMode ? "default" : "outline"}
+                size="sm"
+                className="h-7 gap-1.5 text-xs"
+                onClick={() => {
+                  setDrawZoneMode((prev) => {
+                    const next = !prev;
+                    if (!next) resetZoneForm();
+                    return next;
+                  });
+                  if (drawMode) {
+                    setDrawMode(false);
                     resetBoxForm();
                   }
-                  return next;
-                });
-              }}
-            >
-              <Square className="h-3.5 w-3.5" />
-              {drawMode ? "Cancel Draw" : "Draw Box"}
-            </Button>
+                }}
+              >
+                <PenLine className="h-3.5 w-3.5" />
+                {drawZoneMode ? "Cancel Zone" : "Draw Zone"}
+              </Button>
+            </>
           )}
 
           {/* Category filter */}
@@ -356,6 +421,12 @@ export default function MapPage() {
               canDraw={isLGUAdmin}
               drawMode={drawMode}
               onDrawRectangle={handleDrawRectangle}
+              reportingZones={reportingZones.filter(
+                (z) => !hiddenZoneIds.has(z.id),
+              )}
+              canDrawZone={isLGUAdmin}
+              drawZoneMode={drawZoneMode}
+              onDrawZone={handleDrawZone}
             />
           )}
 
@@ -371,7 +442,7 @@ export default function MapPage() {
                 <span className="text-[10px] text-gray-500">High</span>
               </div>
               <p className="mt-1 text-[9px] text-gray-400 text-center">
-                Weighted by report priority
+                Report density by location
               </p>
             </div>
           )}
@@ -405,28 +476,6 @@ export default function MapPage() {
                 </button>
               ))}
             </div>
-          </div>
-
-          {/* Marker size legend */}
-          <div className="absolute bottom-6 right-4 z-[1000] rounded-xl border border-gray-100 bg-white/96 p-3 shadow-lg backdrop-blur-sm">
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">
-              Priority
-            </p>
-            {(
-              [
-                { label: "Critical", textCls: "text-red-500 font-semibold" },
-                { label: "High", textCls: "text-orange-500 font-semibold" },
-                { label: "Medium", textCls: "text-yellow-500 font-semibold" },
-                { label: "Low", textCls: "text-gray-500" },
-              ] as const
-            ).map(({ label, textCls }) => (
-              <div key={label} className="mb-1.5 flex items-center gap-2">
-                <div
-                  className={`flex-shrink-0 rounded-full border-2 border-white shadow priority-dot-${label.toUpperCase()}`}
-                />
-                <span className={`text-xs ${textCls}`}>{label}</span>
-              </div>
-            ))}
           </div>
         </div>
 
@@ -463,7 +512,7 @@ export default function MapPage() {
               )}
 
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {/* Category + Priority */}
+                {/* Category */}
                 <div className="flex flex-wrap items-center gap-2">
                   <span
                     className={`rounded-full px-2.5 py-1 text-xs font-bold text-white bg-cat-${selectedReport.category}`}
@@ -473,11 +522,6 @@ export default function MapPage() {
                         selectedReport.category
                       ]
                     }
-                  </span>
-                  <span
-                    className={`rounded-full border px-2 py-1 text-xs font-bold ${PRIORITY_STYLES[selectedReport.priority]?.bg} ${PRIORITY_STYLES[selectedReport.priority]?.text} ${PRIORITY_STYLES[selectedReport.priority]?.border}`}
-                  >
-                    {selectedReport.priority}
                   </span>
                 </div>
 
@@ -687,6 +731,117 @@ export default function MapPage() {
           </div>
         </div>
       )}
+
+      {/* ── Save Zone Modal ── */}
+      {showZoneModal && isLGUAdmin && (
+        <div className="absolute inset-0 z-[2000] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-base font-bold text-gray-900">
+                Save Reporting Zone
+              </h2>
+              <button
+                aria-label="Close"
+                onClick={resetZoneForm}
+                className="rounded-md p-1 text-gray-400 hover:bg-gray-100"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {pendingZonePoints && (
+              <p className="mb-3 rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-700">
+                Polygon drawn with {pendingZonePoints.length} points. Name it
+                below to save.
+              </p>
+            )}
+
+            <form className="space-y-3" onSubmit={handleSaveZone}>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Zone Name <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  value={zoneName}
+                  onChange={(e) => setZoneName(e.target.value)}
+                  placeholder="e.g. Panabo Coastal Zone"
+                />
+              </div>
+
+              {zoneSaveError && (
+                <p className="rounded-md border border-red-200 bg-red-50 px-2.5 py-2 text-sm text-red-700">
+                  {zoneSaveError}
+                </p>
+              )}
+
+              <div className="flex justify-end gap-2 pt-1">
+                <Button type="button" variant="outline" onClick={resetZoneForm}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={createZone.isPending}>
+                  {createZone.isPending ? "Saving..." : "Save Zone"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Zone management sidebar (admin) ── */}
+      {isLGUAdmin &&
+        reportingZones.length > 0 &&
+        !drawZoneMode &&
+        !showZoneModal && (
+          <div className="absolute bottom-6 right-4 z-[1000] w-52 rounded-xl border border-blue-100 bg-white/96 p-3 shadow-lg backdrop-blur-sm">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-blue-500">
+              Reporting Zones
+            </p>
+            <div className="space-y-1.5 max-h-40 overflow-y-auto">
+              {reportingZones.map((zone) => (
+                <div
+                  key={zone.id}
+                  className="flex items-center justify-between gap-2 rounded-md px-1.5 py-0.5"
+                >
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <div className="h-2.5 w-2.5 flex-shrink-0 rounded-full border border-blue-400 bg-blue-300/40" />
+                    <span className="text-xs text-gray-700 truncate">
+                      {zone.name}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-0.5 flex-shrink-0">
+                    <button
+                      title={
+                        hiddenZoneIds.has(zone.id) ? "Show zone" : "Hide zone"
+                      }
+                      onClick={() =>
+                        setHiddenZoneIds((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(zone.id)) next.delete(zone.id);
+                          else next.add(zone.id);
+                          return next;
+                        })
+                      }
+                      className="rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+                    >
+                      {hiddenZoneIds.has(zone.id) ? (
+                        <EyeOff className="h-3 w-3" />
+                      ) : (
+                        <Eye className="h-3 w-3" />
+                      )}
+                    </button>
+                    <button
+                      title="Delete zone"
+                      onClick={() => deleteZone.mutate(zone.id)}
+                      className="flex-shrink-0 rounded p-0.5 text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
     </div>
   );
 }

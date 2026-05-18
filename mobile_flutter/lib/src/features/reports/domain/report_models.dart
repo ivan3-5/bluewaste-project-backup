@@ -91,7 +91,6 @@ class ReportRecord {
     required this.description,
     required this.category,
     required this.status,
-    required this.priority,
     required this.latitude,
     required this.longitude,
     required this.isAnonymous,
@@ -107,7 +106,6 @@ class ReportRecord {
   final String description;
   final String category;
   final String status;
-  final String priority;
   final double latitude;
   final double longitude;
   final String? address;
@@ -141,7 +139,6 @@ class ReportRecord {
       description: (json["description"] ?? "").toString(),
       category: (json["category"] ?? "OTHER").toString(),
       status: (json["status"] ?? "PENDING").toString(),
-      priority: (json["priority"] ?? "MEDIUM").toString(),
       latitude: parseDouble(json["latitude"], 0),
       longitude: parseDouble(json["longitude"], 0),
       address: json["address"]?.toString(),

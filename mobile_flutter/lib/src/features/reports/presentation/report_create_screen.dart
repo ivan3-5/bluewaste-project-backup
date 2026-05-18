@@ -4,10 +4,12 @@ import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:geolocator/geolocator.dart";
 import "package:image_picker/image_picker.dart";
+import "package:dio/dio.dart";
 
 import "../../../core/theme/app_colors.dart";
 import "../../../core/theme/app_spacing.dart";
 import "../../../core/ui/app_components.dart";
+import "../../../core/config/app_env.dart";
 import "../data/report_service.dart";
 import "../domain/report_models.dart";
 
@@ -31,6 +33,7 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
   double? _latitude;
   double? _longitude;
   bool _isSubmitting = false;
+  bool _isOutsideZone = false;
 
   bool get _hasLocation => _latitude != null && _longitude != null;
 
@@ -101,10 +104,75 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
       desiredAccuracy: LocationAccuracy.high,
     );
 
+    // Validate against active reporting zones
+    final outside = await _checkOutsideZones(
+      position.latitude,
+      position.longitude,
+    );
+
     setState(() {
       _latitude = position.latitude;
       _longitude = position.longitude;
+      _isOutsideZone = outside;
     });
+
+    if (outside) {
+      _showMessage(
+        "Reporting is only allowed within designated coastal zones.",
+      );
+    }
+  }
+
+  /// Returns true if [lat]/[lng] is NOT inside any active reporting zone.
+  /// Falls back to false (allow) on network errors so offline users aren't blocked.
+  Future<bool> _checkOutsideZones(double lat, double lng) async {
+    try {
+      final dio = Dio(BaseOptions(
+        baseUrl: AppEnv.apiBaseUrl,
+        connectTimeout: const Duration(seconds: 6),
+        receiveTimeout: const Duration(seconds: 6),
+      ));
+      final response = await dio.get<List<dynamic>>(
+        "/reporting-zones",
+        queryParameters: <String, dynamic>{"activeOnly": "true"},
+      );
+      final zones = response.data;
+      if (zones == null || zones.isEmpty) return false;
+      for (final zone in zones) {
+        final coords = (zone["coordinates"] as List<dynamic>)
+            .map((c) => <String, double>{
+                  "lat": (c["lat"] as num).toDouble(),
+                  "lng": (c["lng"] as num).toDouble(),
+                })
+            .toList();
+        if (_pointInPolygon(lat, lng, coords)) return false;
+      }
+      return true;
+    } catch (_) {
+      return false; // Allow on error
+    }
+  }
+
+  /// Ray-casting point-in-polygon test.
+  bool _pointInPolygon(
+    double lat,
+    double lng,
+    List<Map<String, double>> polygon,
+  ) {
+    bool inside = false;
+    final n = polygon.length;
+    int j = n - 1;
+    for (int i = 0; i < n; i++) {
+      final xi = polygon[i]["lng"]!;
+      final yi = polygon[i]["lat"]!;
+      final xj = polygon[j]["lng"]!;
+      final yj = polygon[j]["lat"]!;
+      final intersect = ((yi > lat) != (yj > lat)) &&
+          (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+      if (intersect) inside = !inside;
+      j = i;
+    }
+    return inside;
   }
 
   Future<void> _submitReport() async {
@@ -124,6 +192,14 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
 
     if (_latitude == null || _longitude == null) {
       _showMessage("Please capture your location first.");
+      return;
+    }
+
+    // Hard zone guard — catches any state mismatch
+    if (_isOutsideZone) {
+      _showMessage(
+        "Reporting is only allowed within the designated coastal zone.",
+      );
       return;
     }
 
@@ -187,7 +263,8 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
       if (_descriptionController.text.trim().length < 20) "Description",
       if (!_hasLocation) "Location",
     ];
-    final canSubmit = !_isSubmitting && missingRequirements.isEmpty;
+    final canSubmit =
+        !_isSubmitting && missingRequirements.isEmpty && !_isOutsideZone;
     final hasPhotoSlots = _remainingImageSlots > 0;
 
     return ListView(
