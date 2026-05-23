@@ -185,7 +185,7 @@ export default function TaskDetailPage() {
                         : "text-green-600 bg-green-50 border-green-200"
                 }`}
               >
-                {PRIORITY_LABELS[report.priority]}
+                {PRIORITY_LABELS[report.priority ?? "LOW"]}
               </span>
               <span className="text-xs text-gray-500">
                 {WASTE_CATEGORY_LABELS[report.category]}

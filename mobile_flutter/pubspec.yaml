@@ -29,14 +29,14 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: false
-  image_path: assets/images/logo-bluewaste.png
-  adaptive_icon_foreground: assets/images/logo-bluewaste.png
+  image_path: assets/images/logo-final.png
+  adaptive_icon_foreground: assets/images/logo-final.png
   adaptive_icon_background: "#FFFFFF"
   min_sdk_android: 21
 
 flutter_native_splash:
   color: "#FFFFFF"
-  image: assets/images/logo-bluewaste.png
+  image: assets/images/logo-final.png
   android: true
   ios: false
   web: false
@@ -44,11 +44,11 @@ flutter_native_splash:
   fullscreen: true
   android_12:
     color: "#FFFFFF"
-    image: assets/images/logo-bluewaste.png
+    image: assets/images/logo-final.png
     icon_background_color: "#FFFFFF"
 
 flutter:
   uses-material-design: true
   assets:
     - assets/charls.png
-    - assets/images/logo-bluewaste.png
+    - assets/images/logo-final.png

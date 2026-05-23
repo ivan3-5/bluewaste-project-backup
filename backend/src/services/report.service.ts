@@ -1167,4 +1167,26 @@ export class ReportService {
 
     return deletedReport;
   }
+
+  static async hardDeleteAllReports() {
+    const results = await prisma.$transaction(async (tx) => {
+      const notifications = await tx.notification.deleteMany({
+        where: { reportId: { not: null } },
+      });
+      const statusHistory = await tx.statusHistory.deleteMany({});
+      const images = await tx.reportImage.deleteMany({});
+      const reports = await tx.report.deleteMany({});
+
+      return { notifications, statusHistory, images, reports };
+    });
+
+    this.invalidateGeoCaches();
+
+    return {
+      reports: results.reports.count,
+      images: results.images.count,
+      statusHistory: results.statusHistory.count,
+      notifications: results.notifications.count,
+    };
+  }
 }

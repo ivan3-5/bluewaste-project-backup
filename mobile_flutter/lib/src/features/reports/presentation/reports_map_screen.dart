@@ -32,6 +32,13 @@ class _ReportsMapScreenState extends ConsumerState<ReportsMapScreen>
   static const double _fixedMarkerDiameter = 23;
   static const double _fixedDotSize = 5;
 
+  static const Map<String, double> _priorityCoreSizes = {
+    "CRITICAL": 22,
+    "HIGH": 19,
+    "MEDIUM": 15,
+    "LOW": 13,
+  };
+
   final MapController _mapController = MapController();
   late final AnimationController _markerPulseController;
   List<ReportRecord> _reports = const [];

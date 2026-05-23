@@ -60,11 +60,19 @@ class _CitizenShellScreenState extends ConsumerState<CitizenShellScreen> {
       appBar: AppBar(
         title: Text(
           titles[_index],
-          style: const TextStyle(fontWeight: FontWeight.w700),
+          style: const TextStyle(
+            fontWeight: FontWeight.w800,
+            fontSize: 24,
+            letterSpacing: -0.5,
+          ),
         ),
+        elevation: 0,
+        centerTitle: false,
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 10),
+            padding: const EdgeInsets.only(right: 16),
             child: InkWell(
               borderRadius: BorderRadius.circular(999),
               onTap: () {
@@ -74,32 +82,32 @@ class _CitizenShellScreenState extends ConsumerState<CitizenShellScreen> {
                   ),
                 );
               },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.secondary,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircleAvatar(
-                      radius: 14,
-                      backgroundColor: AppColors.tint(AppColors.primary),
-                      foregroundImage: profileImage,
-                      child: profileImage == null
-                          ? Text(
-                              initials,
-                              style: const TextStyle(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 12,
-                              ),
-                            )
-                          : null,
+              child: Hero(
+                tag: "profile_avatar",
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.15),
+                      width: 2,
                     ),
-                  ],
+                  ),
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: AppColors.tint(AppColors.primary, opacity: 0.1),
+                    foregroundImage: profileImage,
+                    child: profileImage == null
+                        ? Text(
+                            initials,
+                            style: const TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
+                            ),
+                          )
+                        : null,
+                  ),
                 ),
               ),
             ),
@@ -110,35 +118,36 @@ class _CitizenShellScreenState extends ConsumerState<CitizenShellScreen> {
       bottomNavigationBar: SafeArea(
         top: false,
         minimum: const EdgeInsets.fromLTRB(
-          AppSpacing.sm,
+          AppSpacing.md,
           0,
-          AppSpacing.sm,
-          AppSpacing.sm,
+          AppSpacing.md,
+          AppSpacing.md,
         ),
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: AppColors.card,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.border),
+            borderRadius: BorderRadius.circular(28),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 18,
+                color: AppColors.primary.withValues(alpha: 0.08),
+                blurRadius: 24,
+                spreadRadius: 2,
                 offset: const Offset(0, 8),
               ),
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(28),
             child: NavigationBar(
-              height: 66,
+              height: 70,
               elevation: 0,
               shadowColor: Colors.transparent,
               surfaceTintColor: Colors.transparent,
               backgroundColor: Colors.transparent,
-              indicatorColor: AppColors.tint(AppColors.primary, opacity: 0.16),
+              indicatorColor: AppColors.tint(AppColors.primary, opacity: 0.12),
               labelBehavior:
-                  NavigationDestinationLabelBehavior.onlyShowSelected,
+                  NavigationDestinationLabelBehavior.alwaysShow,
+              animationDuration: const Duration(milliseconds: 300),
               selectedIndex: _index,
               onDestinationSelected: (value) => setState(() => _index = value),
               destinations: const [

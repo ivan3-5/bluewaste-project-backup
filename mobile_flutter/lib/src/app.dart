@@ -1,7 +1,9 @@
 import "package:flutter/material.dart";
 
 import "core/theme/app_theme.dart";
-import "features/auth/presentation/root_switcher_screen.dart";
+import "features/auth/presentation/onboarding_screen.dart";
+
+import "features/auth/presentation/login_screen.dart";
 
 class BlueWasteApp extends StatelessWidget {
   const BlueWasteApp({super.key});
@@ -12,7 +14,18 @@ class BlueWasteApp extends StatelessWidget {
       title: "BlueWaste",
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      home: const RootSwitcherScreen(),
+      home: Builder(
+        builder: (context) => OnboardingScreen(
+          onGetStarted: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const LoginScreen(),
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 }

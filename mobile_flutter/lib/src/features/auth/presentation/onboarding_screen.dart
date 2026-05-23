@@ -69,108 +69,101 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [AppColors.secondary, AppColors.background],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.md,
-                  AppSpacing.xs,
-                  AppSpacing.md,
-                  0,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: widget.onGetStarted,
-                      child: Text(_isLastPage ? "Continue" : "Skip"),
-                    ),
-                  ],
-                ),
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
               ),
-              Expanded(
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: _pages.length,
-                  onPageChanged: (index) {
-                    setState(() => _pageIndex = index);
-                  },
-                  itemBuilder: (context, index) {
-                    final page = _pages[index];
-                    return _OnboardingPage(
-                      page: page,
-                      pageIndex: index,
-                      totalPages: _pages.length,
-                    );
-                  },
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.md,
-                  AppSpacing.xs,
-                  AppSpacing.md,
-                  AppSpacing.lg,
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List<Widget>.generate(_pages.length, (index) {
-                        final active = index == _pageIndex;
-                        return AnimatedContainer(
-                          duration: const Duration(milliseconds: 220),
-                          margin: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.xxs),
-                          height: 8,
-                          width: active ? 22 : 8,
-                          decoration: BoxDecoration(
-                            color: active
-                                ? AppColors.primary
-                                : AppColors.tint(
-                                    AppColors.mutedForeground,
-                                    opacity: 0.3,
-                                  ),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                        );
-                      }),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Image.asset(
+                    'assets/logo-final.png',
+                    height: 32,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const SizedBox(height: 32),
+                  ),
+                  TextButton(
+                    onPressed: widget.onGetStarted,
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.mutedForeground,
+                      textStyle: const TextStyle(fontWeight: FontWeight.w600),
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton.icon(
-                        onPressed: _goNext,
-                        icon: Icon(
-                          _isLastPage
-                              ? Icons.login_rounded
-                              : Icons.arrow_forward_rounded,
+                    child: Text(_isLastPage ? "Done" : "Skip"),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: PageView.builder(
+                controller: _pageController,
+                itemCount: _pages.length,
+                onPageChanged: (index) {
+                  setState(() => _pageIndex = index);
+                },
+                itemBuilder: (context, index) {
+                  final page = _pages[index];
+                  return _OnboardingPage(
+                    page: page,
+                    pageIndex: index,
+                    totalPages: _pages.length,
+                  );
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List<Widget>.generate(_pages.length, (index) {
+                      final active = index == _pageIndex;
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOutCubic,
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        height: 6,
+                        width: active ? 28 : 12,
+                        decoration: BoxDecoration(
+                          color: active
+                              ? AppColors.primary
+                              : AppColors.border,
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        label: Text(_isLastPage ? "Get Started" : "Next"),
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                        backgroundColor: AppColors.primary,
+                      ),
+                      onPressed: _goNext,
+                      child: Text(
+                        _isLastPage ? "Get Started" : "Continue",
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.xxs),
-                    Text(
-                      "You can create an account or sign in on the next screen.",
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.mutedForeground,
-                          ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -191,83 +184,70 @@ class _OnboardingPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.md,
-        AppSpacing.sm,
-        AppSpacing.md,
-        AppSpacing.sm,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.xs,
-                vertical: AppSpacing.xxs,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.tint(page.color),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                "Step ${pageIndex + 1} of $totalPages",
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: page.color,
-                      fontWeight: FontWeight.w700,
-                    ),
-              ),
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: AppColors.tint(page.color, opacity: 0.1),
+              borderRadius: BorderRadius.circular(32),
+            ),
+            child: Icon(
+              page.icon,
+              color: page.color,
+              size: 80,
             ),
           ),
-          const Spacer(),
-          CircleAvatar(
-            radius: 34,
-            backgroundColor: AppColors.tint(page.color, opacity: 0.18),
-            child: Icon(page.icon, color: page.color, size: 32),
-          ),
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: 48),
           Text(
             page.title,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.w800,
+                  color: AppColors.foreground,
+                  letterSpacing: -0.5,
                 ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: AppSpacing.xs),
+          const SizedBox(height: 16),
           Text(
             page.description,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: AppColors.mutedForeground,
-                  height: 1.4,
+                  height: 1.5,
                 ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: 32),
           Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(AppSpacing.sm),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
             decoration: BoxDecoration(
-              color: AppColors.card,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
+              color: AppColors.secondary,
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.check_circle_outline, color: page.color, size: 18),
-                const SizedBox(width: AppSpacing.xs),
-                Expanded(
-                  child: Text(
-                    page.highlight,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.mutedForeground,
-                          fontWeight: FontWeight.w600,
-                        ),
-                  ),
+                Icon(
+                  Icons.check_circle_rounded,
+                  color: page.color,
+                  size: 20,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Text(
+                  page.highlight,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.foreground,
+                        fontWeight: FontWeight.w600,
+                      ),
                 ),
               ],
             ),
           ),
-          const Spacer(flex: 2),
         ],
       ),
     );

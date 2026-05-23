@@ -13,6 +13,7 @@ import {
   ClipboardList,
   Map,
   Bell,
+  User,
 } from "lucide-react";
 import { useUnreadCount } from "@/hooks/useNotifications";
 import { FieldWorkerLayoutSkeleton } from "@/components/skeletons/page-skeletons";
@@ -33,6 +34,7 @@ export default function FieldWorkerLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const { data: unreadData } = useUnreadCount();
 
   useEffect(() => {
@@ -75,8 +77,9 @@ export default function FieldWorkerLayout({
               sizes="44px"
               className="h-11 w-11 rounded-lg object-contain"
             />
-            <span className="hidden sm:inline text-xl font-bold text-primary">
-              BlueWaste
+            <span className="hidden sm:inline text-xl font-bold">
+              <span className="text-primary">Blue</span>
+              <span className="text-gray-900">Waste</span>
             </span>
           </Link>
 
@@ -109,22 +112,53 @@ export default function FieldWorkerLayout({
           </nav>
 
           {/* Desktop User Info */}
-          <div className="hidden md:flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-sm font-medium text-gray-700">
-                {user.firstName} {user.lastName}
-              </p>
-              <p className="text-xs text-gray-500">Field Worker</p>
-            </div>
+          <div className="hidden md:flex items-center gap-3 relative">
             <button
-              onClick={() => {
-                logout();
-                router.push("/");
-              }}
-              className="text-sm font-medium bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition-colors"
+              onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors focus:outline-none"
             >
-              Logout
+              {user.avatarUrl ? (
+                <Image
+                  src={user.avatarUrl}
+                  alt={user.firstName}
+                  width={40}
+                  height={40}
+                  className="rounded-full object-cover w-full h-full"
+                />
+              ) : (
+                <User className="w-5 h-5" />
+              )}
             </button>
+
+            {profileMenuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setProfileMenuOpen(false)}
+                />
+                <div className="absolute right-0 top-12 mt-2 w-48 bg-white rounded-lg shadow-lg border py-2 z-50">
+                  <div className="px-4 py-2 border-b mb-2">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {user.firstName} {user.lastName}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {user.email}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setProfileMenuOpen(false);
+                      logout();
+                      router.push("/");
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-50 transition-colors text-left"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </button>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Mobile: Menu button */}

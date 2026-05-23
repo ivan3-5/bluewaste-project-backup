@@ -60,7 +60,6 @@ export default function FieldWorkerDashboard() {
       color: "text-green-600 bg-green-50",
     },
   ];
-  ];
 
   if (loadingAll) {
     return (
@@ -161,9 +160,7 @@ export default function FieldWorkerDashboard() {
                 href={`/field-worker/tasks/${report.id}`}
                 className="flex items-start gap-4 px-5 py-4 hover:bg-gray-50 transition-colors"
               >
-                <div
-                  className="mt-1 w-2 h-2 rounded-full flex-shrink-0 bg-gray-400"
-                />
+                <div className="mt-1 w-2 h-2 rounded-full flex-shrink-0 bg-gray-400" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <p className="text-sm font-medium text-gray-900 truncate">

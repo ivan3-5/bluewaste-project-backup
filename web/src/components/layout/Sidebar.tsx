@@ -86,7 +86,10 @@ export function Sidebar() {
               sizes="36px"
               className="h-9 w-9 rounded-lg object-contain"
             />
-            <span className="text-xl font-bold text-primary">BlueWaste</span>
+            <span className="text-xl font-bold">
+              <span className="text-primary">Blue</span>
+              <span className="text-black">Waste</span>
+            </span>
           </Link>
         )}
 

@@ -219,6 +219,27 @@ export class ReportController {
     }
   }
 
+  static async purgeAllReports(req: AuthRequest, res: Response) {
+    try {
+      if (req.body?.confirm !== "DELETE_ALL_REPORTS") {
+        return sendError(
+          res,
+          400,
+          'Missing confirmation token. Send confirm: "DELETE_ALL_REPORTS".',
+          "REPORT_PURGE_CONFIRMATION_REQUIRED",
+        );
+      }
+
+      const summary = await ReportService.hardDeleteAllReports();
+      res.json({
+        message: "All reports deleted successfully",
+        ...summary,
+      });
+    } catch (error: any) {
+      sendError(res, 500, "Failed to purge reports", "REPORT_PURGE_FAILED");
+    }
+  }
+
   static async restoreSpam(req: AuthRequest, res: Response) {
     try {
       const restored = await ReportService.restoreFromSpam(

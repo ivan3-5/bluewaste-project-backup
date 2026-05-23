@@ -219,6 +219,31 @@ export function useDeleteReport() {
   });
 }
 
+export function usePurgeReports() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await api.delete("/reports/purge", {
+        data: { confirm: "DELETE_ALL_REPORTS" },
+      });
+      return data as {
+        message: string;
+        reports: number;
+        images: number;
+        statusHistory: number;
+        notifications: number;
+      };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+      queryClient.invalidateQueries({ queryKey: ["map-data"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
+      queryClient.invalidateQueries({ queryKey: ["report"] });
+    },
+  });
+}
+
 export function useAnalyzeReportImage() {
   const queryClient = useQueryClient();
 

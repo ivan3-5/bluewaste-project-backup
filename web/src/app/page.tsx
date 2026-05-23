@@ -2,10 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import dynamic from "next/dynamic";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import type { MapReport } from "@/types";
 import {
   MapPin,
   BarChart3,
@@ -16,77 +14,12 @@ import {
   Leaf,
   TrendingUp,
   Zap,
+  Navigation,
   ChevronRight,
   Clock,
   Menu,
   X,
 } from "lucide-react";
-
-const WasteMapPreview = dynamic(() => import("@/components/map/WasteMap"), {
-  ssr: false,
-  loading: () => (
-    <div className="flex h-full w-full items-center justify-center bg-slate-50 text-sm text-slate-500">
-      Loading map preview...
-    </div>
-  ),
-});
-
-const HERO_MAP_CENTER: [number, number] = [7.3132, 125.6844];
-
-const heroMapPreviewReports: MapReport[] = [
-  {
-    id: "hero-map-1",
-    title: "Overflowing garbage near market road",
-    category: "SOLID_WASTE",
-    status: "PENDING",
-    priority: "HIGH",
-    latitude: 7.3069,
-    longitude: 125.6831,
-    address: "Market Road, Panabo City",
-    createdAt: "2026-04-12T08:20:00.000Z",
-    barangay: { id: "brgy-1", name: "A. O. Floirendo" },
-    images: [],
-  },
-  {
-    id: "hero-map-2",
-    title: "Mixed waste beside drainage line",
-    category: "HAZARDOUS",
-    status: "VERIFIED",
-    priority: "CRITICAL",
-    latitude: 7.3145,
-    longitude: 125.688,
-    address: "Purok 3 drainage line",
-    createdAt: "2026-04-11T14:05:00.000Z",
-    barangay: { id: "brgy-2", name: "Gredu" },
-    images: [],
-  },
-  {
-    id: "hero-map-3",
-    title: "Illegal dump site near creek",
-    category: "ORGANIC",
-    status: "CLEANUP_SCHEDULED",
-    priority: "MEDIUM",
-    latitude: 7.3194,
-    longitude: 125.6762,
-    address: "Creekside pathway",
-    createdAt: "2026-04-10T09:50:00.000Z",
-    barangay: { id: "brgy-3", name: "Kasilak" },
-    images: [],
-  },
-  {
-    id: "hero-map-4",
-    title: "Scattered recyclables near terminal",
-    category: "RECYCLABLE",
-    status: "IN_PROGRESS",
-    priority: "LOW",
-    latitude: 7.3101,
-    longitude: 125.6915,
-    address: "City terminal frontage",
-    createdAt: "2026-04-12T11:35:00.000Z",
-    barangay: { id: "brgy-4", name: "San Francisco" },
-    images: [],
-  },
-];
 
 const steps = [
   {
@@ -130,13 +63,13 @@ const features = [
     icon: Users,
     title: "LGU Workforce Dispatch",
     description:
-      "Barangay admins assign field workers instantly. Real-time status updates keep everyone in the loop.",
+      "Admin assign field workers instantly. Real-time status updates keep everyone in the loop.",
   },
   {
     icon: BarChart3,
     title: "Analytics Dashboard",
     description:
-      "Visualize waste hotspots, track resolution rates, and generate reports by barangay, date, or category.",
+      "Visualize waste hotspots, and generate reports, date, or category.",
   },
   {
     icon: Shield,
@@ -145,10 +78,10 @@ const features = [
       "Every cleanup is closed with photo evidence — ensuring accountability from report to resolution.",
   },
   {
-    icon: TrendingUp,
-    title: "Trend Monitoring",
+    icon: Navigation,
+    title: "Accurate GPS Tagging",
     description:
-      "Identify recurring problem areas and seasonal patterns to proactively plan city-wide clean-up drives.",
+      "Pinpoint exact waste locations utilizing highly accurate GPS tagging for rapid LGU response and navigation.",
   },
   {
     icon: Leaf,
@@ -181,10 +114,14 @@ export default function HomePage() {
                 height={44}
                 quality={100}
                 sizes="44px"
-                className="h-11 w-11 rounded-lg object-contain"
+                className="h-11 w-11 object-contain"
+                unoptimized
                 priority
               />
-              <span className="text-xl font-bold text-primary">BlueWaste</span>
+              <span className="text-xl font-bold">
+                <span className="text-primary">Blue</span>
+                <span className="text-gray-900">Waste</span>
+              </span>
             </div>
 
             <nav className="hidden md:flex items-center text-sm font-medium text-gray-600">
@@ -294,11 +231,11 @@ export default function HomePage() {
         <div className="absolute inset-0 pointer-events-none hero-noise opacity-25" />
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            <div className="lg:col-span-7 text-center lg:text-left">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-4 items-center">
+            <div className="lg:col-span-6 text-center lg:text-left">
               <div className="inline-flex items-center gap-2 bg-blue-50/90 border border-blue-200 text-blue-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-6 shadow-sm">
-                <Leaf className="w-3.5 h-3.5 text-blue-500" />
-                Now serving all 38 barangays of Panabo City
+                <Leaf className="w-3.5 h-3.5 text-green-500" />
+                Now serving the coastal communities of Panabo City
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 leading-[1.08] tracking-tight">
@@ -344,15 +281,17 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="lg:col-span-5">
-              <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-200/70">
-                <div className="h-[320px] sm:h-[360px]">
-                  <WasteMapPreview
-                    reports={heroMapPreviewReports}
-                    center={HERO_MAP_CENTER}
-                    zoom={13}
-                  />
-                </div>
+            <div className="lg:col-span-6 relative flex items-center justify-center lg:justify-end mt-8 lg:mt-0">
+              <div className="relative group w-full scale-110 sm:scale-125 lg:scale-[1.25] lg:translate-x-12 xl:translate-x-16 transform transition-transform duration-700 ease-out origin-center">
+                <Image
+                  src="/hero-right-image.png"
+                  alt="BlueWaste System Dashboard Preview"
+                  width={1200}
+                  height={900}
+                  className="w-full h-auto object-contain transform transition-transform duration-700 ease-out group-hover:scale-105"
+                  priority
+                  unoptimized
+                />
               </div>
             </div>
           </div>
@@ -411,8 +350,7 @@ export default function HomePage() {
               Everything you need in one platform
             </h2>
             <p className="mt-4 text-gray-500 max-w-xl mx-auto text-base">
-              Built for citizens, barangay field workers, and city
-              administrators alike.
+              Built for citizens,field workers, and city administrators alike.
             </p>
           </div>
 
@@ -446,8 +384,8 @@ export default function HomePage() {
             Ready to make Panabo City cleaner?
           </h2>
           <p className="mt-4 text-blue-100 text-base max-w-xl mx-auto leading-relaxed">
-            Join thousands of residents already reporting waste and tracking
-            cleanups across the city — completely free.
+            Be part of the solution. Join residents already reporting waste and
+            tracking cleanups across the city—completely free.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/register">
@@ -470,56 +408,118 @@ export default function HomePage() {
               </Button>
             </Link>
           </div>
-          {/* Inline trust row */}
-          <div className="mt-10 flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-blue-100 font-medium">
-            <span className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5" /> Average 48h response time
-            </span>
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5" /> 92% cleanup success rate
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Leaf className="w-3.5 h-3.5" /> 38 barangays covered
-            </span>
-          </div>
         </div>
       </section>
 
       {/* ── Footer ── */}
-      <footer className="bg-white border-t py-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center space-x-2">
-            <Image
-              src="/logo-bluewaste.png"
-              alt="BlueWaste logo"
-              width={36}
-              height={36}
-              quality={100}
-              sizes="36px"
-              className="h-9 w-9 rounded-md object-contain"
-            />
-            <span className="font-semibold text-gray-700">BlueWaste</span>
+      <footer className="bg-slate-50 border-t border-slate-200 pt-16 pb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-12">
+            <div className="md:col-span-5 lg:col-span-6">
+              <div className="flex items-center space-x-2 mb-4">
+                <Image
+                  src="/logo-bluewaste.png"
+                  alt="BlueWaste logo"
+                  width={36}
+                  height={36}
+                  quality={100}
+                  sizes="36px"
+                  className="h-9 w-9 object-contain"
+                  unoptimized
+                />
+                <span className="text-xl font-bold">
+                  <span className="text-primary">Blue</span>
+                  <span className="text-gray-900">Waste</span>
+                </span>
+              </div>
+              <p className="text-sm text-slate-500 max-w-sm leading-relaxed mb-6">
+                Empowering the citizens of Panabo City to proactively report
+                waste issues, ensuring a cleaner, greener, and healthier coastal
+                environment for everyone.
+              </p>
+            </div>
+
+            <div className="md:col-span-3 lg:col-span-3">
+              <h4 className="font-semibold text-gray-900 mb-4 tracking-tight">
+                Platform
+              </h4>
+              <ul className="space-y-3 text-sm text-slate-500">
+                <li>
+                  <Link
+                    href="/register"
+                    className="hover:text-primary transition-colors"
+                  >
+                    Report Waste
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/map"
+                    className="hover:text-primary transition-colors"
+                  >
+                    Interactive Map
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="#how-it-works"
+                    className="hover:text-primary transition-colors"
+                  >
+                    How It Works
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            <div className="md:col-span-4 lg:col-span-3">
+              <h4 className="font-semibold text-gray-900 mb-4 tracking-tight">
+                Account & Legal
+              </h4>
+              <ul className="space-y-3 text-sm text-slate-500">
+                <li>
+                  <Link
+                    href="/login"
+                    className="hover:text-primary transition-colors"
+                  >
+                    Citizen Login
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/register"
+                    className="hover:text-primary transition-colors"
+                  >
+                    Create Account
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="#"
+                    className="hover:text-primary transition-colors"
+                  >
+                    Privacy Policy
+                  </Link>
+                </li>
+              </ul>
+            </div>
           </div>
-          <p className="text-sm text-gray-400">
-            © {new Date().getFullYear()} BlueWaste · Panabo City Smart Waste
-            Management Platform
-          </p>
-          <div className="flex items-center gap-4 text-sm">
-            <Link href="/login">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 px-3 text-sm border-primary text-primary"
-              >
-                Login
-              </Button>
-            </Link>
-            <Link
-              href="/register"
-              className="hover:text-gray-700 transition-colors"
-            >
-              Register
-            </Link>
+
+          <div className="pt-8 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-sm text-slate-400">
+              © {new Date().getFullYear()} BlueWaste. Panabo City Smart Waste
+              Management.
+            </p>
+            <div className="flex gap-4">
+              <Link href="/login">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-4 text-xs font-semibold border-slate-200 text-slate-600 hover:text-primary hover:border-primary"
+                >
+                  Admin Portal
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </footer>

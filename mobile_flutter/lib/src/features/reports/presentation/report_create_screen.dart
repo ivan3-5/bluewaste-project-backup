@@ -23,7 +23,6 @@ class ReportCreateScreen extends ConsumerStatefulWidget {
 class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _addressController = TextEditingController();
 
   final List<XFile> _images = <XFile>[];
   final ImagePicker _picker = ImagePicker();
@@ -43,7 +42,6 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-    _addressController.dispose();
     super.dispose();
   }
 
@@ -178,7 +176,6 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
   Future<void> _submitReport() async {
     final title = _titleController.text.trim();
     final description = _descriptionController.text.trim();
-    final address = _addressController.text.trim();
 
     if (title.length < 5) {
       _showMessage("Title must be at least 5 characters.");
@@ -213,7 +210,6 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
         category: _category,
         latitude: _latitude!,
         longitude: _longitude!,
-        address: address.isEmpty ? null : address,
         isAnonymous: _isAnonymous,
       );
 
@@ -227,7 +223,6 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
 
       _titleController.clear();
       _descriptionController.clear();
-      _addressController.clear();
 
       setState(() {
         _images.clear();
@@ -357,15 +352,6 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
                 },
               ),
               const SizedBox(height: AppSpacing.sm),
-              TextField(
-                controller: _addressController,
-                onChanged: (_) => setState(() {}),
-                decoration: const InputDecoration(
-                  labelText: "Address / Landmark",
-                  prefixIcon: Icon(Icons.place_outlined),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
               Container(
                 decoration: BoxDecoration(
                   color: AppColors.secondary,

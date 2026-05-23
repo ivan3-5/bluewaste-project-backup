@@ -45,7 +45,10 @@ export function Header() {
             sizes="36px"
             className="h-9 w-9 rounded-md object-contain"
           />
-          <span className="font-bold text-primary">BlueWaste</span>
+          <span className="font-bold">
+            <span className="text-primary">Blue</span>
+            <span className="text-black">Waste</span>
+          </span>
         </div>
 
         <div className="hidden md:block">

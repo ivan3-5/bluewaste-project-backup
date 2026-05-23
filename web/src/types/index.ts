@@ -18,6 +18,7 @@ export interface Report {
   description: string;
   category: WasteCategory;
   status: ReportStatus;
+  priority?: ReportPriority;
   latitude: number;
   longitude: number;
   address?: string;
@@ -220,6 +221,8 @@ export type ReportStatus =
   | "CLEANED"
   | "REJECTED";
 
+export type ReportPriority = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+
 export const WASTE_CATEGORY_LABELS: Record<WasteCategory, string> = {
   SOLID_WASTE: "Solid Waste",
   HAZARDOUS: "Hazardous",
@@ -237,6 +240,13 @@ export const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {
   IN_PROGRESS: "In Progress",
   CLEANED: "Cleaned",
   REJECTED: "Rejected",
+};
+
+export const PRIORITY_LABELS: Record<ReportPriority, string> = {
+  LOW: "Low",
+  MEDIUM: "Medium",
+  HIGH: "High",
+  CRITICAL: "Critical",
 };
 
 export const STATUS_COLORS: Record<ReportStatus, string> = {

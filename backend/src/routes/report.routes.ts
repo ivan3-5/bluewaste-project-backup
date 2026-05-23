@@ -54,6 +54,13 @@ router.post(
   validate(createReportSchema),
   ReportController.create,
 );
+
+router.delete(
+  "/purge",
+  authenticate,
+  authorize("LGU_ADMIN"),
+  ReportController.purgeAllReports,
+);
 router.get("/my-reports", authenticate, ReportController.getMyReports);
 router.get(
   "/assigned",
