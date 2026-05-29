@@ -51,13 +51,24 @@ export interface Report {
   updatedAt: string;
 }
 
-export type AiWasteType = "RECYCLABLE" | "NON_RECYCLABLE" | "ORGANIC";
+export type WasteType = "PLASTIC" | "ORGANIC" | "GLASS" | "METAL" | "PAPER";
+
+export type WasteSeverity = "low" | "medium" | "high";
+
+export interface WasteDetection {
+  type: WasteType;
+  confidence: number;
+  bbox: number[];
+}
 
 export interface WasteReport {
   id: string;
   imageUrl: string;
   detectedObject: string;
-  wasteType: AiWasteType;
+  detections: WasteDetection[];
+  dominantWaste?: WasteType | null;
+  totalItems: number;
+  severity: WasteSeverity;
   confidence: number;
   labels: string[];
   latitude?: number | null;

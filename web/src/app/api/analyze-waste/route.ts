@@ -280,8 +280,10 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify({
           imageUrl: uploadedImage.url,
           detectedObject: classification.detectedObject,
-          wasteType: classification.wasteTypeCode,
-          confidence: classification.confidence,
+          detections: classification.wasteDetections,
+          dominantWaste: classification.dominantWaste,
+          totalItems: classification.totalItems,
+          severity: classification.severity,
           labels: classification.labels,
           latitude,
           longitude,
@@ -298,8 +300,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       detectedObject: classification.detectedObject,
-      wasteType: classification.wasteType,
-      wasteTypeCode: classification.wasteTypeCode,
+      dominantWaste: classification.dominantWaste,
+      totalItems: classification.totalItems,
+      severity: classification.severity,
       wasteCategory: classification.wasteCategory,
       confidence: classification.confidence,
       status,

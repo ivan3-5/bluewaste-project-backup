@@ -36,10 +36,12 @@ Enum NotificationType {
   SYSTEM
 }
 
-Enum AiWasteType {
-  RECYCLABLE
-  NON_RECYCLABLE
+Enum WasteType {
+  PLASTIC
   ORGANIC
+  GLASS
+  METAL
+  PAPER
 }
 
 Enum AnalysisStatus {
@@ -129,7 +131,10 @@ Table WasteReport {
   id             uuid        [pk]
   imageUrl       varchar
   detectedObject varchar
-  wasteType      AiWasteType
+  detections     json
+  dominantWaste  WasteType   [null]
+  totalItems     int
+  severity       varchar
   confidence     float
   latitude       float       [null]
   longitude      float       [null]

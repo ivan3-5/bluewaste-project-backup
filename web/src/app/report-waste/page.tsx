@@ -5,6 +5,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { DetectionBox } from "@/lib/waste-classification";
+import type { WasteSeverity, WasteType } from "@/types";
 import DetectionImageOverlay from "@/components/ai/DetectionImageOverlay";
 import { getApiErrorMessage } from "@/lib/apiError";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,7 +23,9 @@ import { useReportingZones, isPointInAnyZone } from "@/hooks/useReportingZones";
 
 interface AnalyzeWasteResult {
   detectedObject: string;
-  wasteType: "Recyclable" | "Non-recyclable" | "Organic";
+  dominantWaste: WasteType | null;
+  totalItems: number;
+  severity: WasteSeverity;
   confidence: number;
   imageUrl: string;
   top_confidence?: number | null;
@@ -36,10 +39,26 @@ interface AnalyzeWasteResult {
   detections: DetectionBox[];
 }
 
-const CATEGORY_STYLES: Record<AnalyzeWasteResult["wasteType"], string> = {
-  Recyclable: "bg-green-100 text-green-800 border-green-200",
-  Organic: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  "Non-recyclable": "bg-red-100 text-red-800 border-red-200",
+const WASTE_TYPE_LABELS: Record<WasteType, string> = {
+  PLASTIC: "Plastic",
+  ORGANIC: "Organic",
+  GLASS: "Glass",
+  METAL: "Metal",
+  PAPER: "Paper",
+};
+
+const WASTE_TYPE_STYLES: Record<WasteType, string> = {
+  PLASTIC: "bg-blue-100 text-blue-800 border-blue-200",
+  ORGANIC: "bg-emerald-100 text-emerald-800 border-emerald-200",
+  GLASS: "bg-teal-100 text-teal-800 border-teal-200",
+  METAL: "bg-amber-100 text-amber-800 border-amber-200",
+  PAPER: "bg-slate-100 text-slate-800 border-slate-200",
+};
+
+const SEVERITY_STYLES: Record<WasteSeverity, string> = {
+  low: "bg-green-100 text-green-800 border-green-200",
+  medium: "bg-amber-100 text-amber-800 border-amber-200",
+  high: "bg-red-100 text-red-800 border-red-200",
 };
 
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -376,13 +395,19 @@ export default function ReportWastePage() {
 
                 <div>
                   <p className="text-xs uppercase tracking-wide text-gray-500">
-                    Waste classification
+                    Dominant waste
                   </p>
-                  <span
-                    className={`mt-1 inline-flex rounded-full border px-3 py-1 text-sm font-semibold ${CATEGORY_STYLES[result.wasteType]}`}
-                  >
-                    {result.wasteType}
-                  </span>
+                  {result.dominantWaste ? (
+                    <span
+                      className={`mt-1 inline-flex rounded-full border px-3 py-1 text-sm font-semibold ${WASTE_TYPE_STYLES[result.dominantWaste]}`}
+                    >
+                      {WASTE_TYPE_LABELS[result.dominantWaste]}
+                    </span>
+                  ) : (
+                    <span className="mt-1 inline-flex rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-sm font-semibold text-gray-700">
+                      Unclassified
+                    </span>
+                  )}
                 </div>
 
                 <div>
@@ -400,16 +425,27 @@ export default function ReportWastePage() {
                   )}
                 </div>
 
-                {result.detections.length > 0 && (
+                {result.totalItems > 0 && (
                   <div>
                     <p className="text-xs uppercase tracking-wide text-gray-500">
-                      Bounding boxes
+                      Detected items
                     </p>
                     <p className="text-sm font-medium text-gray-900">
-                      {result.detections.length} object(s) detected
+                      {result.totalItems} object(s) detected
                     </p>
                   </div>
                 )}
+
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-gray-500">
+                    Severity
+                  </p>
+                  <span
+                    className={`mt-1 inline-flex rounded-full border px-3 py-1 text-sm font-semibold ${SEVERITY_STYLES[result.severity]}`}
+                  >
+                    {result.severity}
+                  </span>
+                </div>
 
                 {(latitude !== null ||
                   longitude !== null ||

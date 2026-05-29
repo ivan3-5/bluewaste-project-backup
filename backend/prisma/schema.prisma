@@ -44,10 +44,12 @@ enum NotificationType {
   SYSTEM
 }
 
-enum AiWasteType {
-  RECYCLABLE
-  NON_RECYCLABLE
+enum WasteType {
+  PLASTIC
   ORGANIC
+  GLASS
+  METAL
+  PAPER
 }
 
 enum AnalysisStatus {
@@ -208,7 +210,10 @@ model WasteReport {
   id             String      @id @default(uuid())
   imageUrl       String
   detectedObject String
-  wasteType      AiWasteType
+  detections     Json        @default("[]")
+  dominantWaste  WasteType?
+  totalItems     Int         @default(0)
+  severity       String      @default("low")
   confidence     Float
   latitude       Float?
   longitude      Float?
@@ -220,7 +225,7 @@ model WasteReport {
   reporterId String?
   reporter   User?   @relation(fields: [reporterId], references: [id], onDelete: SetNull)
 
-  @@index([wasteType])
+  @@index([dominantWaste])
   @@index([createdAt])
   @@index([reporterId])
   @@index([reporterId, createdAt])

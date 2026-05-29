@@ -6,7 +6,12 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/providers/AuthProvider";
 import { useCreateReport, useUploadReportImages } from "@/hooks/useReports";
 import { useReportingZones, isPointInAnyZone } from "@/hooks/useReportingZones";
-import { WASTE_CATEGORY_LABELS, WasteCategory } from "@/types";
+import {
+  WASTE_CATEGORY_LABELS,
+  WasteCategory,
+  WasteSeverity,
+  WasteType,
+} from "@/types";
 import { getApiErrorMessage } from "@/lib/apiError";
 import { DetectionBox, inferWasteCategory } from "@/lib/waste-classification";
 import DetectionImageOverlay from "@/components/ai/DetectionImageOverlay";
@@ -34,7 +39,9 @@ const MAX_IMAGE_SIZE_BYTES = 8 * 1024 * 1024;
 
 type AnalyzeWasteResult = {
   detectedObject: string;
-  wasteType: "Recyclable" | "Non-recyclable" | "Organic";
+  dominantWaste: WasteType | null;
+  totalItems: number;
+  severity: WasteSeverity;
   wasteCategory?: WasteCategory;
   confidence: number;
   status: "DIRTY" | "CLEAN";
@@ -51,10 +58,26 @@ type AnalyzeWasteResult = {
   detections: DetectionBox[];
 };
 
-const ANALYSIS_TYPE_STYLES: Record<AnalyzeWasteResult["wasteType"], string> = {
-  Recyclable: "bg-green-100 text-green-700 border-green-200",
-  Organic: "bg-amber-100 text-amber-700 border-amber-200",
-  "Non-recyclable": "bg-red-100 text-red-700 border-red-200",
+const WASTE_TYPE_LABELS: Record<WasteType, string> = {
+  PLASTIC: "Plastic",
+  ORGANIC: "Organic",
+  GLASS: "Glass",
+  METAL: "Metal",
+  PAPER: "Paper",
+};
+
+const DOMINANT_WASTE_STYLES: Record<WasteType, string> = {
+  PLASTIC: "bg-blue-100 text-blue-700 border-blue-200",
+  ORGANIC: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  GLASS: "bg-teal-100 text-teal-700 border-teal-200",
+  METAL: "bg-amber-100 text-amber-700 border-amber-200",
+  PAPER: "bg-slate-100 text-slate-700 border-slate-200",
+};
+
+const SEVERITY_STYLES: Record<WasteSeverity, string> = {
+  low: "bg-green-100 text-green-700 border-green-200",
+  medium: "bg-amber-100 text-amber-700 border-amber-200",
+  high: "bg-red-100 text-red-700 border-red-200",
 };
 
 function mapAnalysisToCategory(result: AnalyzeWasteResult): WasteCategory {
@@ -62,14 +85,7 @@ function mapAnalysisToCategory(result: AnalyzeWasteResult): WasteCategory {
     return result.wasteCategory;
   }
 
-  const wasteTypeCode =
-    result.wasteType === "Organic"
-      ? "ORGANIC"
-      : result.wasteType === "Recyclable"
-        ? "RECYCLABLE"
-        : "NON_RECYCLABLE";
-
-  return inferWasteCategory(result.labels || [], wasteTypeCode);
+  return inferWasteCategory(result.labels || [], result.dominantWaste);
 }
 
 function buildDefaultDescription(category: WasteCategory) {
@@ -373,18 +389,35 @@ export default function SubmitReportPage() {
       rawWasteCategory in WASTE_CATEGORY_LABELS
         ? (rawWasteCategory as WasteCategory)
         : undefined;
+    const rawDominantWaste = payload?.dominantWaste;
+    const dominantWaste =
+      typeof rawDominantWaste === "string" &&
+      rawDominantWaste in WASTE_TYPE_LABELS
+        ? (rawDominantWaste as WasteType)
+        : null;
+    const totalItems = toNonNegativeInt(
+      payload?.totalItems,
+      Array.isArray(payload?.detections) ? payload.detections.length : 0,
+    );
+    const severity: WasteSeverity =
+      payload?.severity === "low" ||
+      payload?.severity === "medium" ||
+      payload?.severity === "high"
+        ? payload.severity
+        : totalItems >= 7
+          ? "high"
+          : totalItems >= 3
+            ? "medium"
+            : "low";
 
     return {
       detectedObject:
         typeof payload?.detectedObject === "string"
           ? payload.detectedObject
           : "unknown",
-      wasteType:
-        payload?.wasteType === "Recyclable" ||
-        payload?.wasteType === "Organic" ||
-        payload?.wasteType === "Non-recyclable"
-          ? payload.wasteType
-          : "Non-recyclable",
+      dominantWaste,
+      totalItems,
+      severity,
       confidence:
         typeof payload?.confidence === "number" &&
         Number.isFinite(payload.confidence)
@@ -723,12 +756,34 @@ export default function SubmitReportPage() {
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-500">
-                          Classification
+                          Dominant waste
                         </span>
+                        {analysisResult.dominantWaste ? (
+                          <span
+                            className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${DOMINANT_WASTE_STYLES[analysisResult.dominantWaste]}`}
+                          >
+                            {WASTE_TYPE_LABELS[analysisResult.dominantWaste]}
+                          </span>
+                        ) : (
+                          <span className="rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] font-semibold text-gray-700">
+                            Unclassified
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-500">Severity</span>
                         <span
-                          className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${ANALYSIS_TYPE_STYLES[analysisResult.wasteType]}`}
+                          className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${SEVERITY_STYLES[analysisResult.severity]}`}
                         >
-                          {analysisResult.wasteType}
+                          {analysisResult.severity}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-500">
+                          Total items
+                        </span>
+                        <span className="text-xs font-semibold text-gray-800">
+                          {analysisResult.totalItems}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">

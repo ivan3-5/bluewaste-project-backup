@@ -8,17 +8,28 @@ import { useMyWasteReports } from "@/hooks/useWasteReports";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/utils";
+import type { WasteSeverity, WasteType } from "@/types";
 
-const WASTE_TYPE_STYLES: Record<string, string> = {
-  RECYCLABLE: "bg-green-100 text-green-800 border-green-200",
-  ORGANIC: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  NON_RECYCLABLE: "bg-red-100 text-red-800 border-red-200",
+const WASTE_TYPE_STYLES: Record<WasteType, string> = {
+  PLASTIC: "bg-blue-100 text-blue-800 border-blue-200",
+  ORGANIC: "bg-emerald-100 text-emerald-800 border-emerald-200",
+  GLASS: "bg-teal-100 text-teal-800 border-teal-200",
+  METAL: "bg-amber-100 text-amber-800 border-amber-200",
+  PAPER: "bg-slate-100 text-slate-800 border-slate-200",
 };
 
-const WASTE_TYPE_LABELS: Record<string, string> = {
-  RECYCLABLE: "Recyclable",
+const WASTE_TYPE_LABELS: Record<WasteType, string> = {
+  PLASTIC: "Plastic",
   ORGANIC: "Organic",
-  NON_RECYCLABLE: "Non-recyclable",
+  GLASS: "Glass",
+  METAL: "Metal",
+  PAPER: "Paper",
+};
+
+const SEVERITY_STYLES: Record<WasteSeverity, string> = {
+  low: "bg-green-100 text-green-800 border-green-200",
+  medium: "bg-amber-100 text-amber-800 border-amber-200",
+  high: "bg-red-100 text-red-800 border-red-200",
 };
 
 export default function MyWasteReportsPage() {
@@ -98,19 +109,44 @@ export default function MyWasteReportsPage() {
                   <div className="space-y-3">
                     <div>
                       <p className="text-xs uppercase tracking-wide text-gray-500">
-                        Waste Type
+                        Dominant waste
+                      </p>
+                      {report.dominantWaste ? (
+                        <span
+                          className={`mt-1 inline-flex rounded-full border px-3 py-1 text-sm font-semibold ${WASTE_TYPE_STYLES[report.dominantWaste]}`}
+                        >
+                          {WASTE_TYPE_LABELS[report.dominantWaste]}
+                        </span>
+                      ) : (
+                        <span className="mt-1 inline-flex rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-sm font-semibold text-gray-700">
+                          Unclassified
+                        </span>
+                      )}
+                    </div>
+
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-gray-500">
+                        Total items
+                      </p>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {report.totalItems}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-gray-500">
+                        Severity
                       </p>
                       <span
-                        className={`mt-1 inline-flex rounded-full border px-3 py-1 text-sm font-semibold ${WASTE_TYPE_STYLES[report.wasteType] || WASTE_TYPE_STYLES.NON_RECYCLABLE}`}
+                        className={`mt-1 inline-flex rounded-full border px-3 py-1 text-sm font-semibold ${SEVERITY_STYLES[report.severity]}`}
                       >
-                        {WASTE_TYPE_LABELS[report.wasteType] ||
-                          "Non-recyclable"}
+                        {report.severity}
                       </span>
                     </div>
 
                     <div>
                       <p className="text-xs uppercase tracking-wide text-gray-500">
-                        Confidence
+                        Top confidence
                       </p>
                       <p className="text-sm font-semibold text-gray-900">
                         {(report.confidence * 100).toFixed(1)}%

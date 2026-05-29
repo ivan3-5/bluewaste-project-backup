@@ -1,6 +1,9 @@
-import type { WasteCategory } from "@/types";
-
-export type WasteTypeCode = "RECYCLABLE" | "NON_RECYCLABLE" | "ORGANIC";
+import type {
+  WasteCategory,
+  WasteDetection,
+  WasteSeverity,
+  WasteType,
+} from "@/types";
 
 export interface DetectionBox {
   className: string;
@@ -14,26 +17,31 @@ export interface DetectionBox {
 
 export interface ClassificationResult {
   detectedObject: string;
-  wasteTypeCode: WasteTypeCode;
-  wasteType: "Recyclable" | "Non-recyclable" | "Organic";
+  dominantWaste: WasteType | null;
+  totalItems: number;
+  severity: WasteSeverity;
   wasteCategory: WasteCategory;
   confidence: number;
   labels: string[];
   detections: DetectionBox[];
+  wasteDetections: WasteDetection[];
 }
 
-const RECYCLABLE_KEYWORDS = [
-  "plastic",
-  "bottle",
-  "can",
-  "metal",
-  "aluminum",
-  "glass",
-  "paper",
-  "cardboard",
-  "carton",
-  "container",
-];
+const WASTE_LABEL_MAP: Record<string, WasteType> = {
+  plastic: "PLASTIC",
+  organic: "ORGANIC",
+  glass: "GLASS",
+  metal: "METAL",
+  paper: "PAPER",
+};
+
+const WASTE_TYPE_TO_CATEGORY: Record<WasteType, WasteCategory> = {
+  PLASTIC: "PLASTIC_WASTE",
+  ORGANIC: "ORGANIC_WASTE",
+  GLASS: "GLASS_WASTE",
+  METAL: "METAL_WASTE",
+  PAPER: "PAPER_WASTE",
+};
 
 const ORGANIC_KEYWORDS = [
   "food",
@@ -71,12 +79,6 @@ const CATEGORY_MATCH_ORDER: WasteCategory[] = [
   "PAPER_WASTE",
   "PLASTIC_WASTE",
 ];
-
-const HUMAN_LABELS: Record<WasteTypeCode, ClassificationResult["wasteType"]> = {
-  RECYCLABLE: "Recyclable",
-  NON_RECYCLABLE: "Non-recyclable",
-  ORGANIC: "Organic",
-};
 
 function labelMatches(label: string, keywords: string[]) {
   return keywords.some((keyword) => label.includes(keyword));
@@ -258,26 +260,80 @@ function parseDetection(entry: any): DetectionBox | null {
   };
 }
 
-function inferWasteType(labels: string[]): WasteTypeCode {
-  const hasOrganic = labels.some((label) =>
-    labelMatches(label, ORGANIC_KEYWORDS),
-  );
-  if (hasOrganic) return "ORGANIC";
+function mapLabelToWasteType(label: string): WasteType | null {
+  return WASTE_LABEL_MAP[label] ?? null;
+}
 
-  const hasRecyclable = labels.some((label) =>
-    labelMatches(label, RECYCLABLE_KEYWORDS),
-  );
-  if (hasRecyclable) return "RECYCLABLE";
+function toSeverity(totalItems: number): WasteSeverity {
+  if (totalItems >= 7) return "high";
+  if (totalItems >= 3) return "medium";
+  return "low";
+}
 
-  return "NON_RECYCLABLE";
+function toBbox(detection: DetectionBox): number[] {
+  const x1 = detection.x;
+  const y1 = detection.y;
+  const x2 = detection.x + detection.width;
+  const y2 = detection.y + detection.height;
+
+  return [x1, y1, x2, y2].map((value) => Math.round(value));
+}
+
+function buildWasteDetections(detections: DetectionBox[]): WasteDetection[] {
+  return detections
+    .map((detection) => {
+      const type = mapLabelToWasteType(detection.className);
+      if (!type) return null;
+
+      return {
+        type,
+        confidence: Number(detection.confidence.toFixed(4)),
+        bbox: toBbox(detection),
+      };
+    })
+    .filter((item): item is WasteDetection => item !== null);
+}
+
+function getDominantWaste(detections: WasteDetection[]): WasteType | null {
+  if (detections.length === 0) return null;
+
+  const counts = new Map<WasteType, { count: number; maxConfidence: number }>();
+
+  for (const detection of detections) {
+    const current = counts.get(detection.type) ?? {
+      count: 0,
+      maxConfidence: 0,
+    };
+    counts.set(detection.type, {
+      count: current.count + 1,
+      maxConfidence: Math.max(current.maxConfidence, detection.confidence),
+    });
+  }
+
+  let dominant: WasteType | null = null;
+  let bestCount = -1;
+  let bestConfidence = -1;
+
+  for (const [type, stats] of counts.entries()) {
+    if (
+      stats.count > bestCount ||
+      (stats.count === bestCount && stats.maxConfidence > bestConfidence)
+    ) {
+      dominant = type;
+      bestCount = stats.count;
+      bestConfidence = stats.maxConfidence;
+    }
+  }
+
+  return dominant;
 }
 
 export function inferWasteCategory(
   labels: string[],
-  wasteTypeCode?: WasteTypeCode,
+  dominantWaste?: WasteType | null,
 ): WasteCategory {
-  if (wasteTypeCode === "ORGANIC") {
-    return "ORGANIC_WASTE";
+  if (dominantWaste) {
+    return WASTE_TYPE_TO_CATEGORY[dominantWaste];
   }
 
   for (const category of CATEGORY_MATCH_ORDER) {
@@ -296,32 +352,28 @@ export function classifyYoloPayload(payload: unknown): ClassificationResult {
     .filter((item): item is DetectionBox => !!item)
     .sort((a, b) => b.confidence - a.confidence);
 
-  if (detections.length === 0) {
-    return {
-      detectedObject: "unknown",
-      wasteTypeCode: "NON_RECYCLABLE",
-      wasteType: HUMAN_LABELS.NON_RECYCLABLE,
-      wasteCategory: "PLASTIC_WASTE",
-      confidence: 0,
-      labels: [],
-      detections: [],
-    };
-  }
-
   const labels = Array.from(
     new Set(detections.map((detection) => detection.className)),
   );
-  const top = detections[0];
-  const wasteTypeCode = inferWasteType(labels);
-  const wasteCategory = inferWasteCategory(labels, wasteTypeCode);
+  const wasteDetections = buildWasteDetections(detections);
+  const dominantWaste = getDominantWaste(wasteDetections);
+  const totalItems = wasteDetections.length;
+  const severity = toSeverity(totalItems);
+  const wasteCategory = inferWasteCategory(labels, dominantWaste);
+  const topConfidence =
+    detections.length > 0 ? Number(detections[0].confidence.toFixed(4)) : 0;
+  const detectedObject =
+    detections.length > 0 ? detections[0].className : "unknown";
 
   return {
-    detectedObject: top.className,
-    wasteTypeCode,
-    wasteType: HUMAN_LABELS[wasteTypeCode],
+    detectedObject,
+    dominantWaste,
+    totalItems,
+    severity,
     wasteCategory,
-    confidence: Number(top.confidence.toFixed(4)),
+    confidence: topConfidence,
     labels,
     detections,
+    wasteDetections,
   };
 }
