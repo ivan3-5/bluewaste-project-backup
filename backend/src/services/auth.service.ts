@@ -10,7 +10,6 @@ export class AuthService {
     firstName: string;
     lastName: string;
     phone?: string;
-    barangayId?: string;
   }) {
     const existingUser = await prisma.user.findUnique({
       where: { email: data.email },
@@ -28,7 +27,6 @@ export class AuthService {
         firstName: data.firstName,
         lastName: data.lastName,
         phone: data.phone,
-        barangayId: data.barangayId,
         role: Role.CITIZEN,
       },
       select: {
@@ -68,7 +66,6 @@ export class AuthService {
         role: user.role,
         phone: user.phone,
         avatarUrl: user.avatarUrl,
-        barangayId: user.barangayId,
         createdAt: user.createdAt,
       },
       token,
@@ -86,8 +83,6 @@ export class AuthService {
         role: true,
         phone: true,
         avatarUrl: true,
-        barangayId: true,
-        barangay: { select: { id: true, name: true } },
         createdAt: true,
         updatedAt: true,
       },
@@ -107,7 +102,6 @@ export class AuthService {
       lastName?: string;
       phone?: string | null;
       avatarUrl?: string | null;
-      barangayId?: string;
     },
   ) {
     const user = await prisma.user.update({
@@ -121,7 +115,6 @@ export class AuthService {
         role: true,
         phone: true,
         avatarUrl: true,
-        barangayId: true,
         createdAt: true,
         updatedAt: true,
       },

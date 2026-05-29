@@ -56,6 +56,38 @@ export class ReportController {
     }
   }
 
+  static async getReports(req: AuthRequest, res: Response) {
+    try {
+      const result = await ReportService.getReports(req.query as any);
+      res.json(result);
+    } catch (error: any) {
+      sendError(res, 500, "Failed to fetch reports", "REPORT_FETCH_FAILED");
+    }
+  }
+
+  static async assignWorker(req: AuthRequest, res: Response) {
+    try {
+      const { assignedToId } = req.body;
+      const report = await ReportService.assignWorker(
+        req.params.id,
+        assignedToId,
+        req.user!.id,
+      );
+      res.json(report);
+    } catch (error: any) {
+      if (error.message === "Report not found") {
+        return sendError(res, 404, error.message, "REPORT_NOT_FOUND");
+      }
+      if (error.message === "Field worker not found") {
+        return sendError(res, 404, error.message, "WORKER_NOT_FOUND");
+      }
+      if (error.message === "Report is marked as spam") {
+        return sendError(res, 400, error.message, "REPORT_SPAM");
+      }
+      sendError(res, 500, "Failed to assign worker", "REPORT_ASSIGN_FAILED");
+    }
+  }
+
   static async getMyReports(req: AuthRequest, res: Response) {
     try {
       const result = await ReportService.getMyReports(
@@ -87,9 +119,7 @@ export class ReportController {
 
   static async getMapData(req: AuthRequest, res: Response) {
     try {
-      const reports = await ReportService.getMapData(
-        req.query as any,
-      );
+      const reports = await ReportService.getMapData(req.query as any);
       res.setHeader("Cache-Control", "public, max-age=15");
       res.json(reports);
     } catch (error: any) {
@@ -99,9 +129,7 @@ export class ReportController {
 
   static async getHeatmapData(req: AuthRequest, res: Response) {
     try {
-      const data = await ReportService.getHeatmapData(
-        req.query as any,
-      );
+      const data = await ReportService.getHeatmapData(req.query as any);
       res.setHeader("Cache-Control", "public, max-age=15");
       res.json(data);
     } catch (error: any) {
@@ -163,6 +191,35 @@ export class ReportController {
       res.status(201).json(images);
     } catch (error: any) {
       sendError(res, 500, "Failed to upload images", "IMAGE_UPLOAD_FAILED");
+    }
+  }
+
+  static async restoreSpam(req: AuthRequest, res: Response) {
+    try {
+      const report = await ReportService.restoreSpam(req.params.id);
+      res.json(report);
+    } catch (error: any) {
+      if (error.message === "Report not found") {
+        return sendError(res, 404, error.message, "REPORT_NOT_FOUND");
+      }
+      sendError(
+        res,
+        500,
+        "Failed to restore spam report",
+        "REPORT_RESTORE_FAILED",
+      );
+    }
+  }
+
+  static async delete(req: AuthRequest, res: Response) {
+    try {
+      await ReportService.softDelete(req.params.id);
+      res.json({ message: "Report deleted successfully" });
+    } catch (error: any) {
+      if (error.message === "Report not found") {
+        return sendError(res, 404, error.message, "REPORT_NOT_FOUND");
+      }
+      sendError(res, 500, "Failed to delete report", "REPORT_DELETE_FAILED");
     }
   }
 }

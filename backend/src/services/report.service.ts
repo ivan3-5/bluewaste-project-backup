@@ -312,7 +312,6 @@ export class ReportService {
     latitude: number;
     longitude: number;
     address?: string;
-    barangayId?: string;
     isAnonymous?: boolean;
     reporterId?: string;
   }) {
@@ -327,7 +326,6 @@ export class ReportService {
           latitude: data.latitude,
           longitude: data.longitude,
           address: data.address,
-          barangayId: data.barangayId,
           isAnonymous: data.isAnonymous || false,
           reporterId: data.isAnonymous ? null : data.reporterId,
         },
@@ -335,7 +333,6 @@ export class ReportService {
           reporter: {
             select: { id: true, firstName: true, lastName: true, email: true },
           },
-          barangay: { select: { id: true, name: true } },
           images: true,
         },
       });
@@ -406,7 +403,6 @@ export class ReportService {
             phone: true,
           },
         },
-        barangay: { select: { id: true, name: true } },
         images: { orderBy: { createdAt: "asc" } },
         statusHistory: {
           include: {
@@ -456,7 +452,6 @@ export class ReportService {
         data: { status },
         include: {
           reporter: { select: { id: true, firstName: true, lastName: true } },
-          barangay: { select: { id: true, name: true } },
           images: { take: 1 },
         },
       }),
@@ -484,12 +479,7 @@ export class ReportService {
 
     // Notify admins when field worker marks report as cleaned
     if (status === ReportStatus.CLEANED) {
-      const barangayInfo = updatedReport.barangay
-        ? ` in ${updatedReport.barangay.name}`
-        : "";
-      const locationInfo = report.address
-        ? ` (${report.address})`
-        : barangayInfo;
+      const locationInfo = report.address ? ` (${report.address})` : "";
 
       await NotificationService.notifyAdmins(
         "Report Completed",
@@ -500,6 +490,189 @@ export class ReportService {
     }
 
     this.invalidateGeoCaches();
+
+    return updatedReport;
+  }
+
+  static async getReports(filters: {
+    page?: string;
+    limit?: string;
+    status?: ReportStatus;
+    category?: WasteCategory;
+    isSpam?: string;
+    startDate?: string;
+    endDate?: string;
+    search?: string;
+  }) {
+    await this.purgeExpiredSpamIfDue();
+    const pagination = getPaginationParams({
+      page: filters.page,
+      limit: filters.limit,
+    });
+
+    const where: Prisma.ReportWhereInput = {
+      isDeleted: false,
+    };
+
+    const isSpam =
+      typeof filters.isSpam === "string"
+        ? filters.isSpam === "true"
+        : undefined;
+    if (typeof isSpam === "boolean") {
+      where.isSpam = isSpam;
+    } else {
+      where.isSpam = false;
+    }
+
+    if (filters.status) where.status = filters.status;
+    if (filters.category) where.category = filters.category;
+
+    const createdAt: Prisma.DateTimeFilter = {};
+    if (filters.startDate) {
+      const startDate = new Date(filters.startDate);
+      if (!Number.isNaN(startDate.getTime())) {
+        createdAt.gte = startDate;
+      }
+    }
+    if (filters.endDate) {
+      const endDate = new Date(filters.endDate);
+      if (!Number.isNaN(endDate.getTime())) {
+        createdAt.lte = endDate;
+      }
+    }
+    if (Object.keys(createdAt).length > 0) {
+      where.createdAt = createdAt;
+    }
+
+    const search = filters.search?.trim();
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+        { address: { contains: search, mode: "insensitive" } },
+        {
+          reporter: {
+            is: { firstName: { contains: search, mode: "insensitive" } },
+          },
+        },
+        {
+          reporter: {
+            is: { lastName: { contains: search, mode: "insensitive" } },
+          },
+        },
+        {
+          reporter: {
+            is: { email: { contains: search, mode: "insensitive" } },
+          },
+        },
+        {
+          assignedTo: {
+            is: { firstName: { contains: search, mode: "insensitive" } },
+          },
+        },
+        {
+          assignedTo: {
+            is: { lastName: { contains: search, mode: "insensitive" } },
+          },
+        },
+      ];
+    }
+
+    const [reports, total] = await Promise.all([
+      prisma.report.findMany({
+        where,
+        include: {
+          reporter: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+            },
+          },
+          assignedTo: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+            },
+          },
+          images: { take: 1 },
+          _count: { select: { images: true, statusHistory: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        skip: (pagination.page - 1) * pagination.limit,
+        take: pagination.limit,
+      }),
+      prisma.report.count({ where }),
+    ]);
+
+    return buildPaginatedResponse(reports, total, pagination);
+  }
+
+  static async assignWorker(
+    reportId: string,
+    assignedToId: string,
+    assignedById: string,
+  ) {
+    const report = await prisma.report.findFirst({
+      where: { id: reportId, isDeleted: false },
+      select: { id: true, title: true, isSpam: true },
+    });
+
+    if (!report) {
+      throw new Error("Report not found");
+    }
+
+    if (report.isSpam) {
+      throw new Error("Report is marked as spam");
+    }
+
+    const worker = await prisma.user.findFirst({
+      where: { id: assignedToId, role: Role.FIELD_WORKER, isActive: true },
+      select: { id: true, firstName: true, lastName: true },
+    });
+
+    if (!worker) {
+      throw new Error("Field worker not found");
+    }
+
+    const updatedReport = await prisma.report.update({
+      where: { id: reportId },
+      data: { assignedToId: worker.id },
+      include: {
+        reporter: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+          },
+        },
+        assignedTo: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+          },
+        },
+        images: { take: 1 },
+      },
+    });
+
+    await NotificationService.create({
+      userId: worker.id,
+      title: "New Cleanup Assignment",
+      message: `You have been assigned to report "${report.title}".`,
+      type: NotificationType.ASSIGNMENT,
+      reportId,
+    });
 
     return updatedReport;
   }
@@ -525,7 +698,6 @@ export class ReportService {
       prisma.report.findMany({
         where,
         include: {
-          barangay: { select: { id: true, name: true } },
           images: { take: 1 },
           _count: { select: { images: true, statusHistory: true } },
         },
@@ -561,7 +733,6 @@ export class ReportService {
         where,
         include: {
           reporter: { select: { id: true, firstName: true, lastName: true } },
-          barangay: { select: { id: true, name: true } },
           images: { take: 1 },
           _count: { select: { images: true } },
         },
@@ -575,14 +746,11 @@ export class ReportService {
     return buildPaginatedResponse(reports, total, pagination);
   }
 
-  static async getMapData(
-    filters?: {
-      status?: ReportStatus;
-      category?: WasteCategory;
-      barangayId?: string;
-      limit?: string;
-    },
-  ) {
+  static async getMapData(filters?: {
+    status?: ReportStatus;
+    category?: WasteCategory;
+    limit?: string;
+  }) {
     await this.purgeExpiredSpamIfDue();
     const parsedLimit = Number.parseInt(filters?.limit || "", 10);
     const limit = Number.isFinite(parsedLimit)
@@ -592,7 +760,6 @@ export class ReportService {
     const cacheKey = JSON.stringify({
       status: filters?.status || null,
       category: filters?.category || null,
-      barangayId: filters?.barangayId || null,
       limit,
     });
 
@@ -607,7 +774,6 @@ export class ReportService {
     };
     if (filters?.status) where.status = filters.status;
     if (filters?.category) where.category = filters.category;
-    if (filters?.barangayId) where.barangayId = filters.barangayId;
 
     const reports = await prisma.report.findMany({
       where,
@@ -620,7 +786,6 @@ export class ReportService {
         longitude: true,
         address: true,
         createdAt: true,
-        barangay: { select: { id: true, name: true } },
         images: { take: 1, select: { imageUrl: true } },
       },
       orderBy: { createdAt: "desc" },
@@ -696,6 +861,49 @@ export class ReportService {
     }
 
     return result.count;
+  }
+
+  static async restoreSpam(reportId: string) {
+    const report = await prisma.report.findFirst({
+      where: { id: reportId, isDeleted: false, isSpam: true },
+    });
+
+    if (!report) {
+      throw new Error("Report not found");
+    }
+
+    const updated = await prisma.report.update({
+      where: { id: reportId },
+      data: {
+        isSpam: false,
+        spamMarkedAt: null,
+        spamReason: null,
+      },
+      include: {
+        reporter: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+          },
+        },
+        images: { orderBy: { createdAt: "asc" } },
+        statusHistory: {
+          include: {
+            changedBy: {
+              select: { id: true, firstName: true, lastName: true },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+        },
+      },
+    });
+
+    this.invalidateGeoCaches();
+
+    return updated;
   }
 
   static async softDelete(reportId: string) {

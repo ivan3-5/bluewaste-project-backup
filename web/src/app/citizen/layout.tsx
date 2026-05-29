@@ -3,14 +3,16 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/providers/AuthProvider";
+import { useUnreadCount } from "@/hooks/useNotifications";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, X, LogOut, User } from "lucide-react";
+import { Menu, X, LogOut, User, Bell } from "lucide-react";
 
 const citizenLinks = [
   { href: "/citizen/report", label: "Submit Report", icon: "📝" },
   { href: "/citizen/my-reports", label: "My Reports", icon: "📋" },
   { href: "/citizen/map", label: "Map View", icon: "🗺️" },
+  { href: "/citizen/notifications", label: "Notifications", icon: "🔔" },
 ];
 
 export default function CitizenLayout({
@@ -23,6 +25,8 @@ export default function CitizenLayout({
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const { data: unreadData } = useUnreadCount();
+  const unreadCount = unreadData?.count || 0;
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -64,24 +68,46 @@ export default function CitizenLayout({
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1">
-            {citizenLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  pathname === link.href
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-800"
-                }`}
-              >
-                <span className="mr-1">{link.icon}</span>
-                {link.label}
-              </Link>
-            ))}
+            {citizenLinks.map((link) => {
+              const isActive = pathname === link.href;
+              const isNotifications = link.href === "/citizen/notifications";
+
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-blue-50 text-blue-700"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-800"
+                  }`}
+                >
+                  <span className="mr-1">{link.icon}</span>
+                  {link.label}
+                  {isNotifications && unreadCount > 0 && (
+                    <span className="ml-2 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-semibold text-white">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* Desktop User Info */}
           <div className="hidden md:flex items-center gap-3 relative">
+            <Link
+              href="/citizen/notifications"
+              className="relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition-colors hover:bg-slate-50"
+              title="Notifications"
+            >
+              <Bell className="w-5 h-5" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-semibold text-white">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </Link>
             <button
               onClick={() => setProfileOpen(!profileOpen)}
               className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors focus:outline-none"
@@ -131,6 +157,18 @@ export default function CitizenLayout({
 
           {/* Mobile: User name + Menu button */}
           <div className="md:hidden flex items-center gap-2">
+            <Link
+              href="/citizen/notifications"
+              className="relative flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600"
+              title="Notifications"
+            >
+              <Bell className="w-4 h-4" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-semibold text-white">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </Link>
             <button className="p-1 rounded-full bg-blue-100 text-blue-700">
               {user.avatarUrl ? (
                 <img
@@ -160,21 +198,30 @@ export default function CitizenLayout({
         {mobileMenuOpen && (
           <div className="md:hidden border-t bg-white">
             <nav className="mx-auto max-w-5xl px-4 py-3 space-y-1">
-              {citizenLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                    pathname === link.href
-                      ? "bg-blue-50 text-blue-700"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-800"
-                  }`}
-                >
-                  <span>{link.icon}</span>
-                  {link.label}
-                </Link>
-              ))}
+              {citizenLinks.map((link) => {
+                const isActive = pathname === link.href;
+                const isNotifications = link.href === "/citizen/notifications";
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                      isActive
+                        ? "bg-blue-50 text-blue-700"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-800"
+                    }`}
+                  >
+                    <span>{link.icon}</span>
+                    {link.label}
+                    {isNotifications && unreadCount > 0 && (
+                      <span className="ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-semibold text-white">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);

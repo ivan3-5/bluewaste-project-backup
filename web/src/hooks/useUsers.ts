@@ -7,10 +7,9 @@ export interface UserRecord {
   email: string;
   firstName: string;
   lastName: string;
-  role: "CITIZEN" | "LGU_ADMIN" | "RESORT_ADMIN" | "FIELD_WORKER";
+  role: "CITIZEN" | "LGU_ADMIN" | "FIELD_WORKER";
   phone?: string;
   isActive: boolean;
-  barangay?: { id: string; name: string } | null;
   createdAt: string;
   _count?: { reports: number; assignedReports: number };
 }
@@ -52,7 +51,6 @@ export function useCreateUser() {
       lastName: string;
       role: string;
       phone?: string;
-      barangayId?: string;
     }) => {
       const { data } = await api.post("/users", payload);
       return data as UserRecord;
@@ -77,7 +75,6 @@ export function useUpdateUser() {
       email?: string;
       role?: string;
       phone?: string;
-      barangayId?: string;
       isActive?: boolean;
     }) => {
       const { data } = await api.put(`/users/${id}`, payload);

@@ -7,6 +7,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useSidebar } from "@/contexts/SidebarContext";
 import { cn } from "@/lib/utils";
 import {
+  AlertTriangle,
   LayoutDashboard,
   Map,
   Bell,
@@ -19,6 +20,12 @@ import {
 
 const adminLinks = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  {
+    href: "/dashboard/reports",
+    label: "Report Management",
+    icon: ClipboardList,
+  },
+  { href: "/dashboard/spam", label: "Spam Queue", icon: AlertTriangle },
   { href: "/dashboard/map", label: "Waste Map", icon: Map },
   { href: "/dashboard/users", label: "User Management", icon: Users },
   { href: "/dashboard/notifications", label: "Notifications", icon: Bell },

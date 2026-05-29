@@ -7,14 +7,9 @@ import "leaflet/dist/leaflet.css";
 import "leaflet.heat";
 import "leaflet-draw";
 import "leaflet-draw/dist/leaflet.draw.css";
-import {
-  PANABO_BARANGAY_BOUNDARIES,
-  type BarangayBoundaryProperties,
-} from "@/components/map/data/panaboBarangayBoundaries";
-import { createBarangayBoundaryLayer } from "@/components/map/layers/barangayBoundaryLayer";
+// Barangay boundaries removed from map - no-op imports
 import {
   MapReport,
-  ResortArea,
   ReportingZone,
   ZonePoint,
   WASTE_CATEGORY_LABELS,
@@ -30,7 +25,6 @@ interface WasteMapProps {
   showHeatmap?: boolean;
   onReportClick?: (report: MapReport) => void;
   onMapReady?: (map: L.Map | null) => void;
-  resortBoxes?: ResortArea[];
   canDraw?: boolean;
   drawMode?: boolean;
   onDrawRectangle?: (bounds: {
@@ -40,10 +34,7 @@ interface WasteMapProps {
     maxLng: number;
   }) => void;
   showBarangayBoundaries?: boolean;
-  barangayBoundaryGeoJson?: FeatureCollection<
-    Polygon,
-    BarangayBoundaryProperties
-  >;
+  // Barangay boundaries removed; geojson no longer required
   reportingZones?: ReportingZone[];
   canDrawZone?: boolean;
   drawZoneMode?: boolean;
@@ -84,12 +75,10 @@ export default function WasteMap({
   showHeatmap = false,
   onReportClick,
   onMapReady,
-  resortBoxes = [],
   canDraw = false,
   drawMode = false,
   onDrawRectangle,
   showBarangayBoundaries = true,
-  barangayBoundaryGeoJson = PANABO_BARANGAY_BOUNDARIES,
   reportingZones = [],
   canDrawZone = false,
   drawZoneMode = false,
@@ -98,19 +87,16 @@ export default function WasteMap({
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<L.Marker[]>([]);
-  const boxLayersRef = useRef<L.Rectangle[]>([]);
   const zoneLayersRef = useRef<L.Polygon[]>([]);
   const drawnItemsRef = useRef<L.FeatureGroup | null>(null);
-  const zoneDrawControlRef = useRef<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const zoneDrawControlRef = useRef<any>(null);
   const zoneDrawnItemsRef = useRef<L.FeatureGroup | null>(null);
   const onDrawZoneRef = useRef(onDrawZone);
 
   useEffect(() => {
     onDrawZoneRef.current = onDrawZone;
   }, [onDrawZone]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const drawControlRef = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const heatLayerRef = useRef<any>(null);
   const boundaryLayerRef = useRef<L.GeoJSON | null>(null);
   const boundaryBoundsRef = useRef<L.LatLngBounds | null>(null);
@@ -137,17 +123,14 @@ export default function WasteMap({
       zoom,
     );
 
-    // OpenStreetMap — standard colorful basemap
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution:
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19,
     }).addTo(map);
 
-    // Zoom controls — top right
     L.control.zoom({ position: "topright" }).addTo(map);
 
-    // Re-center button
     const RecenterControl = L.Control.extend({
       options: { position: "topright" },
       onAdd() {
@@ -172,7 +155,6 @@ export default function WasteMap({
     zoneDrawnItemsRef.current = zoneDrawnItems;
 
     const handleDrawCreated = (event: any) => {
-      // eslint-disable-line @typescript-eslint/no-explicit-any
       if (event.layerType === "rectangle") {
         const layer = event.layer as L.Rectangle;
         const bounds = layer.getBounds();
@@ -202,7 +184,6 @@ export default function WasteMap({
     mapRef.current = map;
     onMapReadyRef.current?.(map);
 
-    // Delay first resize slightly to avoid running before mount is complete.
     const rafId = requestAnimationFrame(() => {
       if (mapRef.current === map) {
         map.invalidateSize({ pan: false });
@@ -238,9 +219,6 @@ export default function WasteMap({
       markersRef.current.forEach((marker) => marker.remove());
       markersRef.current = [];
 
-      boxLayersRef.current.forEach((layer) => layer.remove());
-      boxLayersRef.current = [];
-
       zoneLayersRef.current.forEach((layer) => layer.remove());
       zoneLayersRef.current = [];
 
@@ -255,7 +233,6 @@ export default function WasteMap({
       drawnItemsRef.current = null;
       onMapReadyRef.current?.(null);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -282,26 +259,9 @@ export default function WasteMap({
     }
     boundaryBoundsRef.current = null;
 
-    if (!showBarangayBoundaries) {
-      return;
-    }
-
-    const { layer, bounds } = createBarangayBoundaryLayer({
-      geoJson: barangayBoundaryGeoJson,
-    });
-    layer.addTo(map);
-
-    boundaryLayerRef.current = layer;
-    boundaryBoundsRef.current = bounds;
-
-    return () => {
-      if (boundaryLayerRef.current === layer) {
-        layer.remove();
-        boundaryLayerRef.current = null;
-        boundaryBoundsRef.current = null;
-      }
-    };
-  }, [showBarangayBoundaries, barangayBoundaryGeoJson]);
+    // Barangay boundary layer removed — skip
+    return;
+  }, [showBarangayBoundaries]);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -309,20 +269,27 @@ export default function WasteMap({
 
     let combinedBounds: L.LatLngBounds | null = null;
 
-    if (boundaryBoundsRef.current?.isValid()) {
-      combinedBounds = L.latLngBounds(
-        boundaryBoundsRef.current.getSouthWest(),
-        boundaryBoundsRef.current.getNorthEast(),
+    // Build a flat list of coordinates from reports and active reporting zones,
+    // then compute bounds in one call to avoid Leaflet/TS inference issues.
+    const allCoords: [number, number][] = [];
+    if (reports.length > 0) {
+      allCoords.push(
+        ...reports.map((r) => [r.latitude, r.longitude] as [number, number]),
       );
     }
+    if (reportingZones && reportingZones.length > 0) {
+      reportingZones
+        .filter((z) => z.isActive)
+        .forEach((zone) => {
+          allCoords.push(
+            ...zone.coordinates.map((p) => [p.lat, p.lng] as [number, number]),
+          );
+        });
+    }
 
-    if (reports.length > 0) {
-      const reportBounds = L.latLngBounds(
-        reports.map((r) => [r.latitude, r.longitude] as [number, number]),
-      );
-      combinedBounds = combinedBounds
-        ? combinedBounds.extend(reportBounds)
-        : reportBounds;
+    if (allCoords.length > 0) {
+      const bounds = L.latLngBounds(allCoords);
+      combinedBounds = bounds;
     }
 
     if (combinedBounds?.isValid()) {
@@ -332,7 +299,7 @@ export default function WasteMap({
         animate: false,
       });
     }
-  }, [reports, showBarangayBoundaries, barangayBoundaryGeoJson]);
+  }, [reports, showBarangayBoundaries, reportingZones]);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -348,7 +315,6 @@ export default function WasteMap({
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const DrawControl = (L as any).Control?.Draw;
     if (!DrawControl || !drawnItemsRef.current) {
       return;
@@ -383,7 +349,6 @@ export default function WasteMap({
     };
   }, [canDraw, drawMode]);
 
-  // ── Zone polygon draw control ─────────────────────────────────────────────
   useEffect(() => {
     if (!mapRef.current) return;
     const map = mapRef.current;
@@ -398,7 +363,6 @@ export default function WasteMap({
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const DrawControl = (L as any).Control?.Draw;
     if (!DrawControl || !zoneDrawnItemsRef.current) return;
 
@@ -442,7 +406,6 @@ export default function WasteMap({
     };
   }, [canDrawZone, drawZoneMode]);
 
-  // ── Reporting zone polygons ───────────────────────────────────────────────
   useEffect(() => {
     if (!mapRef.current) return;
     const map = mapRef.current;
@@ -477,45 +440,6 @@ export default function WasteMap({
     if (!mapRef.current) return;
     const map = mapRef.current;
 
-    boxLayersRef.current.forEach((layer) => layer.remove());
-    boxLayersRef.current = [];
-
-    resortBoxes
-      .filter((box) => box.isActive)
-      .forEach((box) => {
-        const rectangle = L.rectangle(
-          [
-            [box.minLat, box.minLng],
-            [box.maxLat, box.maxLng],
-          ],
-          {
-            color: "#1d4ed8",
-            weight: 2,
-            fillColor: "#2563eb",
-            fillOpacity: 0.08,
-          },
-        );
-
-        rectangle
-          .bindTooltip(box.name, {
-            permanent: false,
-            direction: "center",
-            className: "waste-marker-tooltip",
-          })
-          .bindPopup(
-            `<div style="font-size:12px;line-height:1.4;"><strong>${box.name.replace(/</g, "&lt;")}</strong><br/>Owner: ${box.owner.firstName} ${box.owner.lastName}<br/>Reports: ${box._count?.reports ?? 0}</div>`,
-          );
-
-        rectangle.addTo(map);
-        boxLayersRef.current.push(rectangle);
-      });
-  }, [resortBoxes]);
-
-  useEffect(() => {
-    if (!mapRef.current) return;
-    const map = mapRef.current;
-
-    // Clear old markers
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
 
@@ -533,21 +457,21 @@ export default function WasteMap({
         ? `<img src="${report.images[0].imageUrl}" style="width:100%;height:80px;object-fit:cover;border-radius:6px;margin-bottom:8px;" loading="lazy" />`
         : "";
 
+      const safeTitle = report.title.replace(/</g, "<");
+      const safeAddress = report.address?.replace(/</g, "<") || "";
       const popupContent = `
         <div class="waste-popup">
           <div class="waste-popup-header" style="background:${catColor};">
             <span class="waste-popup-cat">${(WASTE_CATEGORY_LABELS as Record<string, string>)[report.category]}</span>
-
           </div>
           <div class="waste-popup-body">
             ${imgHtml}
-            <h3 class="waste-popup-title">${report.title.replace(/</g, "&lt;")}</h3>
+            <h3 class="waste-popup-title">${safeTitle}</h3>
             <div class="waste-popup-meta">
               <span class="waste-popup-status" style="background:${statusColor}22;color:${statusColor};border:1px solid ${statusColor}44;">${(REPORT_STATUS_LABELS as Record<string, string>)[report.status]}</span>
               <span class="waste-popup-time">${timeAgo(report.createdAt)}</span>
             </div>
-            ${report.barangay ? `<p class="waste-popup-loc">&#128205; Brgy. ${report.barangay.name.replace(/</g, "&lt;")}</p>` : ""}
-            ${report.address ? `<p class="waste-popup-addr">${report.address.replace(/</g, "&lt;")}</p>` : ""}
+            ${report.address ? `<p class="waste-popup-addr">${safeAddress}</p>` : ""}
           </div>
         </div>`;
 
@@ -557,17 +481,12 @@ export default function WasteMap({
         className: "waste-popup-wrapper",
       });
 
-      // Tooltip on hover — short preview
-      const barangayHtml = report.barangay
-        ? `<span style="display:block;font-size:10px;color:#6b7280;margin-top:3px;">&#128205; Brgy. ${report.barangay.name.replace(/</g, "&lt;")}</span>`
-        : "";
       const tooltipContent = `
         <div style="font-size:12px;line-height:1.4;">
-          <strong style="display:block;margin-bottom:3px;color:#1f2937;">${report.title.replace(/</g, "&lt;")}</strong>
+          <strong style="display:block;margin-bottom:3px;color:#1f2937;">${safeTitle}</strong>
           <span style="font-size:10px;color:#6b7280;">${(WASTE_CATEGORY_LABELS as Record<string, string>)[report.category]}</span>
           <span style="margin:0 5px;color:#d1d5db;">·</span>
           <span style="font-size:10px;color:${statusColor};font-weight:600;">${(REPORT_STATUS_LABELS as Record<string, string>)[report.status]}</span>
-          ${barangayHtml}
         </div>`;
       marker.bindTooltip(tooltipContent, {
         direction: "top",
@@ -585,12 +504,10 @@ export default function WasteMap({
     });
   }, [reports, onReportClick]);
 
-  // ── Heatmap layer ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!mapRef.current) return;
     const map = mapRef.current;
 
-    // Remove existing heat layer
     if (heatLayerRef.current) {
       map.removeLayer(heatLayerRef.current);
       heatLayerRef.current = null;
@@ -604,9 +521,7 @@ export default function WasteMap({
       0.5,
     ]);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (typeof (L as any).heatLayer === "function") {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       heatLayerRef.current = (L as any)
         .heatLayer(heatData, {
           radius: 35,

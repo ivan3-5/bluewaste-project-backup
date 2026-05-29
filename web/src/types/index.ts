@@ -6,8 +6,6 @@ export interface User {
   role: "CITIZEN" | "LGU_ADMIN" | "FIELD_WORKER";
   phone?: string;
   avatarUrl?: string;
-  barangayId?: string;
-  barangay?: Barangay;
   createdAt: string;
   updatedAt?: string;
 }
@@ -46,8 +44,6 @@ export interface Report {
     email?: string;
     phone?: string;
   };
-  barangayId?: string;
-  barangay?: { id: string; name: string };
   images: ReportImage[];
   statusHistory?: StatusHistory[];
   _count?: { images: number; statusHistory?: number };
@@ -116,37 +112,7 @@ export interface MapReport {
   longitude: number;
   address?: string;
   createdAt: string;
-  barangay?: { id: string; name: string };
   images: { imageUrl: string }[];
-}
-
-export interface ResortArea {
-  id: string;
-  name: string;
-  description?: string | null;
-  minLat: number;
-  maxLat: number;
-  minLng: number;
-  maxLng: number;
-  isActive: boolean;
-  ownerId: string;
-  owner: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-  createdById: string;
-  createdBy: {
-    id: string;
-    firstName: string;
-    lastName: string;
-  };
-  _count?: {
-    reports: number;
-  };
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface ZonePoint {
@@ -190,8 +156,8 @@ export interface CategoryData {
 }
 
 export interface BarangayStats {
-  barangayId: string;
-  barangayName: string;
+  barangayId?: string;
+  barangayName?: string;
   count: number;
 }
 

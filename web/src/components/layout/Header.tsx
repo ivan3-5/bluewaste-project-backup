@@ -20,7 +20,9 @@ export function Header() {
 
   const notifPath = isAdmin
     ? "/dashboard/notifications"
-    : "/citizen/my-reports";
+    : isFieldWorker
+      ? "/field-worker/notifications"
+      : "/citizen/notifications";
 
   return (
     <header className="sticky top-0 z-40 bg-white border-b">
@@ -173,6 +175,11 @@ export function Header() {
               <MobileLink
                 href="/citizen/map"
                 label="Waste Map"
+                onClick={() => setMobileMenuOpen(false)}
+              />
+              <MobileLink
+                href="/citizen/notifications"
+                label="Notifications"
                 onClick={() => setMobileMenuOpen(false)}
               />
             </>

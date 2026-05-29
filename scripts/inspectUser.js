@@ -3,7 +3,7 @@ const { PrismaClient } = require("@prisma/client");
   const prisma = new PrismaClient();
   try {
     const u = await prisma.user.findUnique({
-      where: { email: "resort@bluewaste.ph" },
+      where: { email: "citizen@bluewaste.ph" },
     });
     console.log(JSON.stringify(u, null, 2));
   } catch (e) {

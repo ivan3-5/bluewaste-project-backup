@@ -20,7 +20,6 @@ export class UserController {
           lastName: true,
           email: true,
           phone: true,
-          barangay: { select: { id: true, name: true } },
           _count: { select: { assignedReports: true } },
         },
         orderBy: { firstName: "asc" },
@@ -64,7 +63,6 @@ export class UserController {
             role: true,
             phone: true,
             isActive: true,
-            barangay: { select: { id: true, name: true } },
             createdAt: true,
             _count: { select: { reports: true, assignedReports: true } },
           },
@@ -83,7 +81,7 @@ export class UserController {
 
   static async createUser(req: AuthRequest, res: Response) {
     try {
-      const { email, password, firstName, lastName, role, phone, barangayId } =
+      const { email, password, firstName, lastName, role, phone } =
         req.body;
 
       if (!email || !password || !firstName || !lastName || !role) {
@@ -114,7 +112,6 @@ export class UserController {
           lastName,
           role,
           phone: phone || null,
-          barangayId: barangayId || null,
         },
         select: {
           id: true,
@@ -124,7 +121,6 @@ export class UserController {
           role: true,
           phone: true,
           isActive: true,
-          barangay: { select: { id: true, name: true } },
           createdAt: true,
           _count: { select: { reports: true, assignedReports: true } },
         },
@@ -139,8 +135,7 @@ export class UserController {
   static async updateUser(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
-      const { firstName, lastName, email, role, phone, barangayId, isActive } =
-        req.body;
+      const { firstName, lastName, email, role, phone, isActive } = req.body;
 
       const existing = await prisma.user.findUnique({ where: { id } });
       if (!existing) {
@@ -166,7 +161,7 @@ export class UserController {
           ...(email !== undefined && { email }),
           ...(role !== undefined && { role }),
           ...(phone !== undefined && { phone }),
-          ...(barangayId !== undefined && { barangayId: barangayId || null }),
+          
           ...(isActive !== undefined && { isActive }),
         },
         select: {
@@ -177,7 +172,6 @@ export class UserController {
           role: true,
           phone: true,
           isActive: true,
-          barangay: { select: { id: true, name: true } },
           createdAt: true,
           _count: { select: { reports: true, assignedReports: true } },
         },

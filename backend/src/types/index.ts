@@ -23,7 +23,6 @@ export interface CreateReportInput {
   latitude: number;
   longitude: number;
   address?: string;
-  barangayId?: string;
   isAnonymous?: boolean;
 }
 
@@ -39,7 +38,6 @@ export interface AssignWorkerInput {
 export interface ReportFilters {
   status?: ReportStatus;
   category?: WasteCategory;
-  barangayId?: string;
   startDate?: string;
   endDate?: string;
   search?: string;

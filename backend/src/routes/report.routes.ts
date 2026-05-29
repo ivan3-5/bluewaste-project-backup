@@ -8,6 +8,8 @@ import {
   updateStatusSchema,
   mapFilterSchema,
   heatmapFilterSchema,
+  reportFilterSchema,
+  assignWorkerSchema,
 } from "../validators/report.validator";
 import { upload, validateUploadedImages } from "../middleware/upload";
 
@@ -35,6 +37,14 @@ router.post(
   ReportController.create,
 );
 
+router.get(
+  "/",
+  authenticate,
+  authorize("LGU_ADMIN"),
+  validate(reportFilterSchema, "query"),
+  ReportController.getReports,
+);
+
 router.get("/my-reports", authenticate, ReportController.getMyReports);
 router.get(
   "/assigned",
@@ -50,9 +60,17 @@ router.get("/:id", authenticate, ReportController.findById);
 router.put(
   "/:id/status",
   authenticate,
-  authorize("FIELD_WORKER"),
+  authorize("FIELD_WORKER", "LGU_ADMIN"),
   validate(updateStatusSchema),
   ReportController.updateStatus,
+);
+
+router.put(
+  "/:id/assign",
+  authenticate,
+  authorize("LGU_ADMIN"),
+  validate(assignWorkerSchema),
+  ReportController.assignWorker,
 );
 
 // Image upload
@@ -62,6 +80,21 @@ router.post(
   upload.array("images", 5),
   validateUploadedImages,
   ReportController.addImages,
+);
+
+// Admin spam restore and delete
+router.put(
+  "/:id/restore-spam",
+  authenticate,
+  authorize("LGU_ADMIN"),
+  ReportController.restoreSpam,
+);
+
+router.delete(
+  "/:id",
+  authenticate,
+  authorize("LGU_ADMIN"),
+  ReportController.delete,
 );
 
 export default router;

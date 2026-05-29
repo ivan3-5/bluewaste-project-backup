@@ -14,7 +14,7 @@ interface ReportFilters {
   limit?: number;
   status?: ReportStatus;
   category?: WasteCategory;
-  barangayId?: string;
+  isSpam?: boolean;
   startDate?: string;
   endDate?: string;
   search?: string;
@@ -68,7 +68,6 @@ export function useMyReports(
 export function useMapData(filters?: {
   status?: ReportStatus;
   category?: WasteCategory;
-  barangayId?: string;
   limit?: number;
 }) {
   return useQuery<MapReport[]>({
@@ -112,7 +111,6 @@ export function useCreateReport() {
       latitude: number;
       longitude: number;
       address?: string;
-      barangayId?: string;
       isAnonymous?: boolean;
     }) => {
       const { data } = await api.post("/reports", reportData);
@@ -215,6 +213,36 @@ export function useAssignedReports(
       });
       const { data } = await api.get(`/reports/assigned?${params.toString()}`);
       return data;
+    },
+  });
+}
+
+export function useRestoreSpamReport() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.put(`/reports/${id}/restore-spam`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+      queryClient.invalidateQueries({ queryKey: ["report"] });
+    },
+  });
+}
+
+export function useDeleteSpamReport() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.delete(`/reports/${id}`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+      queryClient.invalidateQueries({ queryKey: ["report"] });
     },
   });
 }

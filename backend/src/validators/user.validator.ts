@@ -13,7 +13,6 @@ export const createUserSchema = z.object({
   lastName: z.string().min(1, "Last name is required").max(50),
   role: roleEnum,
   phone: z.string().max(30).optional(),
-  barangayId: z.string().uuid().optional(),
 });
 
 export const updateUserSchema = z
@@ -23,7 +22,6 @@ export const updateUserSchema = z
     email: z.string().email().optional(),
     role: roleEnum.optional(),
     phone: z.string().max(30).optional(),
-    barangayId: z.string().uuid().nullable().optional(),
     isActive: z.boolean().optional(),
   })
   .refine((value) => Object.keys(value).length > 0, {

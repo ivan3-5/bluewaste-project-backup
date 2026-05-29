@@ -10,11 +10,12 @@ import { generalLimiter } from "./middleware/rateLimiter";
 
 // Import routes
 import authRoutes from "./routes/auth.routes";
+import userRoutes from "./routes/user.routes";
 import reportRoutes from "./routes/report.routes";
-import barangayRoutes from "./routes/barangay.routes";
 import notificationRoutes from "./routes/notification.routes";
 import uploadRoutes from "./routes/upload.routes";
 import wasteReportRoutes from "./routes/wasteReport.routes";
+import reportingZoneRoutes from "./routes/reportingZone.routes";
 
 const app = express();
 
@@ -42,6 +43,7 @@ const vercelOrigins = [
 const allowedOrigins = new Set(
   [
     normalizeOrigin(env.WEB_URL),
+    "http://localhost:3001",
     normalizeOrigin(env.MOBILE_URL),
     "http://localhost:3000",
     "http://localhost:8081",
@@ -121,11 +123,13 @@ app.get("/api/health", (req, res) => {
 
 // API Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 app.use("/api/reports", reportRoutes);
-app.use("/api/barangays", barangayRoutes);
+app.use("/api/reports", reportRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/waste-reports", wasteReportRoutes);
+app.use("/api/reporting-zones", reportingZoneRoutes);
 
 // Error handler
 app.use(errorHandler);
