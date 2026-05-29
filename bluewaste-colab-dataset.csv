@@ -1,0 +1,121 @@
+report_id,date,barangay,category,status,latitude,longitude,analysis_confidence
+RPT-0001,2026-01-01,Cagangohan,Plastic Waste,Pending,7.2624,125.7478,0.91
+RPT-0002,2026-01-02,San Pedro,Organic Waste,Verified,7.2791,125.7623,0.88
+RPT-0003,2026-01-03,San Vicente,Glass Waste,In Progress,7.2953,125.7812,0.84
+RPT-0004,2026-01-04,Cagangohan,Metal Waste,Cleaned,7.2618,125.7485,0.93
+RPT-0005,2026-01-05,San Pedro,Paper Waste,Pending,7.2787,125.7616,0.79
+RPT-0006,2026-01-06,San Vicente,Fishing Gear Waste,Verified,7.2946,125.7804,0.87
+RPT-0007,2026-01-07,Cagangohan,Textile Waste,Rejected,7.2631,125.7490,0.72
+RPT-0008,2026-01-08,San Pedro,Plastic Waste,In Progress,7.2798,125.7628,0.89
+RPT-0009,2026-01-09,San Vicente,Organic Waste,Cleaned,7.2958,125.7816,0.94
+RPT-0010,2026-01-10,Cagangohan,Glass Waste,Verified,7.2627,125.7482,0.86
+RPT-0011,2026-01-11,San Pedro,Metal Waste,Pending,7.2789,125.7619,0.81
+RPT-0012,2026-01-12,San Vicente,Paper Waste,In Progress,7.2949,125.7807,0.83
+RPT-0013,2026-01-13,Cagangohan,Fishing Gear Waste,Cleaned,7.2634,125.7493,0.92
+RPT-0014,2026-01-14,San Pedro,Textile Waste,Verified,7.2793,125.7621,0.85
+RPT-0015,2026-01-15,San Vicente,Plastic Waste,Pending,7.2951,125.7810,0.90
+RPT-0016,2026-01-16,Cagangohan,Organic Waste,In Progress,7.2621,125.7480,0.88
+RPT-0017,2026-01-17,San Pedro,Glass Waste,Cleaned,7.2796,125.7625,0.95
+RPT-0018,2026-01-18,San Vicente,Metal Waste,Rejected,7.2943,125.7802,0.76
+RPT-0019,2026-01-19,Cagangohan,Paper Waste,Verified,7.2630,125.7491,0.87
+RPT-0020,2026-01-20,San Pedro,Fishing Gear Waste,Pending,7.2784,125.7614,0.82
+RPT-0021,2026-01-21,San Vicente,Textile Waste,In Progress,7.2955,125.7814,0.80
+RPT-0022,2026-01-22,Cagangohan,Plastic Waste,Cleaned,7.2629,125.7483,0.96
+RPT-0023,2026-01-23,San Pedro,Organic Waste,Rejected,7.2790,125.7620,0.74
+RPT-0024,2026-01-24,San Vicente,Glass Waste,Pending,7.2948,125.7805,0.83
+RPT-0025,2026-01-25,Cagangohan,Metal Waste,Verified,7.2632,125.7494,0.89
+RPT-0026,2026-01-26,San Pedro,Paper Waste,Cleaned,7.2794,125.7622,0.93
+RPT-0027,2026-01-27,San Vicente,Fishing Gear Waste,In Progress,7.2950,125.7811,0.85
+RPT-0028,2026-01-28,Cagangohan,Textile Waste,Pending,7.2625,125.7481,0.77
+RPT-0029,2026-01-29,San Pedro,Plastic Waste,Verified,7.2788,125.7617,0.90
+RPT-0030,2026-01-30,San Vicente,Organic Waste,Cleaned,7.2957,125.7817,0.95
+RPT-0031,2026-01-31,Cagangohan,Glass Waste,In Progress,7.2633,125.7492,0.84
+RPT-0032,2026-02-01,San Pedro,Metal Waste,Pending,7.2792,125.7624,0.78
+RPT-0033,2026-02-02,San Vicente,Paper Waste,Verified,7.2944,125.7803,0.86
+RPT-0034,2026-02-03,Cagangohan,Fishing Gear Waste,Cleaned,7.2626,125.7486,0.91
+RPT-0035,2026-02-04,San Pedro,Textile Waste,Rejected,7.2797,125.7627,0.73
+RPT-0036,2026-02-05,San Vicente,Plastic Waste,Pending,7.2952,125.7813,0.88
+RPT-0037,2026-02-06,Cagangohan,Organic Waste,Verified,7.2622,125.7479,0.94
+RPT-0038,2026-02-07,San Pedro,Glass Waste,In Progress,7.2785,125.7615,0.82
+RPT-0039,2026-02-08,San Vicente,Metal Waste,Cleaned,7.2947,125.7808,0.97
+RPT-0040,2026-02-09,Cagangohan,Paper Waste,Pending,7.2635,125.7495,0.76
+RPT-0041,2026-02-10,San Pedro,Fishing Gear Waste,Verified,7.2795,125.7626,0.87
+RPT-0042,2026-02-11,San Vicente,Textile Waste,In Progress,7.2954,125.7815,0.81
+RPT-0043,2026-02-12,Cagangohan,Plastic Waste,Cleaned,7.2628,125.7484,0.92
+RPT-0044,2026-02-13,San Pedro,Organic Waste,Pending,7.2786,125.7618,0.79
+RPT-0045,2026-02-14,San Vicente,Glass Waste,Verified,7.2945,125.7806,0.85
+RPT-0046,2026-01-16,Cagangohan,Organic Waste,In Progress,7.2621,125.7480,0.88
+RPT-0047,2026-01-17,San Pedro,Glass Waste,Cleaned,7.2796,125.7625,0.95
+RPT-0048,2026-01-17,San Pedro,Glass Waste,Cleaned,7.2796,125.7625,0.95
+RPT-0049,2026-01-18,San Vicente,Metal Waste,Rejected,7.2943,125.7802,0.76
+RPT-0050,2026-01-18,San Vicente,Metal Waste,Rejected,7.2943,125.7802,0.76
+RPT-0051,2026-01-19,Cagangohan,Paper Waste,Verified,7.2630,125.7491,0.87
+RPT-0052,2026-01-19,Cagangohan,Paper Waste,Verified,7.2630,125.7491,0.87
+RPT-0053,2026-01-19,Cagangohan,Paper Waste,Verified,7.2630,125.7491,0.87
+RPT-0054,2026-01-20,San Pedro,Fishing Gear Waste,Pending,7.2784,125.7614,0.82
+RPT-0055,2026-01-20,San Pedro,Fishing Gear Waste,Pending,7.2784,125.7614,0.82
+RPT-0056,2026-01-21,San Vicente,Textile Waste,In Progress,7.2955,125.7814,0.80
+RPT-0057,2026-01-22,Cagangohan,Plastic Waste,Cleaned,7.2629,125.7483,0.96
+RPT-0058,2026-01-22,Cagangohan,Plastic Waste,Cleaned,7.2629,125.7483,0.96
+RPT-0059,2026-01-22,Cagangohan,Plastic Waste,Cleaned,7.2629,125.7483,0.96
+RPT-0060,2026-01-22,Cagangohan,Plastic Waste,Cleaned,7.2629,125.7483,0.96
+RPT-0061,2026-01-23,San Pedro,Organic Waste,Rejected,7.2790,125.7620,0.74
+RPT-0062,2026-01-23,San Pedro,Organic Waste,Rejected,7.2790,125.7620,0.74
+RPT-0063,2026-01-23,San Pedro,Organic Waste,Rejected,7.2790,125.7620,0.74
+RPT-0064,2026-01-24,San Vicente,Glass Waste,Pending,7.2948,125.7805,0.83
+RPT-0065,2026-01-24,San Vicente,Glass Waste,Pending,7.2948,125.7805,0.83
+RPT-0066,2026-01-25,Cagangohan,Metal Waste,Verified,7.2632,125.7494,0.89
+RPT-0067,2026-01-26,San Pedro,Paper Waste,Cleaned,7.2794,125.7622,0.93
+RPT-0068,2026-01-26,San Pedro,Paper Waste,Cleaned,7.2794,125.7622,0.93
+RPT-0069,2026-01-27,San Vicente,Fishing Gear Waste,In Progress,7.2950,125.7811,0.85
+RPT-0070,2026-01-28,Cagangohan,Textile Waste,Pending,7.2625,125.7481,0.77
+RPT-0071,2026-01-28,Cagangohan,Textile Waste,Pending,7.2625,125.7481,0.77
+RPT-0072,2026-01-28,Cagangohan,Textile Waste,Pending,7.2625,125.7481,0.77
+RPT-0073,2026-01-29,San Pedro,Plastic Waste,Verified,7.2788,125.7617,0.90
+RPT-0074,2026-01-29,San Pedro,Plastic Waste,Verified,7.2788,125.7617,0.90
+RPT-0075,2026-01-29,San Pedro,Plastic Waste,Verified,7.2788,125.7617,0.90
+RPT-0076,2026-01-30,San Vicente,Organic Waste,Cleaned,7.2957,125.7817,0.95
+RPT-0077,2026-01-30,San Vicente,Organic Waste,Cleaned,7.2957,125.7817,0.95
+RPT-0078,2026-01-30,San Vicente,Organic Waste,Cleaned,7.2957,125.7817,0.95
+RPT-0079,2026-01-30,San Vicente,Organic Waste,Cleaned,7.2957,125.7817,0.95
+RPT-0080,2026-01-31,Cagangohan,Glass Waste,In Progress,7.2633,125.7492,0.84
+RPT-0081,2026-01-31,Cagangohan,Glass Waste,In Progress,7.2633,125.7492,0.84
+RPT-0082,2026-02-01,San Pedro,Metal Waste,Pending,7.2792,125.7624,0.78
+RPT-0083,2026-02-01,San Pedro,Metal Waste,Pending,7.2792,125.7624,0.78
+RPT-0084,2026-02-01,San Pedro,Metal Waste,Pending,7.2792,125.7624,0.78
+RPT-0085,2026-02-02,San Vicente,Paper Waste,Verified,7.2944,125.7803,0.86
+RPT-0086,2026-02-02,San Vicente,Paper Waste,Verified,7.2944,125.7803,0.86
+RPT-0087,2026-02-02,San Vicente,Paper Waste,Verified,7.2944,125.7803,0.86
+RPT-0088,2026-02-03,Cagangohan,Fishing Gear Waste,Cleaned,7.2626,125.7486,0.91
+RPT-0089,2026-02-03,Cagangohan,Fishing Gear Waste,Cleaned,7.2626,125.7486,0.91
+RPT-0090,2026-02-03,Cagangohan,Fishing Gear Waste,Cleaned,7.2626,125.7486,0.91
+RPT-0091,2026-02-03,Cagangohan,Fishing Gear Waste,Cleaned,7.2626,125.7486,0.91
+RPT-0092,2026-02-04,San Pedro,Textile Waste,Rejected,7.2797,125.7627,0.73
+RPT-0093,2026-02-04,San Pedro,Textile Waste,Rejected,7.2797,125.7627,0.73
+RPT-0094,2026-02-04,San Pedro,Textile Waste,Rejected,7.2797,125.7627,0.73
+RPT-0095,2026-02-05,San Vicente,Plastic Waste,Pending,7.2952,125.7813,0.88
+RPT-0096,2026-02-05,San Vicente,Plastic Waste,Pending,7.2952,125.7813,0.88
+RPT-0097,2026-02-06,Cagangohan,Organic Waste,Verified,7.2622,125.7479,0.94
+RPT-0098,2026-02-06,Cagangohan,Organic Waste,Verified,7.2622,125.7479,0.94
+RPT-0099,2026-02-06,Cagangohan,Organic Waste,Verified,7.2622,125.7479,0.94
+RPT-0100,2026-02-06,Cagangohan,Organic Waste,Verified,7.2622,125.7479,0.94
+RPT-0101,2026-02-07,San Pedro,Glass Waste,In Progress,7.2785,125.7615,0.82
+RPT-0102,2026-02-07,San Pedro,Glass Waste,In Progress,7.2785,125.7615,0.82
+RPT-0103,2026-02-07,San Pedro,Glass Waste,In Progress,7.2785,125.7615,0.82
+RPT-0104,2026-02-08,San Vicente,Metal Waste,Cleaned,7.2947,125.7808,0.97
+RPT-0105,2026-02-09,Cagangohan,Paper Waste,Pending,7.2635,125.7495,0.76
+RPT-0106,2026-02-09,Cagangohan,Paper Waste,Pending,7.2635,125.7495,0.76
+RPT-0107,2026-02-09,Cagangohan,Paper Waste,Pending,7.2635,125.7495,0.76
+RPT-0108,2026-02-09,Cagangohan,Paper Waste,Pending,7.2635,125.7495,0.76
+RPT-0109,2026-02-10,San Pedro,Fishing Gear Waste,Verified,7.2795,125.7626,0.87
+RPT-0110,2026-02-11,San Vicente,Textile Waste,In Progress,7.2954,125.7815,0.81
+RPT-0111,2026-02-11,San Vicente,Textile Waste,In Progress,7.2954,125.7815,0.81
+RPT-0112,2026-02-11,San Vicente,Textile Waste,In Progress,7.2954,125.7815,0.81
+RPT-0113,2026-02-12,Cagangohan,Plastic Waste,Cleaned,7.2628,125.7484,0.92
+RPT-0114,2026-02-12,Cagangohan,Plastic Waste,Cleaned,7.2628,125.7484,0.92
+RPT-0115,2026-02-12,Cagangohan,Plastic Waste,Cleaned,7.2628,125.7484,0.92
+RPT-0116,2026-02-13,San Pedro,Organic Waste,Pending,7.2786,125.7618,0.79
+RPT-0117,2026-02-13,San Pedro,Organic Waste,Pending,7.2786,125.7618,0.79
+RPT-0118,2026-02-14,San Vicente,Glass Waste,Verified,7.2945,125.7806,0.85
+RPT-0119,2026-01-08,San Pedro,Plastic Waste,In Progress,7.2798,125.7628,0.89
+RPT-0120,2026-01-08,San Pedro,Plastic Waste,In Progress,7.2798,125.7628,0.89

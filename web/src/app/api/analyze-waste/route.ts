@@ -300,6 +300,7 @@ export async function POST(request: NextRequest) {
       detectedObject: classification.detectedObject,
       wasteType: classification.wasteType,
       wasteTypeCode: classification.wasteTypeCode,
+      wasteCategory: classification.wasteCategory,
       confidence: classification.confidence,
       status,
       waste_count: wasteCount,

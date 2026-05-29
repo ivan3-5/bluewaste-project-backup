@@ -1,238 +1,193 @@
-"use client";
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Manrope } from "next/font/google";
 import {
-  useAnalyticsOverview,
-  useAnalyticsTrends,
-  useAnalyticsCategories,
-  useAnalyticsBarangays,
-} from "@/hooks/useAnalytics";
-import { useReports } from "@/hooks/useReports";
-import { StatusBadge } from "@/components/reports/StatusBadge";
-import { formatDateTime } from "@/lib/utils";
-import { filterAdminBarangayStats } from "@/lib/adminBarangays";
-import { FileText, Clock, CheckCircle, TrendingUp } from "lucide-react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import dynamic from "next/dynamic";
-import { AdminOverviewSkeleton } from "@/components/skeletons/page-skeletons";
-import { Skeleton } from "@/components/ui/skeleton";
+  FileText,
+  Clock,
+  Loader2,
+  CheckCircle2,
+  TrendingUp,
+} from "lucide-react";
 
-const TrendChart = dynamic(() => import("@/components/analytics/TrendChart"), {
-  ssr: false,
-  loading: () => <Skeleton className="h-[280px] w-full rounded-lg" />,
+const manrope = Manrope({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
 });
-const CategoryPieChart = dynamic(
-  () => import("@/components/analytics/CategoryPieChart"),
+
+const statCards = [
   {
-    ssr: false,
-    loading: () => <Skeleton className="h-[280px] w-full rounded-lg" />,
+    label: "Total Reports",
+    value: 0,
+    caption: "All submitted reports",
+    icon: FileText,
+    gradient: "from-blue-500 via-blue-500 to-indigo-500",
   },
-);
+  {
+    label: "Pending",
+    value: 0,
+    caption: "Needs review",
+    icon: Clock,
+    gradient: "from-orange-400 via-amber-400 to-yellow-400",
+  },
+  {
+    label: "In Progress",
+    value: 0,
+    caption: "Currently being handled",
+    icon: Loader2,
+    gradient: "from-violet-500 via-purple-500 to-fuchsia-500",
+  },
+  {
+    label: "Cleaned",
+    value: 0,
+    caption: "Successfully resolved",
+    icon: CheckCircle2,
+    gradient: "from-emerald-500 via-green-500 to-lime-500",
+  },
+];
+
+const trendBars = [20, 32, 18, 42, 36, 28, 52, 38, 30, 46, 34, 40];
+
+const categoryLegend = [
+  { label: "Plastic", value: 0, color: "bg-blue-500" },
+  { label: "Organic", value: 0, color: "bg-emerald-500" },
+  { label: "Metal", value: 0, color: "bg-amber-500" },
+  { label: "Glass", value: 0, color: "bg-cyan-500" },
+];
 
 export default function DashboardPage() {
-  const { data: overview, isLoading: overviewLoading } = useAnalyticsOverview();
-  const { data: trends, isLoading: trendsLoading } = useAnalyticsTrends(
-    "daily",
-    30,
-  );
-  const { data: categories, isLoading: categoriesLoading } =
-    useAnalyticsCategories();
-  const { data: barangayStats, isLoading: barangaysLoading } =
-    useAnalyticsBarangays();
-  const { data: recentReports, isLoading: recentReportsLoading } = useReports({
-    page: 1,
-    limit: 5,
-  });
-
-  const isInitialLoading =
-    overviewLoading ||
-    trendsLoading ||
-    categoriesLoading ||
-    barangaysLoading ||
-    recentReportsLoading;
-
-  const filteredBarangays = filterAdminBarangayStats(barangayStats ?? []);
-
-  const stats = [
-    {
-      label: "Total Reports",
-      value: overview?.total || 0,
-      icon: FileText,
-      subtitle: "All submitted reports",
-      cardBg: "from-blue-500 to-indigo-500",
-    },
-    {
-      label: "Pending",
-      value: overview?.pending || 0,
-      icon: Clock,
-      subtitle: "Needs review",
-      cardBg: "from-orange-400 to-amber-400",
-    },
-    {
-      label: "In Progress",
-      value: overview?.inProgress || 0,
-      icon: TrendingUp,
-      subtitle: "Currently being handled",
-      cardBg: "from-violet-500 to-purple-500",
-    },
-    {
-      label: "Cleaned",
-      value: overview?.cleaned || 0,
-      icon: CheckCircle,
-      subtitle: "Successfully resolved",
-      cardBg: "from-emerald-500 to-green-500",
-    },
-  ];
-
-  if (isInitialLoading) {
-    return <AdminOverviewSkeleton />;
-  }
-
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
-        <p className="text-gray-600">
-          Waste management statistics for Panabo City
-        </p>
+    <div className={`${manrope.className} relative`}>
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute -left-24 top-6 h-56 w-56 rounded-full bg-blue-100/70 blur-3xl" />
+        <div className="absolute right-8 top-16 h-40 w-40 rounded-full bg-emerald-100/70 blur-3xl" />
+        <div className="absolute left-1/3 top-72 h-56 w-56 rounded-full bg-orange-100/50 blur-3xl" />
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <Card
-              key={stat.label}
-              className={`relative overflow-hidden border-0 rounded-2xl bg-gradient-to-br ${stat.cardBg} shadow-[0_14px_26px_rgba(15,23,42,0.20)]`}
-            >
-              <div className="pointer-events-none absolute -right-7 -top-9 h-28 w-28 rounded-full bg-white/15" />
-              <div className="pointer-events-none absolute -right-4 -bottom-10 h-32 w-32 rounded-full bg-white/10" />
-              <CardContent className="p-4">
-                <div className="absolute right-4 top-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/40 bg-white/12 backdrop-blur-sm">
-                  <Icon className="h-6 w-6 text-white" />
-                </div>
-                <p className="text-sm font-semibold text-white/90">
-                  {stat.label}
-                </p>
-                <p className="mt-10 text-4xl font-extrabold leading-none text-white">
-                  {stat.value}
-                </p>
-                <p className="mt-3 text-sm text-white/80">{stat.subtitle}</p>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+      <div className="space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-semibold text-slate-900">
+              Dashboard Overview
+            </h1>
+            <p className="mt-1 text-sm text-slate-500">
+              Waste management statistics for Panabo City
+            </p>
+          </div>
+          <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-slate-500 shadow-sm">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            Live Updates
+          </div>
+        </div>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">
-              Report Trends (Last 30 Days)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>{trends && <TrendChart data={trends} />}</CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">
-              Waste Category Distribution
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {categories && <CategoryPieChart data={categories} />}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Recent Reports & Top Barangays */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Reports */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Recent Reports</CardTitle>
-            <Link href="/dashboard/reports">
-              <Button variant="default" size="sm" className="h-8 px-3">
-                View All
-              </Button>
-            </Link>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {recentReports?.data.map((report) => (
-                <Link
-                  key={report.id}
-                  href={`/dashboard/report?id=${report.id}`}
-                  className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {report.title}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {formatDateTime(report.createdAt)}
-                      {report.barangay?.name && (
-                        <span className="inline-block ml-3 text-xs text-gray-400">
-                          • {report.barangay.name}
-                        </span>
-                      )}
-                    </p>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {statCards.map((card, index) => {
+            const Icon = card.icon;
+            return (
+              <div
+                key={card.label}
+                className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${card.gradient} p-5 text-white shadow-[0_16px_30px_rgba(15,23,42,0.18)] transition-all duration-300 hover:-translate-y-1 ${
+                  index < 2
+                    ? "animate-in fade-in slide-in-from-bottom-4"
+                    : "animate-in fade-in slide-in-from-bottom-6"
+                }`}
+              >
+                <div className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-white/20" />
+                <div className="pointer-events-none absolute -right-4 -bottom-12 h-32 w-32 rounded-full bg-white/10" />
+                <div className="flex items-start justify-between">
+                  <p className="text-sm font-semibold text-white/90">
+                    {card.label}
+                  </p>
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/30 bg-white/15 backdrop-blur">
+                    <Icon className="h-5 w-5" />
                   </div>
-                  <StatusBadge status={report.status} />
-                </Link>
-              ))}
-              {(!recentReports || recentReports.data.length === 0) && (
-                <p className="text-sm text-gray-500 text-center py-4">
-                  No reports yet
+                </div>
+                <p className="mt-8 text-4xl font-semibold leading-none">
+                  {card.value}
                 </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                <p className="mt-2 text-sm text-white/80">{card.caption}</p>
+              </div>
+            );
+          })}
+        </div>
 
-        {/* Top Barangays */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Top Barangays by Reports</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {filteredBarangays.slice(0, 10).map((brgy, idx) => (
+        <div className="grid gap-6 lg:grid-cols-[1.35fr_1fr]">
+          <div className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">
+                  Report Trends (Last 30 Days)
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Daily submissions across the city
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                <TrendingUp className="h-4 w-4 text-blue-500" />
+                +0% from last period
+              </div>
+            </div>
+
+            <div className="relative mt-6 h-56 overflow-hidden rounded-xl border border-slate-100 bg-gradient-to-br from-slate-50 via-white to-slate-50">
+              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(148,163,184,0.16)_1px,transparent_1px),linear-gradient(to_bottom,rgba(148,163,184,0.16)_1px,transparent_1px)] bg-[size:36px_36px]" />
+              <div className="absolute inset-x-6 bottom-6 flex h-40 items-end gap-3">
+                {trendBars.map((value, idx) => (
+                  <div
+                    key={`bar-${idx}`}
+                    className="flex-1 rounded-full bg-gradient-to-t from-blue-500 via-blue-400 to-cyan-300 shadow-[0_6px_14px_rgba(37,99,235,0.25)]"
+                    style={{ height: `${value}%` }}
+                  />
+                ))}
+              </div>
+              <div className="absolute left-6 top-4 text-xs font-medium text-slate-400">
+                30 days
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">
+                Waste Category Distribution
+              </h2>
+              <p className="text-xs text-slate-500">
+                Breakdown by classification
+              </p>
+            </div>
+
+            <div className="mt-8 flex flex-col gap-6">
+              <div className="relative mx-auto h-44 w-44">
                 <div
-                  key={brgy.barangayId}
-                  className="flex items-center justify-between"
-                >
-                  <div className="flex items-center space-x-3">
-                    <span
-                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                        idx < 3
-                          ? "bg-red-100 text-red-700"
-                          : "bg-gray-100 text-gray-600"
-                      }`}
-                    >
-                      {idx + 1}
-                    </span>
-                    <span className="text-sm text-gray-700">
-                      {brgy.barangayName}
+                  className="absolute inset-0 rounded-full"
+                  style={{
+                    background:
+                      "conic-gradient(#3b82f6 0deg 90deg, #22c55e 90deg 160deg, #f59e0b 160deg 250deg, #06b6d4 250deg 360deg)",
+                  }}
+                />
+                <div className="absolute inset-6 rounded-full bg-white shadow-[inset_0_0_0_10px_rgba(241,245,249,0.8)]" />
+                <div className="absolute inset-0 flex items-center justify-center text-sm font-semibold text-slate-500">
+                  0 reports
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {categoryLegend.map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-center justify-between text-sm text-slate-600"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`h-2.5 w-2.5 rounded-full ${item.color}`}
+                      />
+                      {item.label}
+                    </div>
+                    <span className="font-semibold text-slate-700">
+                      {item.value}
                     </span>
                   </div>
-                  <span className="text-sm font-semibold text-gray-900">
-                    {brgy.count}
-                  </span>
-                </div>
-              ))}
-              {filteredBarangays.length === 0 && (
-                <p className="text-sm text-gray-500 text-center py-4">
-                  No data
-                </p>
-              )}
+                ))}
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

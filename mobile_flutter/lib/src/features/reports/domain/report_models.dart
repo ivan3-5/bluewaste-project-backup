@@ -50,20 +50,6 @@ PaginatedData<T> parsePaginatedData<T>(
   );
 }
 
-class BarangayBrief {
-  const BarangayBrief({required this.id, required this.name});
-
-  final String id;
-  final String name;
-
-  factory BarangayBrief.fromJson(Map<String, dynamic> json) {
-    return BarangayBrief(
-      id: (json["id"] ?? "").toString(),
-      name: (json["name"] ?? "").toString(),
-    );
-  }
-}
-
 class ReportImage {
   const ReportImage({
     required this.id,
@@ -98,7 +84,6 @@ class ReportRecord {
     required this.updatedAt,
     required this.images,
     this.address,
-    this.barangay,
   });
 
   final String id;
@@ -112,7 +97,6 @@ class ReportRecord {
   final bool isAnonymous;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final BarangayBrief? barangay;
   final List<ReportImage> images;
 
   factory ReportRecord.fromJson(Map<String, dynamic> json) {
@@ -137,7 +121,7 @@ class ReportRecord {
       id: (json["id"] ?? "").toString(),
       title: (json["title"] ?? "").toString(),
       description: (json["description"] ?? "").toString(),
-      category: (json["category"] ?? "OTHER").toString(),
+      category: (json["category"] ?? "PLASTIC_WASTE").toString(),
       status: (json["status"] ?? "PENDING").toString(),
       latitude: parseDouble(json["latitude"], 0),
       longitude: parseDouble(json["longitude"], 0),
@@ -145,9 +129,6 @@ class ReportRecord {
       isAnonymous: json["isAnonymous"] == true,
       createdAt: parseDate(json["createdAt"]),
       updatedAt: parseDate(json["updatedAt"]),
-      barangay: json["barangay"] is Map<String, dynamic>
-          ? BarangayBrief.fromJson(json["barangay"] as Map<String, dynamic>)
-          : null,
       images: imageList,
     );
   }
@@ -163,11 +144,9 @@ const Map<String, String> statusLabels = {
 };
 
 const Map<String, String> wasteCategoryLabels = {
-  "SOLID_WASTE": "Solid Waste",
-  "HAZARDOUS": "Hazardous",
-  "LIQUID": "Liquid Waste",
-  "RECYCLABLE": "Recyclable",
-  "ORGANIC": "Organic",
-  "ELECTRONIC": "Electronic",
-  "OTHER": "Other",
+  "PLASTIC_WASTE": "Plastic Waste",
+  "ORGANIC_WASTE": "Organic Waste",
+  "GLASS_WASTE": "Glass Waste",
+  "METAL_WASTE": "Metal Waste",
+  "PAPER_WASTE": "Paper Waste",
 };

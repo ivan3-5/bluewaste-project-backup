@@ -82,7 +82,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Image.asset(
-                    'assets/logo-final.png',
+                    'assets/images/logo-final.png',
                     height: 32,
                     errorBuilder: (context, error, stackTrace) =>
                         const SizedBox(height: 32),
@@ -130,9 +130,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         height: 6,
                         width: active ? 28 : 12,
                         decoration: BoxDecoration(
-                          color: active
-                              ? AppColors.primary
-                              : AppColors.border,
+                          color: active ? AppColors.primary : AppColors.border,
                           borderRadius: BorderRadius.circular(12),
                         ),
                       );

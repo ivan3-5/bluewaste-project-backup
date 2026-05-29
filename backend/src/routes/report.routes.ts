@@ -6,32 +6,12 @@ import { validate } from "../middleware/validate";
 import {
   createReportSchema,
   updateStatusSchema,
-  assignWorkerSchema,
-  reportFilterSchema,
   mapFilterSchema,
   heatmapFilterSchema,
-  analyzeReportSchema,
 } from "../validators/report.validator";
 import { upload, validateUploadedImages } from "../middleware/upload";
 
 const router = Router();
-
-// Dashboard routes
-router.get(
-  "/",
-  authenticate,
-  authorize("LGU_ADMIN", "RESORT_ADMIN"),
-  validate(reportFilterSchema, "query"),
-  ReportController.findAll,
-);
-
-router.get(
-  "/spam",
-  authenticate,
-  authorize("LGU_ADMIN"),
-  validate(reportFilterSchema, "query"),
-  ReportController.getSpamReports,
-);
 
 // Public / optional auth routes
 router.get(
@@ -55,12 +35,6 @@ router.post(
   ReportController.create,
 );
 
-router.delete(
-  "/purge",
-  authenticate,
-  authorize("LGU_ADMIN"),
-  ReportController.purgeAllReports,
-);
 router.get("/my-reports", authenticate, ReportController.getMyReports);
 router.get(
   "/assigned",
@@ -72,48 +46,13 @@ router.get(
 // Single report routes
 router.get("/:id", authenticate, ReportController.findById);
 
-// Admin / Field Worker actions
-router.post(
-  "/:id/analyze",
-  authenticate,
-  authorize("LGU_ADMIN"),
-  validate(analyzeReportSchema),
-  ReportController.analyzeImage,
-);
-
+// Field Worker actions
 router.put(
   "/:id/status",
   authenticate,
-  authorize("LGU_ADMIN", "FIELD_WORKER"),
+  authorize("FIELD_WORKER"),
   validate(updateStatusSchema),
   ReportController.updateStatus,
-);
-router.put(
-  "/:id/assign",
-  authenticate,
-  authorize("LGU_ADMIN"),
-  validate(assignWorkerSchema),
-  ReportController.assignWorker,
-);
-router.delete(
-  "/:id",
-  authenticate,
-  authorize("LGU_ADMIN"),
-  ReportController.deleteReport,
-);
-
-router.put(
-  "/:id/spam/restore",
-  authenticate,
-  authorize("LGU_ADMIN"),
-  ReportController.restoreSpam,
-);
-
-router.delete(
-  "/:id/spam",
-  authenticate,
-  authorize("LGU_ADMIN"),
-  ReportController.deleteSpam,
 );
 
 // Image upload

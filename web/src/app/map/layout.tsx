@@ -50,7 +50,9 @@ function UserProfileMenu({
                 setOpen(false);
                 // simple logout flow: navigate to profile destination or root
                 router.push(
-                  user.role === "LGU_ADMIN" ? "/dashboard" : "/citizen/report",
+                  user.role === "FIELD_WORKER"
+                    ? "/field-worker"
+                    : "/citizen/report",
                 );
               }}
               className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left"

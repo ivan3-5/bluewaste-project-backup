@@ -40,31 +40,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     if (!isLoading && !user) {
       router.push("/login");
     }
-    if (
-      !isLoading &&
-      user &&
-      user.role !== "LGU_ADMIN" &&
-      user.role !== "RESORT_ADMIN"
-    ) {
+    if (!isLoading && user && user.role !== "LGU_ADMIN") {
       if (user.role === "FIELD_WORKER") {
         router.push("/field-worker");
       } else {
         router.push("/citizen/report");
-      }
-    }
-
-    if (!isLoading && user?.role === "RESORT_ADMIN") {
-      const allowedPrefixes = [
-        "/dashboard/map",
-        "/dashboard/reports",
-        "/dashboard/report",
-        "/dashboard/notifications",
-      ];
-      const isAllowed = allowedPrefixes.some((prefix) =>
-        pathname.startsWith(prefix),
-      );
-      if (!isAllowed) {
-        router.push("/dashboard/map");
       }
     }
   }, [user, isLoading, router, pathname]);
@@ -79,7 +59,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!user || (user.role !== "LGU_ADMIN" && user.role !== "RESORT_ADMIN")) {
+  if (!user || user.role !== "LGU_ADMIN") {
     return null;
   }
 

@@ -3,7 +3,7 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: "CITIZEN" | "LGU_ADMIN" | "RESORT_ADMIN" | "FIELD_WORKER";
+  role: "CITIZEN" | "LGU_ADMIN" | "FIELD_WORKER";
   phone?: string;
   avatarUrl?: string;
   barangayId?: string;
@@ -206,13 +206,11 @@ export interface PaginatedResponse<T> {
 }
 
 export type WasteCategory =
-  | "SOLID_WASTE"
-  | "HAZARDOUS"
-  | "LIQUID"
-  | "RECYCLABLE"
-  | "ORGANIC"
-  | "ELECTRONIC"
-  | "OTHER";
+  | "PLASTIC_WASTE"
+  | "ORGANIC_WASTE"
+  | "GLASS_WASTE"
+  | "METAL_WASTE"
+  | "PAPER_WASTE";
 export type ReportStatus =
   | "PENDING"
   | "VERIFIED"
@@ -224,13 +222,19 @@ export type ReportStatus =
 export type ReportPriority = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
 export const WASTE_CATEGORY_LABELS: Record<WasteCategory, string> = {
-  SOLID_WASTE: "Solid Waste",
-  HAZARDOUS: "Hazardous",
-  LIQUID: "Liquid Waste",
-  RECYCLABLE: "Recyclable",
-  ORGANIC: "Organic",
-  ELECTRONIC: "Electronic",
-  OTHER: "Other",
+  PLASTIC_WASTE: "Plastic Waste",
+  ORGANIC_WASTE: "Organic Waste",
+  GLASS_WASTE: "Glass Waste",
+  METAL_WASTE: "Metal Waste",
+  PAPER_WASTE: "Paper Waste",
+};
+
+export const WASTE_CATEGORY_COLORS: Record<WasteCategory, string> = {
+  PLASTIC_WASTE: "#3b82f6",
+  ORGANIC_WASTE: "#84cc16",
+  GLASS_WASTE: "#06b6d4",
+  METAL_WASTE: "#f97316",
+  PAPER_WASTE: "#8b5cf6",
 };
 
 export const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {

@@ -26,13 +26,11 @@ enum ReportStatus {
 }
 
 enum WasteCategory {
-  SOLID_WASTE
-  HAZARDOUS
-  LIQUID
-  RECYCLABLE
-  ORGANIC
-  ELECTRONIC
-  OTHER
+  PLASTIC_WASTE
+  ORGANIC_WASTE
+  GLASS_WASTE
+  METAL_WASTE
+  PAPER_WASTE
 }
 
 enum ImageType {

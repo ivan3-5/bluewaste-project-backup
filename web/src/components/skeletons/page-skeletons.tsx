@@ -319,25 +319,6 @@ export function AdminOverviewSkeleton() {
   );
 }
 
-export function BarangayCardsSkeleton({ cards = 6 }: { cards?: number }) {
-  return (
-    <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-      {Array.from({ length: cards }).map((_, idx) => (
-        <div key={idx} className="rounded-xl border bg-white p-5 space-y-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-2">
-              <Skeleton className="h-6 w-32" />
-              <Skeleton className="h-3 w-28" />
-            </div>
-            <Skeleton className="h-6 w-20 rounded-full" />
-          </div>
-          <Skeleton className="h-2.5 w-full rounded-full" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
 export function ReportDetailSkeleton() {
   return (
     <div className="space-y-6">

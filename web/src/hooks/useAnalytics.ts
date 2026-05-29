@@ -1,57 +1,45 @@
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
-import {
-  AnalyticsOverview,
-  TrendData,
-  CategoryData,
-  BarangayStats,
-} from "@/types";
+import { BarangayStats } from "@/types";
 
-export function useAnalyticsOverview() {
-  return useQuery<AnalyticsOverview>({
-    queryKey: ["analytics", "overview"],
-    queryFn: async () => {
-      const { data } = await api.get("/analytics/overview");
-      return data;
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-}
+type BackendBarangayStats = {
+  id?: string;
+  name?: string;
+  totalReports?: number;
+  count?: number;
+  barangayId?: string;
+  barangayName?: string;
+};
 
-export function useAnalyticsTrends(
-  period: "daily" | "weekly" | "monthly" = "daily",
-  days: number = 30,
-) {
-  return useQuery<TrendData[]>({
-    queryKey: ["analytics", "trends", period, days],
-    queryFn: async () => {
-      const { data } = await api.get(
-        `/analytics/trends?period=${period}&days=${days}`,
-      );
-      return data;
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-}
+function toNonNegativeInt(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+    return Math.trunc(value);
+  }
 
-export function useAnalyticsCategories() {
-  return useQuery<CategoryData[]>({
-    queryKey: ["analytics", "categories"],
-    queryFn: async () => {
-      const { data } = await api.get("/analytics/categories");
-      return data;
-    },
-    staleTime: 5 * 60 * 1000,
-  });
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed) && parsed >= 0) {
+      return Math.trunc(parsed);
+    }
+  }
+
+  return 0;
 }
 
 export function useAnalyticsBarangays() {
   return useQuery<BarangayStats[]>({
     queryKey: ["analytics", "barangays"],
     queryFn: async () => {
-      const { data } = await api.get("/analytics/barangays");
-      return data;
+      const { data } = await api.get("/barangays/ranking");
+      if (!Array.isArray(data)) {
+        return [];
+      }
+
+      return data.map((item: BackendBarangayStats) => ({
+        barangayId: item.id ?? item.barangayId ?? "",
+        barangayName: item.name ?? item.barangayName ?? "",
+        count: toNonNegativeInt(item.totalReports ?? item.count),
+      }));
     },
-    staleTime: 5 * 60 * 1000,
   });
 }

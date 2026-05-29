@@ -18,9 +18,6 @@ interface AuthContextType {
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
   isAdmin: boolean;
-  isResortAdmin: boolean;
-  isFieldWorker: boolean;
-  isCitizen: boolean;
 }
 
 interface RegisterData {
@@ -76,6 +73,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("bluewaste_user");
   }, []);
 
+  const isAdmin = user?.role === "LGU_ADMIN" || user?.role === "FIELD_WORKER";
+
   return (
     <AuthContext.Provider
       value={{
@@ -85,10 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         register,
         logout,
-        isAdmin: user?.role === "LGU_ADMIN" || user?.role === "RESORT_ADMIN",
-        isResortAdmin: user?.role === "RESORT_ADMIN",
-        isFieldWorker: user?.role === "FIELD_WORKER",
-        isCitizen: user?.role === "CITIZEN",
+        isAdmin,
       }}
     >
       {children}

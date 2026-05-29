@@ -199,7 +199,7 @@ export default function TaskDetailPage() {
         <div className="flex flex-wrap gap-4 text-xs text-gray-500">
           <span className="flex items-center gap-1">
             <MapPin className="w-3.5 h-3.5" />
-            {report.barangay?.name || report.address || "No address"}
+            {report.address || "No address"}
           </span>
           <span className="flex items-center gap-1">
             <Clock className="w-3.5 h-3.5" />

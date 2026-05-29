@@ -131,7 +131,7 @@ export default function TasksPage() {
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
                   <span className="flex items-center gap-1">
                     <MapPin className="w-3 h-3" />
-                    {report.barangay?.name || report.address || "No address"}
+                    {report.address || "No address"}
                   </span>
                   <span>{WASTE_CATEGORY_LABELS[report.category]}</span>
                   <span>{timeAgo(report.createdAt)}</span>

@@ -57,7 +57,7 @@ export default function LoginPage() {
       const savedUser = localStorage.getItem("bluewaste_user");
       if (savedUser) {
         const user = JSON.parse(savedUser);
-        if (user.role === "LGU_ADMIN" || user.role === "RESORT_ADMIN") {
+        if (user.role === "LGU_ADMIN") {
           router.push("/dashboard");
         } else if (user.role === "FIELD_WORKER") {
           router.push("/field-worker");
@@ -111,7 +111,7 @@ export default function LoginPage() {
                 </h2>
                 <p className="mt-4 max-w-md text-sm leading-relaxed text-slate-600">
                   Empowering Panabo City residents to report and track waste,
-                  keeping every barangay cleaner through community
+                  keeping every neighborhood cleaner through community
                   participation.
                 </p>
               </div>

@@ -18,27 +18,6 @@ export class ReportController {
     }
   }
 
-  static async findAll(req: AuthRequest, res: Response) {
-    try {
-      const result = await ReportService.findAll(req.query as any, req.user);
-      res.json(result);
-    } catch (error: any) {
-      sendError(res, 500, "Failed to fetch reports", "REPORT_FETCH_FAILED");
-    }
-  }
-
-  static async getSpamReports(req: AuthRequest, res: Response) {
-    try {
-      const result = await ReportService.getSpamReports(
-        req.query as any,
-        req.user,
-      );
-      res.json(result);
-    } catch {
-      sendError(res, 500, "Failed to fetch spam reports", "SPAM_FETCH_FAILED");
-    }
-  }
-
   static async findById(req: AuthRequest, res: Response) {
     try {
       const report = await ReportService.findById(req.params.id, req.user);
@@ -73,76 +52,6 @@ export class ReportController {
         500,
         "Failed to update status",
         "REPORT_STATUS_UPDATE_FAILED",
-      );
-    }
-  }
-
-  static async analyzeImage(req: AuthRequest, res: Response) {
-    try {
-      const { imageId } = req.body;
-      const result = await ReportService.analyzeReportImage(
-        req.params.id,
-        req.user!.id,
-        imageId,
-      );
-      res.json(result);
-    } catch (error: any) {
-      const message =
-        typeof error?.message === "string"
-          ? error.message
-          : "Failed to analyze report image";
-
-      if (message === "Report not found") {
-        return sendError(res, 404, message, "REPORT_NOT_FOUND");
-      }
-      if (message === "No report image found") {
-        return sendError(res, 400, message, "REPORT_IMAGE_REQUIRED");
-      }
-      if (message === "Failed to fetch report image for analysis") {
-        return sendError(
-          res,
-          502,
-          "Could not fetch the report image for analysis.",
-          "REPORT_IMAGE_FETCH_FAILED",
-        );
-      }
-      if (message.includes("YOLO service is unavailable")) {
-        return sendError(res, 502, message, "YOLO_SERVICE_UNAVAILABLE");
-      }
-      if (message.startsWith("YOLO API error:")) {
-        return sendError(res, 502, message, "YOLO_API_ERROR");
-      }
-      console.error("Report analysis failed:", error);
-      sendError(
-        res,
-        500,
-        "Failed to analyze report image",
-        "REPORT_ANALYZE_FAILED",
-      );
-    }
-  }
-
-  static async assignWorker(req: AuthRequest, res: Response) {
-    try {
-      const { assignedToId } = req.body;
-      const report = await ReportService.assignWorker(
-        req.params.id,
-        assignedToId,
-        req.user!.id,
-      );
-      res.json(report);
-    } catch (error: any) {
-      if (
-        error.message === "Report not found" ||
-        error.message === "Invalid field worker"
-      ) {
-        return sendError(res, 404, error.message, "REPORT_ASSIGNMENT_FAILED");
-      }
-      sendError(
-        res,
-        500,
-        "Failed to assign worker",
-        "REPORT_ASSIGNMENT_FAILED",
       );
     }
   }
@@ -204,71 +113,6 @@ export class ReportController {
         "Failed to fetch heatmap data",
         "HEATMAP_FETCH_FAILED",
       );
-    }
-  }
-
-  static async deleteReport(req: AuthRequest, res: Response) {
-    try {
-      await ReportService.softDelete(req.params.id);
-      res.json({ message: "Report deleted successfully" });
-    } catch (error: any) {
-      if (error.message === "Report not found") {
-        return sendError(res, 404, error.message, "REPORT_NOT_FOUND");
-      }
-      sendError(res, 500, "Failed to delete report", "REPORT_DELETE_FAILED");
-    }
-  }
-
-  static async purgeAllReports(req: AuthRequest, res: Response) {
-    try {
-      if (req.body?.confirm !== "DELETE_ALL_REPORTS") {
-        return sendError(
-          res,
-          400,
-          'Missing confirmation token. Send confirm: "DELETE_ALL_REPORTS".',
-          "REPORT_PURGE_CONFIRMATION_REQUIRED",
-        );
-      }
-
-      const summary = await ReportService.hardDeleteAllReports();
-      res.json({
-        message: "All reports deleted successfully",
-        ...summary,
-      });
-    } catch (error: any) {
-      sendError(res, 500, "Failed to purge reports", "REPORT_PURGE_FAILED");
-    }
-  }
-
-  static async restoreSpam(req: AuthRequest, res: Response) {
-    try {
-      const restored = await ReportService.restoreFromSpam(
-        req.params.id,
-        req.user!.id,
-      );
-      res.json(restored);
-    } catch (error: any) {
-      if (error.message === "Spam report not found") {
-        return sendError(res, 404, error.message, "SPAM_REPORT_NOT_FOUND");
-      }
-      sendError(
-        res,
-        500,
-        "Failed to restore spam report",
-        "SPAM_RESTORE_FAILED",
-      );
-    }
-  }
-
-  static async deleteSpam(req: AuthRequest, res: Response) {
-    try {
-      await ReportService.deleteSpamReport(req.params.id);
-      res.json({ message: "Spam report deleted successfully" });
-    } catch (error: any) {
-      if (error.message === "Spam report not found") {
-        return sendError(res, 404, error.message, "SPAM_REPORT_NOT_FOUND");
-      }
-      sendError(res, 500, "Failed to delete spam report", "SPAM_DELETE_FAILED");
     }
   }
 

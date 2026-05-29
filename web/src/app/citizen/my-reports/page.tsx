@@ -188,13 +188,38 @@ export default function MyReportsPage() {
             Loading your reports...
           </div>
         ) : reports.length === 0 ? (
-          <div className="py-10 text-center">
-            <p className="mb-2 text-gray-400">No reports found</p>
-            <Link href="/citizen/report">
-              <Button variant="outline" size="sm">
-                Submit your first report
-              </Button>
-            </Link>
+          <div className="relative overflow-hidden rounded-2xl border border-dashed border-blue-200 bg-gradient-to-br from-white via-blue-50/40 to-white p-8 text-center shadow-sm">
+            <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-blue-100/60 blur-2xl" />
+            <div className="pointer-events-none absolute -bottom-10 -left-10 h-32 w-32 rounded-full bg-emerald-100/50 blur-2xl" />
+
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600/10 ring-1 ring-blue-200">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-8 w-8 text-blue-600"
+              >
+                <path
+                  fill="currentColor"
+                  d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"
+                />
+              </svg>
+            </div>
+
+            <h2 className="mt-4 text-lg font-semibold text-gray-800">
+              No reports yet
+            </h2>
+            <p className="mx-auto mt-2 max-w-md text-sm text-gray-600">
+              Create your first report to track clean-up status and keep your
+              area visible to responders.
+            </p>
+            <div className="mt-6">
+              <Link href="/citizen/report">
+                <Button size="sm">Submit your first report</Button>
+              </Link>
+            </div>
+            <p className="mt-3 text-xs text-gray-400">
+              Tip: add a clear photo for faster validation.
+            </p>
           </div>
         ) : (
           reports.map((report) => {
@@ -217,11 +242,6 @@ export default function MyReportsPage() {
                       <span className="text-xs text-gray-400">
                         {WASTE_CATEGORY_LABELS[report.category]}
                       </span>
-                      {report.barangay && (
-                        <span className="text-xs text-gray-400">
-                          Brgy. {report.barangay.name}
-                        </span>
-                      )}
                       <span className="text-xs text-gray-400">
                         {timeAgo(report.createdAt)}
                       </span>

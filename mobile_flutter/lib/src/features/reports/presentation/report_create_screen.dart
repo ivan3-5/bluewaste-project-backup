@@ -27,7 +27,7 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
   final List<XFile> _images = <XFile>[];
   final ImagePicker _picker = ImagePicker();
 
-  String _category = "SOLID_WASTE";
+  String _category = "PLASTIC_WASTE";
   bool _isAnonymous = false;
   double? _latitude;
   double? _longitude;
@@ -227,7 +227,7 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
       setState(() {
         _images.clear();
         _isAnonymous = false;
-        _category = "SOLID_WASTE";
+        _category = "PLASTIC_WASTE";
       });
 
       _showMessage("Report submitted successfully.");

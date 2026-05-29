@@ -204,26 +204,20 @@
 /* ── Waste map: pre-defined category + status + priority color classes ── */
 
 /* Backgrounds */
-.bg-cat-SOLID_WASTE {
+.bg-cat-PLASTIC_WASTE {
   background-color: #3b82f6;
 }
-.bg-cat-HAZARDOUS {
-  background-color: #ef4444;
-}
-.bg-cat-LIQUID {
-  background-color: #06b6d4;
-}
-.bg-cat-RECYCLABLE {
-  background-color: #22c55e;
-}
-.bg-cat-ORGANIC {
+.bg-cat-ORGANIC_WASTE {
   background-color: #84cc16;
 }
-.bg-cat-ELECTRONIC {
-  background-color: #8b5cf6;
+.bg-cat-GLASS_WASTE {
+  background-color: #06b6d4;
 }
-.bg-cat-OTHER {
-  background-color: #6b7280;
+.bg-cat-METAL_WASTE {
+  background-color: #f97316;
+}
+.bg-cat-PAPER_WASTE {
+  background-color: #8b5cf6;
 }
 
 .bg-st-PENDING {

@@ -126,7 +126,6 @@ class ReportService {
     int limit = 2000,
     String? status,
     String? category,
-    String? barangayId,
   }) async {
     try {
       final response = await _dio.get<List<dynamic>>(
@@ -135,8 +134,6 @@ class ReportService {
           "limit": limit,
           if (status != null && status.isNotEmpty) "status": status,
           if (category != null && category.isNotEmpty) "category": category,
-          if (barangayId != null && barangayId.isNotEmpty)
-            "barangayId": barangayId,
         },
       );
 

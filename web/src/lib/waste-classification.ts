@@ -1,3 +1,5 @@
+import type { WasteCategory } from "@/types";
+
 export type WasteTypeCode = "RECYCLABLE" | "NON_RECYCLABLE" | "ORGANIC";
 
 export interface DetectionBox {
@@ -14,6 +16,7 @@ export interface ClassificationResult {
   detectedObject: string;
   wasteTypeCode: WasteTypeCode;
   wasteType: "Recyclable" | "Non-recyclable" | "Organic";
+  wasteCategory: WasteCategory;
   confidence: number;
   labels: string[];
   detections: DetectionBox[];
@@ -42,6 +45,31 @@ const ORGANIC_KEYWORDS = [
   "compost",
   "organic",
   "garden waste",
+];
+
+const CATEGORY_KEYWORDS: Record<WasteCategory, string[]> = {
+  PLASTIC_WASTE: [
+    "plastic",
+    "bottle",
+    "bag",
+    "wrapper",
+    "cup",
+    "container",
+    "straw",
+    "styrofoam",
+  ],
+  ORGANIC_WASTE: ORGANIC_KEYWORDS,
+  GLASS_WASTE: ["glass", "wine glass", "jar", "glass bottle"],
+  METAL_WASTE: ["metal", "can", "tin", "aluminum", "steel"],
+  PAPER_WASTE: ["paper", "cardboard", "carton", "newspaper", "box"],
+};
+
+const CATEGORY_MATCH_ORDER: WasteCategory[] = [
+  "ORGANIC_WASTE",
+  "GLASS_WASTE",
+  "METAL_WASTE",
+  "PAPER_WASTE",
+  "PLASTIC_WASTE",
 ];
 
 const HUMAN_LABELS: Record<WasteTypeCode, ClassificationResult["wasteType"]> = {
@@ -244,6 +272,24 @@ function inferWasteType(labels: string[]): WasteTypeCode {
   return "NON_RECYCLABLE";
 }
 
+export function inferWasteCategory(
+  labels: string[],
+  wasteTypeCode?: WasteTypeCode,
+): WasteCategory {
+  if (wasteTypeCode === "ORGANIC") {
+    return "ORGANIC_WASTE";
+  }
+
+  for (const category of CATEGORY_MATCH_ORDER) {
+    const keywords = CATEGORY_KEYWORDS[category];
+    if (labels.some((label) => labelMatches(label, keywords))) {
+      return category;
+    }
+  }
+
+  return "PLASTIC_WASTE";
+}
+
 export function classifyYoloPayload(payload: unknown): ClassificationResult {
   const detections = pickArray(payload)
     .map(parseDetection)
@@ -255,6 +301,7 @@ export function classifyYoloPayload(payload: unknown): ClassificationResult {
       detectedObject: "unknown",
       wasteTypeCode: "NON_RECYCLABLE",
       wasteType: HUMAN_LABELS.NON_RECYCLABLE,
+      wasteCategory: "PLASTIC_WASTE",
       confidence: 0,
       labels: [],
       detections: [],
@@ -266,11 +313,13 @@ export function classifyYoloPayload(payload: unknown): ClassificationResult {
   );
   const top = detections[0];
   const wasteTypeCode = inferWasteType(labels);
+  const wasteCategory = inferWasteCategory(labels, wasteTypeCode);
 
   return {
     detectedObject: top.className,
     wasteTypeCode,
     wasteType: HUMAN_LABELS[wasteTypeCode],
+    wasteCategory,
     confidence: Number(top.confidence.toFixed(4)),
     labels,
     detections,

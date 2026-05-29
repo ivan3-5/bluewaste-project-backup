@@ -16,7 +16,7 @@ export function Header() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   const isLGUAdmin = user?.role === "LGU_ADMIN";
-  const isResortAdmin = user?.role === "RESORT_ADMIN";
+  const isFieldWorker = user?.role === "FIELD_WORKER";
 
   const notifPath = isAdmin
     ? "/dashboard/notifications"
@@ -55,8 +55,8 @@ export function Header() {
           <h2 className="text-lg font-semibold text-gray-800">
             {isLGUAdmin
               ? "Admin Dashboard"
-              : isResortAdmin
-                ? "Resort Admin Dashboard"
+              : isFieldWorker
+                ? "Field Worker Portal"
                 : "Citizen Portal"}
           </h2>
         </div>
@@ -101,8 +101,8 @@ export function Header() {
                   <p className="text-xs text-gray-500 mt-1">
                     {isLGUAdmin
                       ? "Administrator"
-                      : isResortAdmin
-                        ? "Resort Admin"
+                      : isFieldWorker
+                        ? "Field Worker"
                         : "Citizen"}
                   </p>
                 </div>
@@ -149,13 +149,6 @@ export function Header() {
                 <MobileLink
                   href="/dashboard/analytics"
                   label="Analytics"
-                  onClick={() => setMobileMenuOpen(false)}
-                />
-              )}
-              {isLGUAdmin && (
-                <MobileLink
-                  href="/dashboard/barangays"
-                  label="Barangays"
                   onClick={() => setMobileMenuOpen(false)}
                 />
               )}

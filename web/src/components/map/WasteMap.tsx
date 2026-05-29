@@ -18,6 +18,7 @@ import {
   ReportingZone,
   ZonePoint,
   WASTE_CATEGORY_LABELS,
+  WASTE_CATEGORY_COLORS,
   REPORT_STATUS_LABELS,
   STATUS_COLORS,
 } from "@/types";
@@ -49,16 +50,6 @@ interface WasteMapProps {
   onDrawZone?: (points: ZonePoint[]) => void;
 }
 
-export const CATEGORY_COLORS: Record<string, string> = {
-  SOLID_WASTE: "#3b82f6",
-  HAZARDOUS: "#ef4444",
-  LIQUID: "#06b6d4",
-  RECYCLABLE: "#22c55e",
-  ORGANIC: "#84cc16",
-  ELECTRONIC: "#8b5cf6",
-  OTHER: "#6b7280",
-};
-
 const DEFAULT_CENTER: [number, number] = [7.3132, 125.6844];
 
 function timeAgo(dateStr: string): string {
@@ -71,7 +62,8 @@ function timeAgo(dateStr: string): string {
 }
 
 function createMarkerIcon(category: string, status: string) {
-  const color = CATEGORY_COLORS[category] || "#6b7280";
+  const color =
+    (WASTE_CATEGORY_COLORS as Record<string, string>)[category] || "#6b7280";
   const statusColor =
     (STATUS_COLORS as Record<string, string>)[status] || "#6b7280";
   const size = 15;
@@ -532,7 +524,9 @@ export default function WasteMap({
         icon: createMarkerIcon(report.category, report.status),
       });
 
-      const catColor = CATEGORY_COLORS[report.category] || "#6b7280";
+      const catColor =
+        (WASTE_CATEGORY_COLORS as Record<string, string>)[report.category] ||
+        "#6b7280";
       const statusColor =
         (STATUS_COLORS as Record<string, string>)[report.status] || "#6b7280";
       const imgHtml = report.images?.[0]

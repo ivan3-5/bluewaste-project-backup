@@ -58,7 +58,7 @@ class _RootSwitcherScreenState extends ConsumerState<RootSwitcherScreen> {
               backgroundColor: AppColors.secondary,
               child: ClipOval(
                 child: Image.asset(
-                  "assets/images/logo-bluewaste.png",
+                  "assets/images/logo-final.png",
                   width: 34,
                   height: 34,
                   fit: BoxFit.cover,

@@ -46,17 +46,15 @@ class AppColors {
 
   static Color categoryColor(String category) {
     switch (category) {
-      case "SOLID_WASTE":
+      case "PLASTIC_WASTE":
         return info;
-      case "HAZARDOUS":
-        return destructive;
-      case "LIQUID":
-        return cyan;
-      case "RECYCLABLE":
-        return success;
-      case "ORGANIC":
+      case "ORGANIC_WASTE":
         return olive;
-      case "ELECTRONIC":
+      case "GLASS_WASTE":
+        return cyan;
+      case "METAL_WASTE":
+        return orange;
+      case "PAPER_WASTE":
         return purple;
       default:
         return neutral;

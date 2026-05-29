@@ -18,7 +18,6 @@ interface ReportFilters {
   startDate?: string;
   endDate?: string;
   search?: string;
-  isSpam?: boolean;
 }
 
 export function useReports(filters: ReportFilters = {}) {
@@ -150,7 +149,6 @@ export function useUpdateReportStatus() {
       queryClient.invalidateQueries({ queryKey: ["reports"] });
       queryClient.invalidateQueries({ queryKey: ["report"] });
       queryClient.invalidateQueries({ queryKey: ["map-data"] });
-      queryClient.invalidateQueries({ queryKey: ["analytics"] });
     },
   });
 }
@@ -201,121 +199,6 @@ export function useUploadReportImages() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["report"] });
-    },
-  });
-}
-
-export function useDeleteReport() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      await api.delete(`/reports/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["reports"] });
-      queryClient.invalidateQueries({ queryKey: ["map-data"] });
-    },
-  });
-}
-
-export function usePurgeReports() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async () => {
-      const { data } = await api.delete("/reports/purge", {
-        data: { confirm: "DELETE_ALL_REPORTS" },
-      });
-      return data as {
-        message: string;
-        reports: number;
-        images: number;
-        statusHistory: number;
-        notifications: number;
-      };
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["reports"] });
-      queryClient.invalidateQueries({ queryKey: ["map-data"] });
-      queryClient.invalidateQueries({ queryKey: ["analytics"] });
-      queryClient.invalidateQueries({ queryKey: ["report"] });
-    },
-  });
-}
-
-export function useAnalyzeReportImage() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-      reportId,
-      imageId,
-    }: {
-      reportId: string;
-      imageId?: string;
-    }) => {
-      const { data } = await api.post(`/reports/${reportId}/analyze`, {
-        ...(imageId ? { imageId } : {}),
-      });
-      return data as {
-        report: Report;
-        analysis: {
-          status: "DIRTY" | "CLEAN";
-          wasteCount: number;
-          count: number;
-          confidence: number | null;
-          labels: string[];
-          detections: unknown[];
-          inferenceMs: number | null;
-          imageId: string;
-          imageUrl: string;
-          annotatedImageUrl: string | null;
-          annotatedImagePublicId: string | null;
-          spam: boolean;
-          spamMarkedAt: string | null;
-          autoDeleteAt: string | null;
-        };
-      };
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["reports"] });
-      queryClient.invalidateQueries({ queryKey: ["report"] });
-      queryClient.invalidateQueries({ queryKey: ["analytics"] });
-      queryClient.invalidateQueries({ queryKey: ["map-data"] });
-    },
-  });
-}
-
-export function useRestoreSpamReport() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (reportId: string) => {
-      const { data } = await api.put(`/reports/${reportId}/spam/restore`);
-      return data as Report;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["reports"] });
-      queryClient.invalidateQueries({ queryKey: ["report"] });
-      queryClient.invalidateQueries({ queryKey: ["analytics"] });
-      queryClient.invalidateQueries({ queryKey: ["map-data"] });
-    },
-  });
-}
-
-export function useDeleteSpamReport() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (reportId: string) => {
-      await api.delete(`/reports/${reportId}/spam`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["reports"] });
-      queryClient.invalidateQueries({ queryKey: ["report"] });
-      queryClient.invalidateQueries({ queryKey: ["analytics"] });
-      queryClient.invalidateQueries({ queryKey: ["map-data"] });
     },
   });
 }

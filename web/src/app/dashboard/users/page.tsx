@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import {
   useUsers,
   useCreateUser,
@@ -11,9 +10,6 @@ import {
 } from "@/hooks/useUsers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Barangay } from "@/types";
-import api from "@/lib/api";
-import { filterAdminBarangaysByName } from "@/lib/adminBarangays";
 import { formatDateTime } from "@/lib/utils";
 import {
   DataTableSkeleton,
@@ -23,19 +19,17 @@ import {
 
 const ROLE_LABELS: Record<string, string> = {
   LGU_ADMIN: "Admin",
-  RESORT_ADMIN: "Resort Admin",
   FIELD_WORKER: "Field Worker",
   CITIZEN: "Citizen",
 };
 
 const ROLE_BADGE_CLASSES: Record<string, string> = {
   LGU_ADMIN: "bg-blue-100 text-blue-800",
-  RESORT_ADMIN: "bg-indigo-100 text-indigo-800",
   FIELD_WORKER: "bg-green-100 text-green-800",
   CITIZEN: "bg-gray-100 text-gray-700",
 };
 
-const ROLES = ["LGU_ADMIN", "RESORT_ADMIN", "FIELD_WORKER", "CITIZEN"] as const;
+const ROLES = ["LGU_ADMIN", "FIELD_WORKER", "CITIZEN"] as const;
 
 type Role = (typeof ROLES)[number];
 
@@ -46,7 +40,6 @@ interface UserFormData {
   password: string;
   role: Role;
   phone: string;
-  barangayId: string;
 }
 
 const emptyForm: UserFormData = {
@@ -56,7 +49,6 @@ const emptyForm: UserFormData = {
   password: "",
   role: "CITIZEN",
   phone: "",
-  barangayId: "",
 };
 
 export default function UsersPage() {
@@ -79,15 +71,6 @@ export default function UsersPage() {
     search: search || undefined,
   });
 
-  const { data: barangays = [] } = useQuery<Barangay[]>({
-    queryKey: ["barangays"],
-    queryFn: async () => {
-      const { data } = await api.get("/barangays");
-      return data;
-    },
-  });
-  const filteredBarangays = filterAdminBarangaysByName(barangays);
-
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
   const deleteUserMutation = useDeleteUser();
@@ -102,7 +85,7 @@ export default function UsersPage() {
           <PageHeadingSkeleton withSubtitle={false} />
         </div>
         <FilterToolbarSkeleton blocks={1} />
-        <DataTableSkeleton rows={8} cols={8} />
+        <DataTableSkeleton rows={8} cols={7} />
       </div>
     );
   }
@@ -126,7 +109,6 @@ export default function UsersPage() {
       password: "",
       role: user.role as Role,
       phone: user.phone || "",
-      barangayId: user.barangay?.id || "",
     });
     setFormError("");
     setEditUser(user);
@@ -153,7 +135,6 @@ export default function UsersPage() {
         password: form.password,
         role: form.role,
         phone: form.phone || undefined,
-        barangayId: form.barangayId || undefined,
       });
       setShowAddModal(false);
     } catch (err: any) {
@@ -181,7 +162,6 @@ export default function UsersPage() {
         email: form.email,
         role: form.role,
         phone: form.phone || undefined,
-        barangayId: form.barangayId || undefined,
       });
       setEditUser(null);
     } catch (err: any) {
@@ -309,9 +289,6 @@ export default function UsersPage() {
                 Role
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">
-                Barangay
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">
                 Phone
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">
@@ -329,7 +306,7 @@ export default function UsersPage() {
             {isLoading ? (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={7}
                   className="px-4 py-10 text-center text-gray-400"
                 >
                   Loading...
@@ -338,7 +315,7 @@ export default function UsersPage() {
             ) : users.length === 0 ? (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={7}
                   className="px-4 py-10 text-center text-gray-400"
                 >
                   No users found
@@ -359,9 +336,6 @@ export default function UsersPage() {
                     >
                       {ROLE_LABELS[user.role] ?? user.role}
                     </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {user.barangay?.name ?? "—"}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">
                     {user.phone || "—"}
@@ -472,27 +446,6 @@ export default function UsersPage() {
                 {field("Phone", "phone")}
               </div>
 
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Barangay
-                </label>
-                <select
-                  title="Select barangay"
-                  className="w-full rounded-md border px-3 py-2 text-sm"
-                  value={form.barangayId}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, barangayId: e.target.value }))
-                  }
-                >
-                  <option value="">— None —</option>
-                  {filteredBarangays.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
               {formError && <p className="text-sm text-red-600">{formError}</p>}
 
               <div className="flex justify-end gap-3 pt-2">
@@ -553,27 +506,6 @@ export default function UsersPage() {
                   </select>
                 </div>
                 {field("Phone", "phone")}
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Barangay
-                </label>
-                <select
-                  title="Select barangay"
-                  className="w-full rounded-md border px-3 py-2 text-sm"
-                  value={form.barangayId}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, barangayId: e.target.value }))
-                  }
-                >
-                  <option value="">— None —</option>
-                  {filteredBarangays.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
               </div>
 
               {formError && <p className="text-sm text-red-600">{formError}</p>}

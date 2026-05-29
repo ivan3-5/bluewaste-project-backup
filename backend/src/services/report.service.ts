@@ -1,6 +1,5 @@
 import prisma from "../config/database";
 import {
-  AnalysisStatus,
   ReportStatus,
   WasteCategory,
   Prisma,
@@ -12,7 +11,6 @@ import {
   buildPaginatedResponse,
 } from "../utils/pagination";
 import { NotificationService } from "./notification.service";
-import { CloudinaryService } from "./cloudinary.service";
 import { env } from "../config/env";
 
 type Viewer = {
@@ -48,14 +46,6 @@ function toFiniteNumberOrNull(value: unknown): number | null {
   }
 
   return null;
-}
-
-function normalizeDecisionStatus(value: unknown): AnalysisStatus {
-  if (typeof value === "string" && value.trim().toUpperCase() === "DIRTY") {
-    return AnalysisStatus.DIRTY;
-  }
-
-  return AnalysisStatus.CLEAN;
 }
 
 function toSafeJson(text: string) {
@@ -341,7 +331,9 @@ export class ReportService {
 
     if (annotatedImageBuffer) {
       try {
-        annotatedImageUpload = await CloudinaryService.uploadImage(
+        annotatedImageUpload = await (
+          await import("../services/cloudinary.service")
+        ).CloudinaryService.uploadImage(
           annotatedImageBuffer,
           "bluewaste/analysis",
         );
@@ -360,7 +352,10 @@ export class ReportService {
       : extractDetectionLabels(detections);
 
     return {
-      status: normalizeDecisionStatus((yoloJson as any)?.status),
+      status:
+        (yoloJson as any)?.status === "DIRTY"
+          ? ("DIRTY" as const)
+          : ("CLEAN" as const),
       wasteCount,
       count,
       confidence:
@@ -469,77 +464,6 @@ export class ReportService {
     this.invalidateGeoCaches();
 
     return report;
-  }
-
-  static async findAll(
-    filters: {
-      status?: ReportStatus;
-      category?: WasteCategory;
-      barangayId?: string;
-      startDate?: string;
-      endDate?: string;
-      search?: string;
-      isSpam?: string;
-      page?: string;
-      limit?: string;
-    },
-    viewer?: Viewer,
-  ) {
-    await this.purgeExpiredSpamIfDue();
-    const pagination = getPaginationParams({
-      page: filters.page,
-      limit: filters.limit,
-    });
-
-    const wantsSpam =
-      filters.isSpam === "true" && viewer?.role === Role.LGU_ADMIN;
-
-    const where: Prisma.ReportWhereInput = {
-      isDeleted: false,
-      isSpam: wantsSpam,
-      ...this.getViewerWhereScope(viewer),
-    };
-
-    if (filters.status) where.status = filters.status;
-    if (filters.category) where.category = filters.category;
-    if (filters.barangayId) where.barangayId = filters.barangayId;
-
-    if (filters.startDate || filters.endDate) {
-      where.createdAt = {};
-      if (filters.startDate) where.createdAt.gte = new Date(filters.startDate);
-      if (filters.endDate) where.createdAt.lte = new Date(filters.endDate);
-    }
-
-    if (filters.search) {
-      where.OR = [
-        { title: { contains: filters.search, mode: "insensitive" } },
-        { description: { contains: filters.search, mode: "insensitive" } },
-        { address: { contains: filters.search, mode: "insensitive" } },
-      ];
-    }
-
-    const [reports, total] = await Promise.all([
-      prisma.report.findMany({
-        where,
-        include: {
-          reporter: {
-            select: { id: true, firstName: true, lastName: true },
-          },
-          assignedTo: {
-            select: { id: true, firstName: true, lastName: true },
-          },
-          barangay: { select: { id: true, name: true } },
-          images: { take: 1 },
-          _count: { select: { images: true } },
-        },
-        orderBy: { createdAt: "desc" },
-        skip: (pagination.page - 1) * pagination.limit,
-        take: pagination.limit,
-      }),
-      prisma.report.count({ where }),
-    ]);
-
-    return buildPaginatedResponse(reports, total, pagination);
   }
 
   static async findById(id: string, viewer?: Viewer) {
@@ -669,49 +593,6 @@ export class ReportService {
     }
 
     this.invalidateGeoCaches();
-
-    return updatedReport;
-  }
-
-  static async assignWorker(
-    reportId: string,
-    assignedToId: string,
-    assignedById: string,
-  ) {
-    const report = await prisma.report.findFirst({
-      where: { id: reportId, isDeleted: false, isSpam: false },
-    });
-
-    if (!report) {
-      throw new Error("Report not found");
-    }
-
-    // Verify worker exists and is a field worker
-    const worker = await prisma.user.findUnique({
-      where: { id: assignedToId },
-    });
-
-    if (!worker || worker.role !== "FIELD_WORKER") {
-      throw new Error("Invalid field worker");
-    }
-
-    const updatedReport = await prisma.report.update({
-      where: { id: reportId },
-      data: { assignedToId },
-      include: {
-        assignedTo: { select: { id: true, firstName: true, lastName: true } },
-        barangay: { select: { id: true, name: true } },
-      },
-    });
-
-    // Notify assigned worker
-    await NotificationService.create({
-      userId: assignedToId,
-      title: "New Assignment",
-      message: `You have been assigned to report: "${report.title}"`,
-      type: "ASSIGNMENT",
-      reportId,
-    });
 
     return updatedReport;
   }
@@ -891,245 +772,6 @@ export class ReportService {
     return heatmapData;
   }
 
-  static async analyzeReportImage(
-    reportId: string,
-    changedById: string,
-    imageId?: string,
-  ) {
-    const report = await prisma.report.findFirst({
-      where: { id: reportId, isDeleted: false },
-      include: {
-        images: {
-          orderBy: { createdAt: "asc" },
-        },
-      },
-    });
-
-    if (!report) {
-      throw new Error("Report not found");
-    }
-
-    const reportImages = report.images.filter(
-      (image) => image.type === "REPORT",
-    );
-    const targetImage = imageId
-      ? reportImages.find((image) => image.id === imageId)
-      : reportImages[0];
-
-    if (!targetImage) {
-      throw new Error("No report image found");
-    }
-
-    const analysis = await this.requestYoloAnalysis(targetImage.imageUrl);
-
-    const now = new Date();
-    const shouldMarkSpam = analysis.status === AnalysisStatus.CLEAN;
-    const nextStatus = shouldMarkSpam
-      ? ReportStatus.REJECTED
-      : report.status === ReportStatus.PENDING ||
-          report.status === ReportStatus.REJECTED
-        ? ReportStatus.VERIFIED
-        : report.status;
-
-    const spamReason = shouldMarkSpam
-      ? "No waste detected by image analysis."
-      : null;
-
-    const notes = shouldMarkSpam
-      ? "Admin image analysis: CLEAN. Sent to spam and scheduled for auto-delete in 3 days."
-      : "Admin image analysis: DIRTY. Report validated and kept in active queue.";
-
-    const [updatedReport] = await prisma.$transaction([
-      prisma.report.update({
-        where: { id: reportId },
-        data: {
-          isSpam: shouldMarkSpam,
-          spamMarkedAt: shouldMarkSpam ? now : null,
-          spamReason,
-          analysisStatus: analysis.status,
-          analysisWasteCount: analysis.wasteCount,
-          analysisConfidence: analysis.confidence,
-          analyzedAt: now,
-          status: nextStatus,
-        },
-        include: {
-          reporter: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-              phone: true,
-            },
-          },
-          assignedTo: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-              phone: true,
-            },
-          },
-          barangay: { select: { id: true, name: true } },
-          images: { orderBy: { createdAt: "asc" } },
-          statusHistory: {
-            include: {
-              changedBy: {
-                select: { id: true, firstName: true, lastName: true },
-              },
-            },
-            orderBy: { createdAt: "desc" },
-          },
-        },
-      }),
-      ...(report.status !== nextStatus
-        ? [
-            prisma.statusHistory.create({
-              data: {
-                reportId,
-                previousStatus: report.status,
-                newStatus: nextStatus,
-                changedById,
-                notes,
-              },
-            }),
-          ]
-        : []),
-    ]);
-
-    this.invalidateGeoCaches();
-
-    return {
-      report: updatedReport,
-      analysis: {
-        status: analysis.status,
-        wasteCount: analysis.wasteCount,
-        count: analysis.count,
-        confidence: analysis.confidence,
-        labels: analysis.labels,
-        detections: analysis.detections,
-        inferenceMs: analysis.inferenceMs,
-        imageId: targetImage.id,
-        imageUrl: targetImage.imageUrl,
-        annotatedImageUrl: analysis.annotatedImageUrl,
-        annotatedImagePublicId: analysis.annotatedImagePublicId,
-        spam: shouldMarkSpam,
-        spamMarkedAt: shouldMarkSpam ? now : null,
-        autoDeleteAt: shouldMarkSpam ? this.getSpamAutoDeleteAt(now) : null,
-      },
-    };
-  }
-
-  static async getSpamReports(
-    filters: {
-      status?: ReportStatus;
-      category?: WasteCategory;
-      barangayId?: string;
-      startDate?: string;
-      endDate?: string;
-      search?: string;
-      page?: string;
-      limit?: string;
-    },
-    viewer?: Viewer,
-  ) {
-    return this.findAll({ ...filters, isSpam: "true" }, viewer);
-  }
-
-  static async restoreFromSpam(reportId: string, changedById: string) {
-    const report = await prisma.report.findFirst({
-      where: { id: reportId, isDeleted: false, isSpam: true },
-    });
-
-    if (!report) {
-      throw new Error("Spam report not found");
-    }
-
-    const nextStatus =
-      report.status === ReportStatus.REJECTED
-        ? ReportStatus.PENDING
-        : report.status;
-
-    const [updatedReport] = await prisma.$transaction([
-      prisma.report.update({
-        where: { id: reportId },
-        data: {
-          isSpam: false,
-          spamMarkedAt: null,
-          spamReason: null,
-          status: nextStatus,
-        },
-        include: {
-          reporter: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-              phone: true,
-            },
-          },
-          assignedTo: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-              phone: true,
-            },
-          },
-          barangay: { select: { id: true, name: true } },
-          images: { orderBy: { createdAt: "asc" } },
-          statusHistory: {
-            include: {
-              changedBy: {
-                select: { id: true, firstName: true, lastName: true },
-              },
-            },
-            orderBy: { createdAt: "desc" },
-          },
-        },
-      }),
-      ...(report.status !== nextStatus
-        ? [
-            prisma.statusHistory.create({
-              data: {
-                reportId,
-                previousStatus: report.status,
-                newStatus: nextStatus,
-                changedById,
-                notes: "Restored from spam queue by admin.",
-              },
-            }),
-          ]
-        : []),
-    ]);
-
-    this.invalidateGeoCaches();
-
-    return updatedReport;
-  }
-
-  static async deleteSpamReport(reportId: string) {
-    const report = await prisma.report.findFirst({
-      where: { id: reportId, isDeleted: false, isSpam: true },
-    });
-
-    if (!report) {
-      throw new Error("Spam report not found");
-    }
-
-    const deletedReport = await prisma.report.update({
-      where: { id: reportId },
-      data: { isDeleted: true },
-    });
-
-    this.invalidateGeoCaches();
-
-    return deletedReport;
-  }
-
   static async purgeExpiredSpamReports() {
     const cutoff = new Date(Date.now() - this.SPAM_RETENTION_MS);
 
@@ -1166,27 +808,5 @@ export class ReportService {
     this.invalidateGeoCaches();
 
     return deletedReport;
-  }
-
-  static async hardDeleteAllReports() {
-    const results = await prisma.$transaction(async (tx) => {
-      const notifications = await tx.notification.deleteMany({
-        where: { reportId: { not: null } },
-      });
-      const statusHistory = await tx.statusHistory.deleteMany({});
-      const images = await tx.reportImage.deleteMany({});
-      const reports = await tx.report.deleteMany({});
-
-      return { notifications, statusHistory, images, reports };
-    });
-
-    this.invalidateGeoCaches();
-
-    return {
-      reports: results.reports.count,
-      images: results.images.count,
-      statusHistory: results.statusHistory.count,
-      notifications: results.notifications.count,
-    };
   }
 }

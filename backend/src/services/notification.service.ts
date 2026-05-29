@@ -1,42 +1,11 @@
 import prisma from "../config/database";
-import { NotificationType, Role } from "@prisma/client";
+import { NotificationType } from "@prisma/client";
 import {
   getPaginationParams,
   buildPaginatedResponse,
 } from "../utils/pagination";
 
 export class NotificationService {
-  private static readonly ADMIN_CACHE_TTL_MS = 60_000;
-
-  private static adminIdCache: {
-    ids: string[];
-    expiresAt: number;
-  } | null = null;
-
-  private static async getActiveAdminIds() {
-    if (
-      this.adminIdCache &&
-      this.adminIdCache.expiresAt >= Date.now() &&
-      this.adminIdCache.ids.length > 0
-    ) {
-      return this.adminIdCache.ids;
-    }
-
-    const admins = await prisma.user.findMany({
-      where: { role: Role.LGU_ADMIN, isActive: true },
-      select: { id: true },
-    });
-
-    const ids = admins.map((admin) => admin.id);
-
-    this.adminIdCache = {
-      ids,
-      expiresAt: Date.now() + this.ADMIN_CACHE_TTL_MS,
-    };
-
-    return ids;
-  }
-
   static async create(data: {
     userId: string;
     title: string;
@@ -53,27 +22,6 @@ export class NotificationService {
         reportId: data.reportId,
       },
     });
-  }
-
-  static async notifyAdmins(
-    title: string,
-    message: string,
-    reportId?: string,
-    type: NotificationType = NotificationType.NEW_REPORT,
-  ) {
-    const adminIds = await this.getActiveAdminIds();
-
-    const notifications = adminIds.map((adminId) => ({
-      userId: adminId,
-      title,
-      message,
-      type,
-      reportId,
-    }));
-
-    if (notifications.length > 0) {
-      await prisma.notification.createMany({ data: notifications });
-    }
   }
 
   static async getUserNotifications(
@@ -121,5 +69,29 @@ export class NotificationService {
     return prisma.notification.count({
       where: { userId, isRead: false },
     });
+  }
+
+  static async notifyAdmins(
+    title: string,
+    message: string,
+    reportId?: string,
+    type?: string,
+  ) {
+    const admins = await prisma.user.findMany({
+      where: { role: "LGU_ADMIN", isActive: true },
+      select: { id: true },
+    });
+
+    await Promise.all(
+      admins.map((admin) =>
+        this.create({
+          userId: admin.id,
+          title,
+          message,
+          type: (type || "SYSTEM") as any,
+          reportId,
+        }),
+      ),
+    );
   }
 }

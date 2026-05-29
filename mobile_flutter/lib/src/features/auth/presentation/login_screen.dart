@@ -37,7 +37,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         SnackBar(
           content: const Text("Please enter email and password."),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           backgroundColor: AppColors.foreground,
         ),
       );
@@ -57,7 +58,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         SnackBar(
           content: Text(error.toString()),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           backgroundColor: AppColors.destructive,
         ),
       );
@@ -101,7 +103,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             color: AppColors.mutedForeground.withOpacity(0.8),
             fontWeight: FontWeight.w500,
           ),
-          prefixIcon: Icon(prefixIcon, color: AppColors.primary.withOpacity(0.8)),
+          prefixIcon:
+              Icon(prefixIcon, color: AppColors.primary.withOpacity(0.8)),
           suffixIcon: suffixIcon,
           border: InputBorder.none,
           contentPadding:
@@ -207,7 +210,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const SizedBox(height: AppSpacing.xl),
                       Text(
                         "BlueWaste",
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineMedium
+                            ?.copyWith(
                               fontWeight: FontWeight.w900,
                               letterSpacing: -1,
                               color: AppColors.foreground,
@@ -218,11 +224,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const SizedBox(height: AppSpacing.xs),
                       Text(
                         "Clean city, connected citizens.",
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: AppColors.mutedForeground,
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: -0.2,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  color: AppColors.mutedForeground,
+                                  fontWeight: FontWeight.w500,
+                                  letterSpacing: -0.2,
+                                ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: AppSpacing.xxl),
@@ -293,8 +300,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                           : Icons.visibility_rounded,
                                       color: AppColors.mutedForeground,
                                     ),
-                                    onPressed: () => setState(
-                                        () => _obscurePassword = !_obscurePassword),
+                                    onPressed: () => setState(() =>
+                                        _obscurePassword = !_obscurePassword),
                                   ),
                                 ),
                                 const SizedBox(height: AppSpacing.sm),
@@ -302,13 +309,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   alignment: Alignment.centerRight,
                                   child: TextButton(
                                     onPressed: () {
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
                                         SnackBar(
                                           content: const Text(
                                               "Reset password not implemented yet."),
                                           behavior: SnackBarBehavior.floating,
                                           shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(12)),
+                                              borderRadius:
+                                                  BorderRadius.circular(12)),
                                         ),
                                       );
                                     },
@@ -331,7 +340,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   decoration: BoxDecoration(
                                     boxShadow: [
                                       BoxShadow(
-                                        color: AppColors.primary.withOpacity(0.3),
+                                        color:
+                                            AppColors.primary.withOpacity(0.3),
                                         blurRadius: 16,
                                         offset: const Offset(0, 8),
                                       ),
@@ -340,14 +350,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   child: FilledButton(
                                     style: FilledButton.styleFrom(
                                       backgroundColor: AppColors.primary,
-                                      padding:
-                                          const EdgeInsets.symmetric(vertical: 18),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 18),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(16),
                                       ),
                                       elevation: 0,
                                     ),
-                                    onPressed: _isSubmitting ? null : _handleLogin,
+                                    onPressed:
+                                        _isSubmitting ? null : _handleLogin,
                                     child: _isSubmitting
                                         ? const SizedBox(
                                             height: 24,

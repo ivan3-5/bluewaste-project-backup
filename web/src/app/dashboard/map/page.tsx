@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useMapData } from "@/hooks/useReports";
-import { useCreateResortArea, useResortAreaes } from "@/hooks/useResortBoxes";
 import {
   useReportingZones,
   useCreateReportingZone,
@@ -25,14 +24,11 @@ import {
   MapPin,
   X,
   ChevronRight,
-  Square,
   PenLine,
   Trash2,
   Eye,
   EyeOff,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import api from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const WasteMap = dynamic(() => import("@/components/map/WasteMap"), {
@@ -52,26 +48,14 @@ const STATUS_PILL_LIST: Array<{
   { value: "REJECTED", label: "Rejected" },
 ];
 
-interface ResortAdminOption {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  role?: string;
-  isActive?: boolean;
-}
-
 export default function MapPage() {
   const { user } = useAuth();
   const isLGUAdmin = user?.role === "LGU_ADMIN";
-  const canViewBoxes =
-    user?.role === "LGU_ADMIN" || user?.role === "RESORT_ADMIN";
 
   const [statusFilter, setStatusFilter] = useState<ReportStatus | "">("");
   const [categoryFilter, setCategoryFilter] = useState<WasteCategory | "">("");
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [selectedReport, setSelectedReport] = useState<MapReport | null>(null);
-  const [drawMode, setDrawMode] = useState(false);
   const [drawZoneMode, setDrawZoneMode] = useState(false);
   const [hiddenZoneIds, setHiddenZoneIds] = useState<Set<string>>(new Set());
   const [pendingZonePoints, setPendingZonePoints] = useState<
@@ -80,59 +64,12 @@ export default function MapPage() {
   const [showZoneModal, setShowZoneModal] = useState(false);
   const [zoneName, setZoneName] = useState("");
   const [zoneSaveError, setZoneSaveError] = useState("");
-  const [pendingBounds, setPendingBounds] = useState<{
-    minLat: number;
-    maxLat: number;
-    minLng: number;
-    maxLng: number;
-  } | null>(null);
-  const [showBoxModal, setShowBoxModal] = useState(false);
-  const [boxName, setBoxName] = useState("");
-  const [boxDescription, setBoxDescription] = useState("");
-  const [ownerId, setOwnerId] = useState("");
-  const [boxSaveError, setBoxSaveError] = useState("");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [mapInstance, setMapInstance] = useState<any>(null);
 
-  const createResortArea = useCreateResortArea();
   const { data: reportingZones = [] } = useReportingZones(false);
   const createZone = useCreateReportingZone();
   const deleteZone = useDeleteReportingZone();
-
-  const { data: resortBoxes = [] } = useResortAreaes(false, canViewBoxes);
-  const showCurrentBoxes = false;
-  const visibleResortBoxes = showCurrentBoxes ? resortBoxes : [];
-
-  const {
-    data: resortAdmins = [],
-    isLoading: isLoadingResortAdmins,
-    isError: isResortAdminsError,
-    refetch: refetchResortAdmins,
-  } = useQuery<ResortAdminOption[]>({
-    queryKey: ["resort-admin-users"],
-    enabled: isLGUAdmin,
-    queryFn: async () => {
-      try {
-        const { data } = await api.get("/users?role=RESORT_ADMIN&limit=200");
-        return (data?.data || []).filter(
-          (u: ResortAdminOption) => u?.isActive !== false,
-        );
-      } catch {
-        // Fallback for older backend builds where role filter may fail.
-        const { data } = await api.get("/users?limit=200");
-        return (data?.data || []).filter(
-          (u: ResortAdminOption) =>
-            u?.role === "RESORT_ADMIN" && u?.isActive !== false,
-        );
-      }
-    },
-  });
-
-  useEffect(() => {
-    if (showBoxModal && !ownerId && resortAdmins.length > 0) {
-      setOwnerId(resortAdmins[0].id);
-    }
-  }, [showBoxModal, ownerId, resortAdmins]);
 
   const { data: reports = [], isLoading } = useMapData({
     status: statusFilter || undefined,
@@ -161,23 +98,6 @@ export default function MapPage() {
       }
     },
     [mapInstance],
-  );
-
-  const handleDrawRectangle = useCallback(
-    (bounds: {
-      minLat: number;
-      maxLat: number;
-      minLng: number;
-      maxLng: number;
-    }) => {
-      setPendingBounds(bounds);
-      setShowBoxModal(true);
-      setBoxSaveError("");
-      if (!ownerId && resortAdmins.length > 0) {
-        setOwnerId(resortAdmins[0].id);
-      }
-    },
-    [ownerId, resortAdmins],
   );
 
   const handleDrawZone = useCallback((points: ZonePoint[]) => {
@@ -216,66 +136,6 @@ export default function MapPage() {
         error?.response?.data?.message ||
           error?.response?.data?.error ||
           "Failed to save zone.",
-      );
-    }
-  };
-
-  const resetBoxForm = () => {
-    setPendingBounds(null);
-    setBoxName("");
-    setBoxDescription("");
-    setOwnerId("");
-    setBoxSaveError("");
-    setShowBoxModal(false);
-  };
-
-  const handleSaveBox = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setBoxSaveError("");
-
-    if (!pendingBounds) {
-      setBoxSaveError("No rectangle selected. Draw a box first.");
-      return;
-    }
-
-    if (!boxName.trim()) {
-      setBoxSaveError("Please provide a box name.");
-      return;
-    }
-
-    if (isLoadingResortAdmins) {
-      setBoxSaveError("Resort admin owners are still loading. Please wait.");
-      return;
-    }
-
-    if (resortAdmins.length === 0) {
-      setBoxSaveError(
-        isResortAdminsError
-          ? "Failed to load resort admin owners. Retry loading or create one in User Management."
-          : "No resort admin owner found. Create one in User Management first.",
-      );
-      return;
-    }
-
-    if (!ownerId) {
-      setBoxSaveError("Please assign a resort admin owner.");
-      return;
-    }
-
-    try {
-      await createResortArea.mutateAsync({
-        name: boxName.trim(),
-        description: boxDescription.trim() || undefined,
-        ownerId,
-        ...pendingBounds,
-      });
-      setDrawMode(false);
-      resetBoxForm();
-    } catch (error: any) {
-      setBoxSaveError(
-        error?.response?.data?.message ||
-          error?.response?.data?.error ||
-          "Failed to save map box.",
       );
     }
   };
@@ -325,43 +185,21 @@ export default function MapPage() {
 
         <div className="ml-auto flex items-center gap-2">
           {isLGUAdmin && (
-            <>
-              <Button
-                variant={drawMode ? "default" : "outline"}
-                size="sm"
-                className="h-7 gap-1.5 text-xs"
-                onClick={() => {
-                  setDrawMode((prev) => {
-                    const next = !prev;
-                    if (!next) resetBoxForm();
-                    return next;
-                  });
-                  if (drawZoneMode) setDrawZoneMode(false);
-                }}
-              >
-                <Square className="h-3.5 w-3.5" />
-                {drawMode ? "Cancel" : "Draw Box"}
-              </Button>
-              <Button
-                variant={drawZoneMode ? "default" : "outline"}
-                size="sm"
-                className="h-7 gap-1.5 text-xs"
-                onClick={() => {
-                  setDrawZoneMode((prev) => {
-                    const next = !prev;
-                    if (!next) resetZoneForm();
-                    return next;
-                  });
-                  if (drawMode) {
-                    setDrawMode(false);
-                    resetBoxForm();
-                  }
-                }}
-              >
-                <PenLine className="h-3.5 w-3.5" />
-                {drawZoneMode ? "Cancel Zone" : "Draw Zone"}
-              </Button>
-            </>
+            <Button
+              variant={drawZoneMode ? "default" : "outline"}
+              size="sm"
+              className="h-7 gap-1.5 text-xs"
+              onClick={() => {
+                setDrawZoneMode((prev) => {
+                  const next = !prev;
+                  if (!next) resetZoneForm();
+                  return next;
+                });
+              }}
+            >
+              <PenLine className="h-3.5 w-3.5" />
+              {drawZoneMode ? "Cancel Zone" : "Draw Zone"}
+            </Button>
           )}
 
           {/* Category filter */}
@@ -391,13 +229,6 @@ export default function MapPage() {
             <Layers className="h-3.5 w-3.5" />
             Heatmap
           </Button>
-
-          {showCurrentBoxes && canViewBoxes && (
-            <span className="rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700">
-              {visibleResortBoxes.length} box
-              {visibleResortBoxes.length !== 1 ? "es" : ""}
-            </span>
-          )}
         </div>
       </div>
 
@@ -417,10 +248,6 @@ export default function MapPage() {
               showHeatmap={showHeatmap}
               onReportClick={handleReportClick}
               onMapReady={setMapInstance}
-              resortBoxes={visibleResortBoxes}
-              canDraw={isLGUAdmin}
-              drawMode={drawMode}
-              onDrawRectangle={handleDrawRectangle}
               reportingZones={reportingZones.filter(
                 (z) => !hiddenZoneIds.has(z.id),
               )}
@@ -530,11 +357,6 @@ export default function MapPage() {
                   <h3 className="text-sm font-bold leading-snug text-gray-900">
                     {selectedReport.title}
                   </h3>
-                  {selectedReport.barangay && (
-                    <p className="mt-1 text-xs font-semibold text-gray-600">
-                      Brgy. {selectedReport.barangay.name}
-                    </p>
-                  )}
                   {selectedReport.address && (
                     <p className="mt-0.5 flex items-start gap-1 text-xs text-gray-500">
                       <MapPin className="mt-0.5 h-3 w-3 flex-shrink-0" />
@@ -595,142 +417,6 @@ export default function MapPage() {
           )}
         </div>
       </div>
-
-      {showBoxModal && isLGUAdmin && (
-        <div
-          className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/45 p-4"
-          onClick={() => {
-            setShowBoxModal(false);
-          }}
-        >
-          <div
-            className="w-full max-w-lg rounded-xl border bg-white p-5 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="text-lg font-bold text-gray-900">Save Map Box</h2>
-            <p className="mt-1 text-sm text-gray-500">
-              Name this selected area and assign a resort admin owner.
-            </p>
-
-            {pendingBounds && (
-              <p className="mt-3 rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600">
-                Bounds: {pendingBounds.minLat.toFixed(5)} to{" "}
-                {pendingBounds.maxLat.toFixed(5)},{" "}
-                {pendingBounds.minLng.toFixed(5)} to{" "}
-                {pendingBounds.maxLng.toFixed(5)}
-              </p>
-            )}
-
-            <form className="mt-4 space-y-3" onSubmit={handleSaveBox}>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Box Name <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  value={boxName}
-                  onChange={(e) => setBoxName(e.target.value)}
-                  placeholder="e.g. Resort Mr Suave"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Description (optional)
-                </label>
-                <textarea
-                  rows={3}
-                  className="w-full rounded-md border px-3 py-2 text-sm"
-                  value={boxDescription}
-                  onChange={(e) => setBoxDescription(e.target.value)}
-                  placeholder="Optional details for this managed area"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Resort Admin Owner <span className="text-red-500">*</span>
-                </label>
-                <select
-                  title="Select resort admin owner"
-                  className="w-full rounded-md border px-3 py-2 text-sm"
-                  value={ownerId}
-                  onChange={(e) => setOwnerId(e.target.value)}
-                >
-                  <option
-                    value=""
-                    disabled={
-                      isLoadingResortAdmins || resortAdmins.length === 0
-                    }
-                  >
-                    {isLoadingResortAdmins
-                      ? "Loading owners..."
-                      : resortAdmins.length === 0
-                        ? "No resort admins found"
-                        : "Select owner..."}
-                  </option>
-                  {resortAdmins.map((admin) => (
-                    <option key={admin.id} value={admin.id}>
-                      {admin.firstName} {admin.lastName} ({admin.email})
-                    </option>
-                  ))}
-                </select>
-
-                {isResortAdminsError && (
-                  <p className="mt-1 text-xs text-red-600">
-                    Failed to load resort admin owners.{" "}
-                    <button
-                      type="button"
-                      className="font-semibold underline"
-                      onClick={() => {
-                        void refetchResortAdmins();
-                      }}
-                    >
-                      Retry
-                    </button>
-                  </p>
-                )}
-
-                {!isLoadingResortAdmins &&
-                  !isResortAdminsError &&
-                  resortAdmins.length === 0 && (
-                    <p className="mt-1 text-xs text-amber-700">
-                      No resort admin users found. Add one in User Management,
-                      then reopen this modal.
-                    </p>
-                  )}
-              </div>
-
-              {boxSaveError && (
-                <p className="rounded-md border border-red-200 bg-red-50 px-2.5 py-2 text-sm text-red-700">
-                  {boxSaveError}
-                </p>
-              )}
-
-              <div className="flex justify-end gap-2 pt-1">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setShowBoxModal(false);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={
-                    createResortArea.isPending ||
-                    isLoadingResortAdmins ||
-                    resortAdmins.length === 0
-                  }
-                >
-                  {createResortArea.isPending ? "Saving..." : "Save Box"}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* ── Save Zone Modal ── */}
       {showZoneModal && isLGUAdmin && (

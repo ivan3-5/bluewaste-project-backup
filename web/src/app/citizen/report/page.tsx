@@ -8,7 +8,7 @@ import { useCreateReport, useUploadReportImages } from "@/hooks/useReports";
 import { useReportingZones, isPointInAnyZone } from "@/hooks/useReportingZones";
 import { WASTE_CATEGORY_LABELS, WasteCategory } from "@/types";
 import { getApiErrorMessage } from "@/lib/apiError";
-import { DetectionBox } from "@/lib/waste-classification";
+import { DetectionBox, inferWasteCategory } from "@/lib/waste-classification";
 import DetectionImageOverlay from "@/components/ai/DetectionImageOverlay";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -35,6 +35,7 @@ const MAX_IMAGE_SIZE_BYTES = 8 * 1024 * 1024;
 type AnalyzeWasteResult = {
   detectedObject: string;
   wasteType: "Recyclable" | "Non-recyclable" | "Organic";
+  wasteCategory?: WasteCategory;
   confidence: number;
   status: "DIRTY" | "CLEAN";
   wasteCount: number;
@@ -56,12 +57,19 @@ const ANALYSIS_TYPE_STYLES: Record<AnalyzeWasteResult["wasteType"], string> = {
   "Non-recyclable": "bg-red-100 text-red-700 border-red-200",
 };
 
-function mapAnalysisTypeToCategory(
-  wasteType: AnalyzeWasteResult["wasteType"],
-): WasteCategory {
-  if (wasteType === "Recyclable") return "RECYCLABLE";
-  if (wasteType === "Organic") return "ORGANIC";
-  return "OTHER";
+function mapAnalysisToCategory(result: AnalyzeWasteResult): WasteCategory {
+  if (result.wasteCategory) {
+    return result.wasteCategory;
+  }
+
+  const wasteTypeCode =
+    result.wasteType === "Organic"
+      ? "ORGANIC"
+      : result.wasteType === "Recyclable"
+        ? "RECYCLABLE"
+        : "NON_RECYCLABLE";
+
+  return inferWasteCategory(result.labels || [], wasteTypeCode);
 }
 
 function buildDefaultDescription(category: WasteCategory) {
@@ -359,6 +367,12 @@ export default function SubmitReportPage() {
           (tip: unknown): tip is string => typeof tip === "string",
         )
       : [];
+    const rawWasteCategory = payload?.wasteCategory;
+    const wasteCategory =
+      typeof rawWasteCategory === "string" &&
+      rawWasteCategory in WASTE_CATEGORY_LABELS
+        ? (rawWasteCategory as WasteCategory)
+        : undefined;
 
     return {
       detectedObject:
@@ -380,6 +394,7 @@ export default function SubmitReportPage() {
       wasteCount,
       count,
       topConfidence,
+      wasteCategory,
       decision: {
         isUncertain,
         message: decisionMessage,
@@ -400,7 +415,7 @@ export default function SubmitReportPage() {
       const result = await analyzeWasteImage();
 
       setAnalysisResult(result);
-      setSelectedCategory(mapAnalysisTypeToCategory(result.wasteType));
+      setSelectedCategory(mapAnalysisToCategory(result));
       if (result.decision.retakeRecommended) {
         setDecisionMessage(
           result.decision.message ||
@@ -455,7 +470,7 @@ export default function SubmitReportPage() {
       return;
     }
     if (!selectedCategory) {
-      setSubmitError("Please select a waste type.");
+      setSubmitError("Please select a waste category.");
       return;
     }
 
@@ -835,21 +850,21 @@ export default function SubmitReportPage() {
                 <div className="space-y-4 p-4">
                   <div className="space-y-1.5">
                     <Label
-                      htmlFor="waste-type"
+                      htmlFor="waste-category"
                       className="text-xs font-medium text-gray-700"
                     >
-                      Waste Type <span className="text-red-500">*</span>
+                      Waste Category <span className="text-red-500">*</span>
                     </Label>
                     <select
-                      id="waste-type"
-                      title="Select waste type"
+                      id="waste-category"
+                      title="Select waste category"
                       className="w-full rounded-lg border border-input bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                       value={selectedCategory}
                       onChange={(event) =>
                         setSelectedCategory(event.target.value as WasteCategory)
                       }
                     >
-                      <option value="">Select waste type…</option>
+                      <option value="">Select waste category…</option>
                       {Object.entries(WASTE_CATEGORY_LABELS).map(
                         ([key, label]) => (
                           <option key={key} value={key}>
