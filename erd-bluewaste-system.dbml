@@ -1,0 +1,162 @@
+// BlueWaste System ERD (DBML)
+// Source: backend/prisma/schema.prisma
+
+Enum Role {
+  CITIZEN
+  LGU_ADMIN
+  FIELD_WORKER
+}
+
+Enum ReportStatus {
+  PENDING
+  VERIFIED
+  CLEANUP_SCHEDULED
+  IN_PROGRESS
+  CLEANED
+  REJECTED
+}
+
+Enum WasteCategory {
+  PLASTIC_WASTE
+  ORGANIC_WASTE
+  GLASS_WASTE
+  METAL_WASTE
+  PAPER_WASTE
+}
+
+Enum ImageType {
+  REPORT
+  CLEANUP
+}
+
+Enum NotificationType {
+  NEW_REPORT
+  STATUS_CHANGE
+  ASSIGNMENT
+  SYSTEM
+}
+
+Enum AiWasteType {
+  RECYCLABLE
+  NON_RECYCLABLE
+  ORGANIC
+}
+
+Enum AnalysisStatus {
+  DIRTY
+  CLEAN
+}
+
+Table User {
+  id        uuid      [pk]
+  email     varchar   [unique]
+  password  varchar
+  firstName varchar
+  lastName  varchar
+  phone     varchar   [null]
+  role      Role      [default: 'CITIZEN']
+  avatarUrl varchar   [null]
+  isActive  boolean   [default: true]
+  createdAt timestamp [default: now()]
+  updatedAt timestamp
+}
+
+Table Report {
+  id                 uuid           [pk]
+  title              varchar
+  description        text
+  category           WasteCategory
+  status             ReportStatus   [default: 'PENDING']
+  latitude           float
+  longitude          float
+  address            varchar        [null]
+  isAnonymous        boolean        [default: false]
+  isDeleted          boolean        [default: false]
+  isSpam             boolean        [default: false]
+  spamMarkedAt       timestamp      [null]
+  spamReason         varchar        [null]
+  analysisStatus     AnalysisStatus [null]
+  analysisWasteCount int            [null]
+  analysisConfidence float          [null]
+  analyzedAt         timestamp      [null]
+  createdAt          timestamp      [default: now()]
+  updatedAt          timestamp
+  reporterId         uuid           [null]
+  assignedToId       uuid           [null]
+}
+
+Table ReportImage {
+  id        uuid      [pk]
+  imageUrl  varchar
+  publicId  varchar
+  type      ImageType [default: 'REPORT']
+  createdAt timestamp [default: now()]
+  reportId  uuid
+}
+
+Table StatusHistory {
+  id             uuid         [pk]
+  previousStatus ReportStatus [null]
+  newStatus      ReportStatus
+  notes          text         [null]
+  createdAt      timestamp    [default: now()]
+  reportId       uuid
+  changedById    uuid
+}
+
+Table Notification {
+  id        uuid             [pk]
+  title     varchar
+  message   text
+  type      NotificationType
+  isRead    boolean          [default: false]
+  createdAt timestamp        [default: now()]
+  userId    uuid
+  reportId  uuid             [null]
+}
+
+Table ActivityLog {
+  id         uuid      [pk]
+  action     varchar
+  entityType varchar
+  entityId   varchar
+  metadata   json      [null]
+  createdAt  timestamp [default: now()]
+  userId     uuid
+}
+
+Table WasteReport {
+  id             uuid        [pk]
+  imageUrl       varchar
+  detectedObject varchar
+  wasteType      AiWasteType
+  confidence     float
+  latitude       float       [null]
+  longitude      float       [null]
+  address        varchar     [null]
+  labels         text[]      [default: '{}']
+  createdAt      timestamp   [default: now()]
+  updatedAt      timestamp
+  reporterId     uuid        [null]
+}
+
+Table ReportingZone {
+  id          uuid      [pk]
+  name        varchar
+  coordinates json
+  isActive    boolean   [default: true]
+  createdAt   timestamp [default: now()]
+  updatedAt   timestamp
+  createdById uuid
+}
+
+Ref: Report.reporterId > User.id
+Ref: Report.assignedToId > User.id
+Ref: ReportImage.reportId > Report.id
+Ref: StatusHistory.reportId > Report.id
+Ref: StatusHistory.changedById > User.id
+Ref: Notification.userId > User.id
+Ref: Notification.reportId > Report.id
+Ref: ActivityLog.userId > User.id
+Ref: WasteReport.reporterId > User.id
+Ref: ReportingZone.createdById > User.id
