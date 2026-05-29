@@ -12,7 +12,6 @@ datasource db {
 enum Role {
   CITIZEN
   LGU_ADMIN
-  RESORT_ADMIN
   FIELD_WORKER
 }
 
@@ -71,14 +70,6 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  barangayId String?
-  barangay   Barangay? @relation(fields: [barangayId], references: [id])
-
-  // Resort areas assigned to this resort admin
-  ownedResortAreas ResortArea[] @relation("ResortAreaOwner")
-  // Resort areas created by LGU admin users
-  createdResortAreas ResortArea[] @relation("ResortAreaCreator")
-
   // Reports submitted by the user
   reports         Report[]        @relation("ReporterReports")
   // Reports assigned to the user (field worker)
@@ -128,14 +119,6 @@ model Report {
   assignedToId String?
   assignedTo   User?   @relation("AssignedReports", fields: [assignedToId], references: [id])
 
-  // Barangay
-  barangayId String?
-  barangay   Barangay? @relation(fields: [barangayId], references: [id])
-
-  // Resort area assignment (auto-routed by map bounds)
-  resortAreaId String?
-  resortArea   ResortArea? @relation(fields: [resortAreaId], references: [id])
-
   // Related records
   images        ReportImage[]
   statusHistory StatusHistory[]
@@ -143,7 +126,6 @@ model Report {
 
   @@index([status])
   @@index([category])
-  @@index([barangayId])
   @@index([createdAt])
   @@index([reporterId])
   @@index([assignedToId])
@@ -151,38 +133,10 @@ model Report {
   @@index([isDeleted, createdAt])
   @@index([isDeleted, status, createdAt])
   @@index([isDeleted, category, createdAt])
-  @@index([isDeleted, barangayId, createdAt])
   @@index([isDeleted, reporterId, createdAt])
   @@index([isDeleted, assignedToId, createdAt])
-  @@index([resortAreaId])
-  @@index([isDeleted, resortAreaId, createdAt])
   @@index([isDeleted, isSpam, createdAt])
   @@index([isDeleted, isSpam, spamMarkedAt])
-}
-
-model ResortArea {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  description String?
-  minLat      Float
-  maxLat      Float
-  minLng      Float
-  maxLng      Float
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  ownerId   String
-  owner     User   @relation("ResortAreaOwner", fields: [ownerId], references: [id])
-  createdById String
-  createdBy User   @relation("ResortAreaCreator", fields: [createdById], references: [id])
-
-  reports Report[]
-
-  @@index([ownerId])
-  @@index([ownerId, isActive])
-  @@index([createdById])
-  @@index([isActive, minLat, maxLat, minLng, maxLng])
 }
 
 model ReportImage {
@@ -196,20 +150,6 @@ model ReportImage {
   report   Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
 
   @@index([reportId])
-}
-
-model Barangay {
-  id              String  @id @default(uuid())
-  name            String  @unique
-  latitude        Float
-  longitude       Float
-  boundaryGeoJSON Json?
-  createdAt       DateTime @default(now())
-
-  users   User[]
-  reports Report[]
-
-  @@index([name])
 }
 
 model StatusHistory {

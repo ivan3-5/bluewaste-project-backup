@@ -119,7 +119,6 @@ function extractDetectionLabels(payload: unknown): string[] {
 
 export class ReportService {
   private static readonly GEO_CACHE_TTL_MS = 20_000;
-  private static readonly RESORT_ADMIN_NEW_REPORT_TITLE = "New Area Report";
   private static readonly SPAM_RETENTION_MS =
     env.SPAM_RETENTION_DAYS * 24 * 60 * 60 * 1000;
   private static readonly SPAM_PURGE_INTERVAL_MS = 60 * 60 * 1000;
@@ -140,87 +139,6 @@ export class ReportService {
       data: Array<{ lat: number; lng: number; intensity: number }>;
     }
   >();
-
-  private static getViewerScopeKey(viewer?: Viewer) {
-    if (!viewer) {
-      return "public";
-    }
-    if (viewer.role === Role.RESORT_ADMIN) {
-      return `resort-admin:${viewer.id}`;
-    }
-    return viewer.role;
-  }
-
-  private static getViewerWhereScope(viewer?: Viewer): Prisma.ReportWhereInput {
-    if (!viewer || viewer.role !== Role.RESORT_ADMIN) {
-      return {};
-    }
-
-    return {
-      resortArea: {
-        is: {
-          ownerId: viewer.id,
-        },
-      },
-    };
-  }
-
-  private static getReportDetailWhere(viewer: Viewer, reportId: string) {
-    if (viewer.role === Role.LGU_ADMIN) {
-      return {
-        id: reportId,
-        isDeleted: false,
-      } satisfies Prisma.ReportWhereInput;
-    }
-
-    if (viewer.role === Role.RESORT_ADMIN) {
-      return {
-        id: reportId,
-        isDeleted: false,
-        ...this.getViewerWhereScope(viewer),
-      } satisfies Prisma.ReportWhereInput;
-    }
-
-    if (viewer.role === Role.FIELD_WORKER) {
-      return {
-        id: reportId,
-        isDeleted: false,
-        assignedToId: viewer.id,
-      } satisfies Prisma.ReportWhereInput;
-    }
-
-    return {
-      id: "__forbidden__",
-      isDeleted: false,
-    };
-  }
-
-  private static async findMatchingResortArea(
-    latitude: number,
-    longitude: number,
-  ) {
-    const matched = await prisma.resortArea.findFirst({
-      where: {
-        isActive: true,
-        minLat: { lte: latitude },
-        maxLat: { gte: latitude },
-        minLng: { lte: longitude },
-        maxLng: { gte: longitude },
-        owner: {
-          role: Role.RESORT_ADMIN,
-          isActive: true,
-        },
-      },
-      select: {
-        id: true,
-        name: true,
-        ownerId: true,
-      },
-      orderBy: { createdAt: "asc" },
-    });
-
-    return matched;
-  }
 
   private static invalidateGeoCaches() {
     this.mapDataCache.clear();
@@ -399,10 +317,6 @@ export class ReportService {
     reporterId?: string;
   }) {
     await this.purgeExpiredSpamIfDue();
-    const matchedResortArea = await this.findMatchingResortArea(
-      data.latitude,
-      data.longitude,
-    );
 
     const report = await prisma.$transaction(async (tx) => {
       const created = await tx.report.create({
@@ -416,7 +330,6 @@ export class ReportService {
           barangayId: data.barangayId,
           isAnonymous: data.isAnonymous || false,
           reporterId: data.isAnonymous ? null : data.reporterId,
-          resortAreaId: matchedResortArea?.id,
         },
         include: {
           reporter: {
@@ -447,16 +360,6 @@ export class ReportService {
         `A new ${data.category.replace("_", " ").toLowerCase()} report has been submitted: "${data.title}"`,
         report.id,
       );
-
-      if (matchedResortArea?.ownerId) {
-        await NotificationService.create({
-          userId: matchedResortArea.ownerId,
-          title: this.RESORT_ADMIN_NEW_REPORT_TITLE,
-          message: `A new report is inside ${matchedResortArea.name}: "${data.title}"`,
-          type: NotificationType.NEW_REPORT,
-          reportId: report.id,
-        });
-      }
     } catch (error) {
       console.warn("Failed to notify admins for new report:", report.id, error);
     }
@@ -471,8 +374,19 @@ export class ReportService {
       throw new Error("Insufficient permissions.");
     }
 
+    const where: Prisma.ReportWhereInput = {
+      id,
+      isDeleted: false,
+    };
+
+    if (viewer.role === Role.FIELD_WORKER) {
+      where.assignedToId = viewer.id;
+    } else if (viewer.role === Role.CITIZEN) {
+      where.reporterId = viewer.id;
+    }
+
     const report = await prisma.report.findFirst({
-      where: this.getReportDetailWhere(viewer, id),
+      where,
       include: {
         reporter: {
           select: {
@@ -506,10 +420,7 @@ export class ReportService {
     });
 
     if (!report) {
-      if (
-        viewer.role === Role.RESORT_ADMIN ||
-        viewer.role === Role.FIELD_WORKER
-      ) {
+      if (viewer.role === Role.FIELD_WORKER || viewer.role === Role.CITIZEN) {
         const exists = await prisma.report.findFirst({
           where: { id, isDeleted: false },
           select: { id: true },
@@ -517,10 +428,6 @@ export class ReportService {
         if (exists) {
           throw new Error("Insufficient permissions.");
         }
-      }
-
-      if (viewer.role === Role.CITIZEN) {
-        throw new Error("Insufficient permissions.");
       }
 
       throw new Error("Report not found");
@@ -675,7 +582,6 @@ export class ReportService {
       barangayId?: string;
       limit?: string;
     },
-    viewer?: Viewer,
   ) {
     await this.purgeExpiredSpamIfDue();
     const parsedLimit = Number.parseInt(filters?.limit || "", 10);
@@ -688,7 +594,6 @@ export class ReportService {
       category: filters?.category || null,
       barangayId: filters?.barangayId || null,
       limit,
-      scope: this.getViewerScopeKey(viewer),
     });
 
     const cached = this.getCachedMapData(cacheKey);
@@ -699,7 +604,6 @@ export class ReportService {
     const where: Prisma.ReportWhereInput = {
       isDeleted: false,
       isSpam: false,
-      ...this.getViewerWhereScope(viewer),
     };
     if (filters?.status) where.status = filters.status;
     if (filters?.category) where.category = filters.category;
@@ -728,12 +632,11 @@ export class ReportService {
     return reports;
   }
 
-  static async getHeatmapData(filters?: { limit?: string }, viewer?: Viewer) {
+  static async getHeatmapData(filters?: { limit?: string }) {
     await this.purgeExpiredSpamIfDue();
 
     const cacheKey = JSON.stringify({
       limit: filters?.limit || null,
-      scope: this.getViewerScopeKey(viewer),
     });
 
     const cached = this.getCachedHeatmapData(cacheKey);
@@ -751,7 +654,6 @@ export class ReportService {
         isDeleted: false,
         isSpam: false,
         status: { not: ReportStatus.CLEANED },
-        ...this.getViewerWhereScope(viewer),
       },
       select: {
         latitude: true,

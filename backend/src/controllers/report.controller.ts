@@ -89,7 +89,6 @@ export class ReportController {
     try {
       const reports = await ReportService.getMapData(
         req.query as any,
-        req.user,
       );
       res.setHeader("Cache-Control", "public, max-age=15");
       res.json(reports);
@@ -102,7 +101,6 @@ export class ReportController {
     try {
       const data = await ReportService.getHeatmapData(
         req.query as any,
-        req.user,
       );
       res.setHeader("Cache-Control", "public, max-age=15");
       res.json(data);

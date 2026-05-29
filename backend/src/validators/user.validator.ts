@@ -3,7 +3,6 @@ import { z } from "zod";
 const roleEnum = z.enum([
   "CITIZEN",
   "LGU_ADMIN",
-  "RESORT_ADMIN",
   "FIELD_WORKER",
 ]);
 
