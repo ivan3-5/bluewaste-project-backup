@@ -30,7 +30,7 @@ class _WorkerTasksScreenState extends ConsumerState<WorkerTasksScreen> {
   void initState() {
     super.initState();
     _loadTasks();
-    _timer = Timer.periodic(const Duration(seconds: 30), (_) => _loadTasks());
+    _timer = Timer.periodic(const Duration(seconds: 10), (_) => _loadTasks());
   }
 
   @override

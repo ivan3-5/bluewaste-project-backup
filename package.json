@@ -14,7 +14,7 @@
     "web:typecheck": "npx tsc --project web/tsconfig.json --noEmit",
     "mobile:analyze": "cd mobile_flutter && flutter analyze",
     "mobile:typecheck": "npm run mobile:analyze",
-    "mobile:run:android": "cd mobile_flutter && flutter run --dart-define=API_BASE_URL=http://10.0.2.2:5000/api",
+    "mobile:run:android": "cd mobile_flutter && flutter run --dart-define=API_BASE_URL=https://bluewaste-management-system.vercel.app/api",
     "clean:safe": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/cleanup-safe.ps1",
     "clean:safe:dry": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/cleanup-safe.ps1 -DryRun",
     "clean:deep": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/cleanup-deep.ps1",

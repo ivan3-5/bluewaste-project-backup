@@ -54,7 +54,7 @@ class _ReportsMapScreenState extends ConsumerState<ReportsMapScreen>
     )..repeat();
     _loadReports();
     _timer = Timer.periodic(
-      const Duration(seconds: 30),
+      const Duration(seconds: 10),
       (_) => _loadReports(silent: true),
     );
   }

@@ -9,7 +9,7 @@ export function useNotifications(page: number = 1) {
       const { data } = await api.get(`/notifications?page=${page}`);
       return data;
     },
-    refetchInterval: 30000,
+    refetchInterval: 10000,
   });
 }
 
@@ -20,7 +20,7 @@ export function useUnreadCount() {
       const { data } = await api.get("/notifications/unread-count");
       return data;
     },
-    refetchInterval: 30000,
+    refetchInterval: 10000,
   });
 }
 

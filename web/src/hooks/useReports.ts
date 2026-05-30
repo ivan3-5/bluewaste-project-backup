@@ -85,7 +85,7 @@ export function useMapData(filters?: {
       const { data } = await api.get(`/reports/map?${params.toString()}`);
       return data;
     },
-    refetchInterval: 30000,
+    refetchInterval: 10000,
   });
 }
 
@@ -96,7 +96,7 @@ export function useHeatmapData() {
       const { data } = await api.get("/reports/heatmap?limit=8000");
       return data;
     },
-    refetchInterval: 60000,
+    refetchInterval: 30000,
   });
 }
 

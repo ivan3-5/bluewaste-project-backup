@@ -29,7 +29,7 @@ class _MyReportsScreenState extends ConsumerState<MyReportsScreen> {
   void initState() {
     super.initState();
     _loadReports();
-    _timer = Timer.periodic(const Duration(seconds: 30), (_) => _loadReports());
+    _timer = Timer.periodic(const Duration(seconds: 10), (_) => _loadReports());
   }
 
   @override
