@@ -166,6 +166,14 @@ export interface CategoryData {
   count: number;
 }
 
+export interface DashboardOverviewResponse {
+  overview: AnalyticsOverview;
+  trends: TrendData[];
+  categories: CategoryData[];
+  trendChange: number;
+  periodDays: number;
+}
+
 export interface BarangayStats {
   barangayId?: string;
   barangayName?: string;

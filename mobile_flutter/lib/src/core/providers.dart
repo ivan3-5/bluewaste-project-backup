@@ -21,6 +21,14 @@ final dioProvider = Provider<Dio>((ref) {
     ),
   );
 
+  // Debug log: show which API base URL the app is using on device.
+  // This helps verify the installed app was built with the expected API URL.
+  // Remove this in production.
+  try {
+    // ignore: avoid_print
+    print("[DEBUG] AppEnv.apiBaseUrl = ${AppEnv.apiBaseUrl}");
+  } catch (_) {}
+
   dio.interceptors.add(
     QueuedInterceptorsWrapper(
       onRequest: (options, handler) async {

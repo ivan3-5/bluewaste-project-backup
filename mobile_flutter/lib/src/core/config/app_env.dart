@@ -1,7 +1,8 @@
 class AppEnv {
   static const String apiBaseUrl = String.fromEnvironment(
     "API_BASE_URL",
-    // 10.0.2.2 is the alias for host loopback interface (localhost) on Android Emulators
-    defaultValue: "http://10.0.2.2:5000/api",
+    // Default to the production Vercel deployment. Override with
+    // `--dart-define=API_BASE_URL=<url>` for local development/emulator.
+    defaultValue: "https://bluewaste-management-system.vercel.app/api",
   );
 }

@@ -12,7 +12,6 @@ const citizenLinks = [
   { href: "/citizen/report", label: "Submit Report", icon: "📝" },
   { href: "/citizen/my-reports", label: "My Reports", icon: "📋" },
   { href: "/citizen/map", label: "Map View", icon: "🗺️" },
-  { href: "/citizen/notifications", label: "Notifications", icon: "🔔" },
 ];
 
 export default function CitizenLayout({
@@ -76,14 +75,21 @@ export default function CitizenLayout({
                 <Link
                   key={link.href}
                   href={link.href}
+                  title={isNotifications ? "Notifications" : undefined}
                   className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                     isActive
                       ? "bg-blue-50 text-blue-700"
                       : "text-gray-600 hover:bg-gray-50 hover:text-gray-800"
                   }`}
                 >
-                  <span className="mr-1">{link.icon}</span>
-                  {link.label}
+                  <span className={isNotifications ? "" : "mr-1"}>
+                    {link.icon}
+                  </span>
+                  {isNotifications ? (
+                    <span className="sr-only">Notifications</span>
+                  ) : (
+                    link.label
+                  )}
                   {isNotifications && unreadCount > 0 && (
                     <span className="ml-2 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-semibold text-white">
                       {unreadCount > 9 ? "9+" : unreadCount}

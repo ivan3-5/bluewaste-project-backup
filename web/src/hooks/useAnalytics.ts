@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
-import { BarangayStats } from "@/types";
+import { BarangayStats, DashboardOverviewResponse } from "@/types";
 
 type BackendBarangayStats = {
   id?: string;
@@ -33,5 +33,23 @@ export function useAnalyticsBarangays() {
       // Barangay analytics removed on backend; return empty list.
       return [];
     },
+  });
+}
+
+export function useDashboardOverview(days = 30) {
+  return useQuery<DashboardOverviewResponse>({
+    queryKey: ["analytics", "dashboard", days],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (Number.isFinite(days)) {
+        params.append("days", String(days));
+      }
+      const query = params.toString();
+      const { data } = await api.get(
+        `/analytics/dashboard${query ? `?${query}` : ""}`,
+      );
+      return data;
+    },
+    refetchInterval: 30000,
   });
 }
