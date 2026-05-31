@@ -329,7 +329,7 @@ export class ReportService {
           longitude: data.longitude,
           address: data.address,
           isAnonymous: data.isAnonymous || false,
-          reporterId: data.isAnonymous ? null : data.reporterId,
+          reporterId: data.reporterId,
         },
         include: {
           reporter: {

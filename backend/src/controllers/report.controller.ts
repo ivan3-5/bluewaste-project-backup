@@ -6,13 +6,40 @@ import { CloudinaryService } from "../services/cloudinary.service";
 import { sendError } from "../utils/http";
 
 export class ReportController {
+  private static redactAnonymous(data: any, currentUser: any) {
+    if (!data) return data;
+    const isAdmin = currentUser?.role === "LGU_ADMIN";
+    const currentUserId = currentUser?.id;
+
+    const redact = (report: any) => {
+      if (!report) return report;
+      if (report.isAnonymous) {
+        const isCreator = currentUserId && report.reporterId === currentUserId;
+        if (!isAdmin && !isCreator) {
+          report.reporterId = null;
+          report.reporter = null;
+        }
+      }
+      return report;
+    };
+
+    if (Array.isArray(data)) {
+      return data.map(redact);
+    }
+    if (data.reports && Array.isArray(data.reports)) {
+      data.reports = data.reports.map(redact);
+      return data;
+    }
+    return redact(data);
+  }
+
   static async create(req: AuthRequest, res: Response) {
     try {
       const report = await ReportService.create({
         ...req.body,
         reporterId: req.user?.id,
       });
-      res.status(201).json(report);
+      res.status(201).json(ReportController.redactAnonymous(report, req.user));
     } catch (error: any) {
       sendError(res, 500, "Failed to create report", "REPORT_CREATE_FAILED");
     }
@@ -21,7 +48,7 @@ export class ReportController {
   static async findById(req: AuthRequest, res: Response) {
     try {
       const report = await ReportService.findById(req.params.id, req.user);
-      res.json(report);
+      res.json(ReportController.redactAnonymous(report, req.user));
     } catch (error: any) {
       if (error.message === "Report not found") {
         return sendError(res, 404, error.message, "REPORT_NOT_FOUND");
@@ -42,7 +69,7 @@ export class ReportController {
         req.user!.id,
         notes,
       );
-      res.json(report);
+      res.json(ReportController.redactAnonymous(report, req.user));
     } catch (error: any) {
       if (error.message === "Report not found") {
         return sendError(res, 404, error.message, "REPORT_NOT_FOUND");
@@ -59,7 +86,7 @@ export class ReportController {
   static async getReports(req: AuthRequest, res: Response) {
     try {
       const result = await ReportService.getReports(req.query as any);
-      res.json(result);
+      res.json(ReportController.redactAnonymous(result, req.user));
     } catch (error: any) {
       sendError(res, 500, "Failed to fetch reports", "REPORT_FETCH_FAILED");
     }
@@ -73,7 +100,7 @@ export class ReportController {
         assignedToId,
         req.user!.id,
       );
-      res.json(report);
+      res.json(ReportController.redactAnonymous(report, req.user));
     } catch (error: any) {
       if (error.message === "Report not found") {
         return sendError(res, 404, error.message, "REPORT_NOT_FOUND");
@@ -94,7 +121,7 @@ export class ReportController {
         req.user!.id,
         req.query as any,
       );
-      res.json(result);
+      res.json(ReportController.redactAnonymous(result, req.user));
     } catch (error: any) {
       sendError(res, 500, "Failed to fetch reports", "REPORT_FETCH_FAILED");
     }
@@ -106,7 +133,7 @@ export class ReportController {
         req.user!.id,
         req.query as any,
       );
-      res.json(result);
+      res.json(ReportController.redactAnonymous(result, req.user));
     } catch (error: any) {
       sendError(
         res,
@@ -124,7 +151,7 @@ export class ReportController {
         viewer: req.user,
       });
       res.setHeader("Cache-Control", "public, max-age=15");
-      res.json(reports);
+      res.json(ReportController.redactAnonymous(reports, req.user));
     } catch (error: any) {
       sendError(res, 500, "Failed to fetch map data", "MAP_DATA_FETCH_FAILED");
     }
@@ -252,7 +279,7 @@ export class ReportController {
   static async restoreSpam(req: AuthRequest, res: Response) {
     try {
       const report = await ReportService.restoreSpam(req.params.id);
-      res.json(report);
+      res.json(ReportController.redactAnonymous(report, req.user));
     } catch (error: any) {
       if (error.message === "Report not found") {
         return sendError(res, 404, error.message, "REPORT_NOT_FOUND");
@@ -271,7 +298,12 @@ export class ReportController {
       const { id } = req.params;
       const report = await prisma.report.findUnique({
         where: { id },
-        select: { id: true, reporterId: true, status: true },
+        select: {
+          id: true,
+          reporterId: true,
+          status: true,
+          images: { select: { id: true } },
+        },
       });
 
       if (!report) {
@@ -289,7 +321,17 @@ export class ReportController {
         return sendError(res, 403, "Insufficient permissions.", "FORBIDDEN");
       }
 
-      await ReportService.softDelete(id);
+      // If the report has no images (meaning upload failed), do a hard delete to remove it completely!
+      if (!report.images || report.images.length === 0) {
+        await prisma.statusHistory.deleteMany({ where: { reportId: id } });
+        await prisma.activityLog.deleteMany({
+          where: { entityType: "REPORT", entityId: id },
+        });
+        await prisma.notification.deleteMany({ where: { reportId: id } });
+        await prisma.report.delete({ where: { id } });
+      } else {
+        await ReportService.softDelete(id);
+      }
       res.json({ message: "Report deleted successfully" });
     } catch (error: any) {
       if (error.message === "Report not found") {
