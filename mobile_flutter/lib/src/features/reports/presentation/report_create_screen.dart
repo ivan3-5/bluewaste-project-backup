@@ -1,10 +1,12 @@
 import "dart:io";
 
 import "package:flutter/material.dart";
+import "package:flutter_map/flutter_map.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:geolocator/geolocator.dart";
 import "package:image_picker/image_picker.dart";
 import "package:dio/dio.dart";
+import "package:latlong2/latlong.dart";
 
 import "../../../core/theme/app_colors.dart";
 import "../../../core/theme/app_spacing.dart";
@@ -34,15 +36,71 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
   bool _isSubmitting = false;
   bool _isOutsideZone = false;
 
+  final MapController _mapController = MapController();
+  List<List<LatLng>> _zonePolygons = <List<LatLng>>[];
+
   bool get _hasLocation => _latitude != null && _longitude != null;
 
   int get _remainingImageSlots => 5 - _images.length;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchReportingZones();
+  }
 
   @override
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchReportingZones() async {
+    try {
+      final dio = Dio(BaseOptions(
+        baseUrl: AppEnv.apiBaseUrl,
+        connectTimeout: const Duration(seconds: 6),
+        receiveTimeout: const Duration(seconds: 6),
+      ));
+      final response = await dio.get<List<dynamic>>(
+        "/reporting-zones",
+        queryParameters: <String, dynamic>{"activeOnly": "true"},
+      );
+      final zones = response.data;
+      if (zones != null) {
+        final fetchedZones = <List<LatLng>>[];
+        for (final zone in zones) {
+          final coords = (zone["coordinates"] as List<dynamic>)
+              .map((c) => LatLng(
+                    (c["lat"] as num).toDouble(),
+                    (c["lng"] as num).toDouble(),
+                  ))
+              .toList();
+          fetchedZones.add(coords);
+        }
+        if (mounted) {
+          setState(() {
+            _zonePolygons = fetchedZones;
+          });
+        }
+      }
+    } catch (_) {
+      // Allow silent fail for zones
+    }
+  }
+
+  Future<void> _handleMapTap(LatLng point) async {
+    final outside = await _checkOutsideZones(point.latitude, point.longitude);
+    setState(() {
+      _latitude = point.latitude;
+      _longitude = point.longitude;
+      _isOutsideZone = outside;
+    });
+
+    if (outside) {
+      _showMessage("Reporting is only allowed within designated coastal zones.");
+    }
   }
 
   Future<void> _pickFromCamera() async {
@@ -113,6 +171,8 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
       _longitude = position.longitude;
       _isOutsideZone = outside;
     });
+
+    _mapController.move(LatLng(position.latitude, position.longitude), 15);
 
     if (outside) {
       _showMessage(
@@ -390,8 +450,77 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
                 icon: Icons.my_location,
                 title: "Location",
                 subtitle: _hasLocation
-                    ? "Location captured. You can update it anytime."
-                    : "Capture your current location before submitting.",
+                    ? "Location marked. You can tap the map to adjust it."
+                    : "Tap the map or click Capture Location to set coordinates.",
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(
+                  height: 240,
+                  width: double.infinity,
+                  child: Stack(
+                    children: [
+                      FlutterMap(
+                        mapController: _mapController,
+                        options: MapOptions(
+                          initialCenter: _hasLocation
+                              ? LatLng(_latitude!, _longitude!)
+                              : const LatLng(7.3132, 125.6844),
+                          initialZoom: _hasLocation ? 15 : 13,
+                          onTap: (tapPosition, latLng) => _handleMapTap(latLng),
+                        ),
+                        children: [
+                          TileLayer(
+                            urlTemplate:
+                                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                            userAgentPackageName:
+                                "com.bluewaste.mobile_flutter",
+                          ),
+                          PolygonLayer(
+                            polygons: _zonePolygons.map((points) {
+                              return Polygon(
+                                points: points,
+                                color: AppColors.tint(AppColors.success, opacity: 0.15),
+                                borderColor: AppColors.success.withValues(alpha: 0.7),
+                                borderStrokeWidth: 2.5,
+
+                              );
+                            }).toList(),
+                          ),
+                          if (_hasLocation)
+                            MarkerLayer(
+                              markers: [
+                                Marker(
+                                  point: LatLng(_latitude!, _longitude!),
+                                  width: 40,
+                                  height: 40,
+                                  child: const Icon(
+                                    Icons.place,
+                                    color: AppColors.destructive,
+                                    size: 40,
+                                  ),
+                                ),
+                              ],
+                            ),
+                        ],
+                      ),
+                      Positioned(
+                        bottom: AppSpacing.xs,
+                        right: AppSpacing.xs,
+                        child: CircleAvatar(
+                          radius: 18,
+                          backgroundColor: Colors.white,
+                          child: IconButton(
+                            icon: const Icon(Icons.my_location, size: 18),
+                            color: AppColors.primary,
+                            onPressed: _getCurrentLocation,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: AppSpacing.sm),
               Container(
@@ -441,7 +570,7 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
                 onPressed: _getCurrentLocation,
                 icon: const Icon(Icons.my_location),
                 label:
-                    Text(_hasLocation ? "Update Location" : "Capture Location"),
+                    Text(_hasLocation ? "Use GPS Location" : "Capture Location"),
               ),
             ],
           ),

@@ -15,9 +15,10 @@ export const createReportSchema = z.object({
   ]),
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
-  address: z.string().max(500).optional(),
+  address: z.string().max(500).nullable().optional(),
   isAnonymous: z.boolean().default(false),
 });
+
 
 export const updateStatusSchema = z.object({
   status: z.enum([

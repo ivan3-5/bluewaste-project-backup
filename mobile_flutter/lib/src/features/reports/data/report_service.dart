@@ -29,7 +29,7 @@ class ReportService {
           "category": category,
           "latitude": latitude,
           "longitude": longitude,
-          "address": address,
+          if (address != null) "address": address,
           "isAnonymous": isAnonymous,
         },
       );
