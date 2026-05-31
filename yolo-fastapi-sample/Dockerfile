@@ -20,8 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
-COPY main.py ./
+COPY main.py best.pt yolov8n-cls.pt yolov8n.pt ./
 
-EXPOSE 8080
-
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}"]
+EXPOSE 7860
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7860"]

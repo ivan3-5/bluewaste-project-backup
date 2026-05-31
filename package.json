@@ -23,6 +23,7 @@
     "web:build": "npm run build --workspace=web",
     "db:migrate": "npm run migrate --workspace=backend",
     "db:seed": "npm run seed --workspace=backend",
+    "db:wipe": "npm run db:wipe --workspace=backend",
     "db:studio": "npm run studio --workspace=backend"
   },
   "engines": {

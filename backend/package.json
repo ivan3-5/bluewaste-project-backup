@@ -11,6 +11,7 @@
     "start": "node dist/index.js",
     "migrate": "prisma migrate dev",
     "seed": "ts-node prisma/seed.ts",
+    "db:wipe": "ts-node prisma/wipe.ts",
     "studio": "prisma studio",
     "generate": "prisma generate"
   },
