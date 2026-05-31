@@ -12,6 +12,7 @@ import {
 } from "../utils/pagination";
 import { NotificationService } from "./notification.service";
 import { env } from "../config/env";
+import { CloudinaryService } from "./cloudinary.service";
 
 type Viewer = {
   id: string;
@@ -249,9 +250,7 @@ export class ReportService {
 
     if (annotatedImageBuffer) {
       try {
-        annotatedImageUpload = await (
-          await import("./cloudinary.service")
-        ).CloudinaryService.uploadImage(
+        annotatedImageUpload = await CloudinaryService.uploadImage(
           annotatedImageBuffer,
           "bluewaste/analysis",
         );
