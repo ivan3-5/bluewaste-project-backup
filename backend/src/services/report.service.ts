@@ -752,6 +752,7 @@ export class ReportService {
     status?: ReportStatus;
     category?: WasteCategory;
     limit?: string;
+    viewer?: { id: string; role: string };
   }) {
     await this.purgeExpiredSpamIfDue();
     const parsedLimit = Number.parseInt(filters?.limit || "", 10);
@@ -763,6 +764,7 @@ export class ReportService {
       status: filters?.status || null,
       category: filters?.category || null,
       limit,
+      userId: filters?.viewer?.role === "CITIZEN" ? filters.viewer.id : null,
     });
 
     const cached = this.getCachedMapData(cacheKey);
@@ -776,6 +778,10 @@ export class ReportService {
     };
     if (filters?.status) where.status = filters.status;
     if (filters?.category) where.category = filters.category;
+
+    if (filters?.viewer?.role === "CITIZEN") {
+      where.reporterId = filters.viewer.id;
+    }
 
     const reports = await prisma.report.findMany({
       where,

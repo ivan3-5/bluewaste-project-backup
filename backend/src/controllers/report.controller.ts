@@ -119,13 +119,17 @@ export class ReportController {
 
   static async getMapData(req: AuthRequest, res: Response) {
     try {
-      const reports = await ReportService.getMapData(req.query as any);
+      const reports = await ReportService.getMapData({
+        ...req.query,
+        viewer: req.user,
+      });
       res.setHeader("Cache-Control", "public, max-age=15");
       res.json(reports);
     } catch (error: any) {
       sendError(res, 500, "Failed to fetch map data", "MAP_DATA_FETCH_FAILED");
     }
   }
+
 
   static async getHeatmapData(req: AuthRequest, res: Response) {
     try {
