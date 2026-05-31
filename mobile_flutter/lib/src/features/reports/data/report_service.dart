@@ -166,6 +166,14 @@ class ReportService {
       throw ApiException.fromDioError(error);
     }
   }
+
+  Future<void> deleteReport(String reportId) async {
+    try {
+      await _dio.delete<void>("/reports/$reportId");
+    } on DioException catch (error) {
+      throw ApiException.fromDioError(error);
+    }
+  }
 }
 
 final reportServiceProvider = Provider<ReportService>((ref) {

@@ -18,6 +18,7 @@ dependencies:
   intl: ^0.19.0
   flutter_map: ^7.0.2
   latlong2: ^0.9.1
+  flutter_dotenv: ^5.2.1
 
 dev_dependencies:
   flutter_test:
@@ -52,3 +53,4 @@ flutter:
   assets:
     - assets/charls.png
     - assets/images/logo-final.png
+    - .env

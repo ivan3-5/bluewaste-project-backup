@@ -60,5 +60,6 @@ coverage/
 
 # Please put here any additional files or directories that should be ignored by Git.
 
-
-
+# Python cache
+__pycache__/
+*.pyc

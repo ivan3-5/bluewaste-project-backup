@@ -201,6 +201,7 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
     }
 
     setState(() => _isSubmitting = true);
+    String? createdReportId;
     try {
       final reportService = ref.read(reportServiceProvider);
 
@@ -212,6 +213,8 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
         longitude: _longitude!,
         isAnonymous: _isAnonymous,
       );
+
+      createdReportId = report.id;
 
       if (_images.isNotEmpty) {
         await reportService.uploadReportImages(
@@ -232,6 +235,14 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
 
       _showMessage("Report submitted successfully.");
     } catch (error) {
+      if (createdReportId != null) {
+        try {
+          final reportService = ref.read(reportServiceProvider);
+          await reportService.deleteReport(createdReportId);
+        } catch (cleanupError) {
+          // Silent catch or debug log
+        }
+      }
       _showMessage(error.toString());
     } finally {
       if (mounted) {

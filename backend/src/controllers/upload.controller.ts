@@ -13,6 +13,7 @@ export class UploadController {
       const result = await CloudinaryService.uploadImage(req.file.buffer);
       res.status(201).json(result);
     } catch (error: any) {
+      console.error("Cloudinary upload error in UploadController:", error);
       sendError(res, 500, "Failed to upload image", "IMAGE_UPLOAD_FAILED");
     }
   }

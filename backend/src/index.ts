@@ -72,6 +72,24 @@ const isTrustedVercelPreviewOrigin = (origin: string): boolean => {
   }
 };
 
+const isLocalNetworkOrigin = (origin: string): boolean => {
+  if (env.NODE_ENV === "production") return false;
+  try {
+    const url = new URL(origin);
+    const hostname = url.hostname;
+    // Allow localhost, 127.0.0.1, and local private network IPs (192.168.x.x, 10.x.x.x, 172.16.x.x)
+    return (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      /^192\.168\.\d+\.\d+$/i.test(hostname) ||
+      /^10\.\d+\.\d+\.\d+$/i.test(hostname) ||
+      /^172\.(?:1[6-9]|2\d|3[0-1])\.\d+\.\d+$/i.test(hostname)
+    );
+  } catch {
+    return false;
+  }
+};
+
 const corsOptions: cors.CorsOptions = {
   origin(origin, callback) {
     // Allow non-browser requests (curl, health checks, server-to-server calls).
@@ -84,7 +102,8 @@ const corsOptions: cors.CorsOptions = {
 
     if (
       allowedOrigins.has(normalizedOrigin) ||
-      isTrustedVercelPreviewOrigin(normalizedOrigin)
+      isTrustedVercelPreviewOrigin(normalizedOrigin) ||
+      isLocalNetworkOrigin(normalizedOrigin)
     ) {
       callback(null, true);
       return;

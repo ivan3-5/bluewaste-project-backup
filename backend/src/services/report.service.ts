@@ -279,8 +279,11 @@ export class ReportService {
       confidence:
         toFiniteNumberOrNull((yoloJson as any)?.top_confidence) ??
         toFiniteNumberOrNull((yoloJson as any)?.confidence),
+      originalConfidence:
+        toFiniteNumberOrNull((yoloJson as any)?.original_confidence),
       labels,
       detections,
+      isUncertain: !!(yoloJson as any)?.decision?.is_uncertain || !!(yoloJson as any)?.decision?.retake_recommended,
       inferenceMs: toFiniteNumberOrNull((yoloJson as any)?.inference_ms),
       annotatedImageUrl: annotatedImageUpload?.url ?? null,
       annotatedImagePublicId: annotatedImageUpload?.publicId ?? null,

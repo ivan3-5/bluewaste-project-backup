@@ -93,7 +93,6 @@ router.put(
 router.delete(
   "/:id",
   authenticate,
-  authorize("LGU_ADMIN"),
   ReportController.delete,
 );
 

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/providers/AuthProvider";
+import api from "@/lib/api";
 import { useCreateReport, useUploadReportImages } from "@/hooks/useReports";
 import { useReportingZones, isPointInAnyZone } from "@/hooks/useReportingZones";
 import {
@@ -519,6 +520,8 @@ export default function SubmitReportPage() {
     setSubmitError("");
     setDecisionMessage("");
 
+    let createdReportId: string | null = null;
+
     try {
       const reportTitle = `Waste report - ${WASTE_CATEGORY_LABELS[selectedCategory]}`;
       const reportDescription =
@@ -534,6 +537,8 @@ export default function SubmitReportPage() {
         longitude: location.lng,
       });
 
+      createdReportId = report.id;
+
       await uploadImages.mutateAsync({
         reportId: report.id,
         files: [imageFile],
@@ -542,6 +547,15 @@ export default function SubmitReportPage() {
 
       router.push("/citizen/my-reports");
     } catch (error: any) {
+      // If we successfully created the report but uploading the image failed, clean up the orphaned report
+      if (createdReportId) {
+        try {
+          await api.delete(`/reports/${createdReportId}`);
+        } catch (cleanupError) {
+          console.warn("Failed to clean up orphaned report after upload failure:", cleanupError);
+        }
+      }
+
       if (error?.response?.status === 401) {
         setSubmitError("Session expired. Please log in and try again.");
         router.push("/login");
@@ -700,115 +714,12 @@ export default function SubmitReportPage() {
                   </div>
                 </div>
                 {imagePreview && (
-                  <DetectionImageOverlay
-                    imageSrc={imagePreview}
+                  <img
+                    src={imagePreview}
                     alt="Selected waste"
-                    detections={analysisResult?.detections || []}
-                    imageClassName="w-full h-auto max-h-80 object-contain bg-gray-50"
+                    className="w-full h-auto max-h-80 object-contain bg-gray-50"
                   />
                 )}
-              </div>
-
-              {/* AI Analysis card */}
-              <div className="rounded-2xl border bg-white shadow-sm">
-                <div className="flex items-center gap-2 border-b px-4 py-3">
-                  <Sparkles className="h-4 w-4 text-violet-500" />
-                  <span className="text-sm font-semibold text-gray-900">
-                    AI Analysis
-                  </span>
-                  <span className="ml-auto text-[11px] text-gray-400">
-                    Optional — helps auto-fill waste type
-                  </span>
-                </div>
-                <div className="space-y-3 p-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full gap-2"
-                    onClick={handleAnalyzeWaste}
-                    disabled={isAnalyzing}
-                  >
-                    {isAnalyzing ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" /> Analyzing…
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="h-4 w-4" /> Analyze Waste
-                      </>
-                    )}
-                  </Button>
-
-                  {analysisError && (
-                    <p className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-                      <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />{" "}
-                      {analysisError}
-                    </p>
-                  )}
-
-                  {analysisResult && (
-                    <div className="space-y-2 rounded-xl border border-gray-100 bg-gray-50 p-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500">Detected</span>
-                        <span className="text-xs font-semibold text-gray-800 capitalize">
-                          {analysisResult.detectedObject}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500">
-                          Dominant waste
-                        </span>
-                        {analysisResult.dominantWaste ? (
-                          <span
-                            className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${DOMINANT_WASTE_STYLES[analysisResult.dominantWaste]}`}
-                          >
-                            {WASTE_TYPE_LABELS[analysisResult.dominantWaste]}
-                          </span>
-                        ) : (
-                          <span className="rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] font-semibold text-gray-700">
-                            Unclassified
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500">Severity</span>
-                        <span
-                          className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${SEVERITY_STYLES[analysisResult.severity]}`}
-                        >
-                          {analysisResult.severity}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500">
-                          Total items
-                        </span>
-                        <span className="text-xs font-semibold text-gray-800">
-                          {analysisResult.totalItems}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500">
-                          Confidence
-                        </span>
-                        <span className="text-xs font-semibold text-gray-800">
-                          {(analysisResult.confidence * 100).toFixed(1)}%
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {decisionMessage && (
-                    <p
-                      className={`rounded-lg border px-3 py-2 text-xs ${
-                        analysisResult?.decision.retakeRecommended
-                          ? "border-amber-200 bg-amber-50 text-amber-700"
-                          : "border-green-200 bg-green-50 text-green-700"
-                      }`}
-                    >
-                      {decisionMessage}
-                    </p>
-                  )}
-                </div>
               </div>
             </div>
 

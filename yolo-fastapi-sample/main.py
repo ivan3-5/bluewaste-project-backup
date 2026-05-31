@@ -58,7 +58,7 @@ LOW_CONFIDENCE_FALLBACK_THRESHOLD = 0.18
 MIN_NORMALIZED_BOX_AREA = 0.0015
 # Set to 2 for stricter DIRTY classification.
 DIRTY_MIN_WASTE_COUNT = 1
-MODEL_NAME = "yolov8n.pt"
+MODEL_NAME = "best.pt" if os.path.exists("best.pt") else "yolov8n-cls.pt"
 MODEL_VERSION = "ultralytics-8.3.2"
 
 
@@ -103,6 +103,7 @@ class PredictResponse(BaseModel):
     waste_count: int
     status: Literal["CLEAN", "DIRTY"]
     top_confidence: Optional[float] = None
+    original_confidence: Optional[float] = None
     inference_ms: float
     annotated_image_base64: Optional[str] = None
     annotated_image_mime: Optional[str] = None
@@ -350,6 +351,63 @@ def _run_waste_detection(
     return detections
 
 
+def _run_waste_classification(
+    model: Any,
+    frame: Any,
+    confidence_threshold: float,
+) -> list[Detection]:
+    # YOLO classification prediction
+    results = model.predict(source=frame, verbose=False)
+    detections: list[Detection] = []
+    if len(results) == 0 or getattr(results[0], "probs", None) is None:
+        return detections
+
+    r = results[0]
+    probs = r.probs
+
+    # Check if probs has data or top1
+    if probs is None or getattr(probs, "top1", None) is None:
+        return detections
+
+    top1_idx = int(probs.top1)
+    confidence = float(probs.top1conf.item())
+
+    if confidence < confidence_threshold:
+        return detections
+
+    if isinstance(r.names, list):
+        class_name = r.names[top1_idx] if top1_idx < len(r.names) else str(top1_idx)
+    else:
+        class_name = r.names.get(top1_idx, str(top1_idx))
+
+    normalized_name = class_name.strip().lower()
+    is_waste = True
+    if normalized_name in {"no-waste", "clean", "no_waste", "nowaste"}:
+        is_waste = False
+    elif normalized_name in {"with-waste", "dirty", "with_waste", "withwaste"}:
+        is_waste = True
+    else:
+        is_waste = normalized_name in WASTE_CLASSES
+
+    bbox = {
+        "x": 0.0,
+        "y": 0.0,
+        "width": 1.0,
+        "height": 1.0,
+        "normalized": True,
+    }
+
+    detections.append(
+        Detection(
+            class_name=class_name,
+            confidence=confidence,
+            bbox=BoundingBox(**bbox),
+            is_waste=is_waste,
+        )
+    )
+    return detections
+
+
 def _get_model() -> Any:
     global _model
     if _model is None:
@@ -387,46 +445,84 @@ async def _predict_core(
 
         height, width = frame.shape[:2]
         model = _get_model()
-        waste_class_ids = _get_waste_class_ids(model)
-
+        
+        # Check if the loaded model is a classification task
+        is_classification = getattr(model, "task", "detect") == "classify"
         active_confidence_threshold = WASTE_CONFIDENCE_THRESHOLD
-        primary_detections = _run_waste_detection(
-            model,
-            frame,
-            width,
-            height,
-            waste_class_ids,
-            WASTE_CONFIDENCE_THRESHOLD,
-        )
 
-        top_primary_confidence = max(
-            (d.confidence for d in primary_detections),
-            default=None,
-        )
-        should_run_fallback = (
-            top_primary_confidence is None
-            or top_primary_confidence < LOW_CONFIDENCE_FALLBACK_THRESHOLD
-        )
+        # Determine low confidence threshold dynamically based on the number of classes
+        decision_threshold = LOW_CONFIDENCE_FALLBACK_THRESHOLD
+        if is_classification:
+            num_classes = len(getattr(model, "names", {}))
+            if num_classes == 2:
+                # In a 2-class binary model, the top probability is always between 0.5 and 1.0.
+                # A score of ~0.5 means the model is completely guessing (50/50).
+                # So we set the uncertainty threshold higher (e.g. 0.65) to capture guessing/spam.
+                decision_threshold = 0.65
+            else:
+                decision_threshold = 0.35
 
-        detections = primary_detections
-
-        # Retry on low confidence/empty result with enhanced frame + lower threshold.
-        if should_run_fallback:
-            fallback_frame = _enhance_low_light_frame(frame)
-            fallback_detections = _run_waste_detection(
+        if is_classification:
+            primary_detections = _run_waste_classification(
                 model,
-                fallback_frame,
+                frame,
+                WASTE_CONFIDENCE_THRESHOLD,
+            )
+            top_primary_confidence = max(
+                (d.confidence for d in primary_detections),
+                default=None,
+            )
+            should_run_fallback = (
+                top_primary_confidence is None
+                or top_primary_confidence < decision_threshold
+            )
+            detections = primary_detections
+
+            if should_run_fallback:
+                fallback_frame = _enhance_low_light_frame(frame)
+                fallback_detections = _run_waste_classification(
+                    model,
+                    fallback_frame,
+                    WASTE_FALLBACK_CONFIDENCE_THRESHOLD,
+                )
+                detections = _merge_detections(primary_detections, fallback_detections)
+                if fallback_detections:
+                    active_confidence_threshold = WASTE_FALLBACK_CONFIDENCE_THRESHOLD
+        else:
+            waste_class_ids = _get_waste_class_ids(model)
+            primary_detections = _run_waste_detection(
+                model,
+                frame,
                 width,
                 height,
                 waste_class_ids,
-                WASTE_FALLBACK_CONFIDENCE_THRESHOLD,
+                WASTE_CONFIDENCE_THRESHOLD,
             )
+            top_primary_confidence = max(
+                (d.confidence for d in primary_detections),
+                default=None,
+            )
+            should_run_fallback = (
+                top_primary_confidence is None
+                or top_primary_confidence < decision_threshold
+            )
+            detections = primary_detections
 
-            detections = _merge_detections(primary_detections, fallback_detections)
-            if fallback_detections:
-                active_confidence_threshold = WASTE_FALLBACK_CONFIDENCE_THRESHOLD
+            if should_run_fallback:
+                fallback_frame = _enhance_low_light_frame(frame)
+                fallback_detections = _run_waste_detection(
+                    model,
+                    fallback_frame,
+                    width,
+                    height,
+                    waste_class_ids,
+                    WASTE_FALLBACK_CONFIDENCE_THRESHOLD,
+                )
+                detections = _merge_detections(primary_detections, fallback_detections)
+                if fallback_detections:
+                    active_confidence_threshold = WASTE_FALLBACK_CONFIDENCE_THRESHOLD
 
-        waste_count = len(detections)
+        waste_count = sum(1 for d in detections if d.is_waste)
         status = "DIRTY" if waste_count >= DIRTY_MIN_WASTE_COUNT else "CLEAN"
         top_confidence = max((d.confidence for d in detections), default=None)
         labels = _extract_labels(detections)
@@ -438,7 +534,8 @@ async def _predict_core(
 
         is_uncertain = (
             top_confidence is None
-            or top_confidence < LOW_CONFIDENCE_FALLBACK_THRESHOLD
+            or top_confidence < decision_threshold
+            or (0.35 <= top_confidence <= 0.65)
         )
         capture_tips = [
             "Move closer to the object",
@@ -451,15 +548,18 @@ async def _predict_core(
             is_uncertain=is_uncertain,
             reason="low_confidence" if is_uncertain else None,
             message=(
-                "No clear waste object was detected. Please retake with better lighting and focus."
+                "No waste could be clearly identified. Please retake the image under better conditions."
                 if top_confidence is None
-                else "Uncertain classification, please retake image with better lighting and focus."
+                else "Uncertain classification. The image cannot be reliably identified as clean or dirty."
                 if is_uncertain
                 else None
             ),
             retake_recommended=is_uncertain,
             capture_tips=capture_tips if is_uncertain else [],
         )
+
+        print(f"[YOLO API] Original Confidence Level (unenhanced): {top_primary_confidence}")
+        print(f"[YOLO API] Final/Modified Confidence Level: {top_confidence}")
 
         return PredictResponse(
             detections=detections,
@@ -468,13 +568,14 @@ async def _predict_core(
             waste_count=waste_count,
             status=status,
             top_confidence=top_confidence,
+            original_confidence=top_primary_confidence,
             inference_ms=inference_ms,
             annotated_image_base64=annotated_image_base64,
             annotated_image_mime="image/jpeg" if annotated_image_base64 else None,
             decision=decision,
             thresholds=Thresholds(
                 model_confidence=active_confidence_threshold,
-                decision_confidence=LOW_CONFIDENCE_FALLBACK_THRESHOLD,
+                decision_confidence=decision_threshold,
                 nms_iou=WASTE_NMS_IOU_THRESHOLD,
             ),
             model=ModelInfo(name=MODEL_NAME, version=MODEL_VERSION),

@@ -1,8 +1,11 @@
+import "package:flutter_dotenv/flutter_dotenv.dart";
+
 class AppEnv {
-  static const String apiBaseUrl = String.fromEnvironment(
-    "API_BASE_URL",
-    // Default to the production Vercel deployment. Override with
-    // `--dart-define=API_BASE_URL=<url>` for local development/emulator.
-    defaultValue: "https://bluewaste-management-system.vercel.app/api",
-  );
+  static String get apiBaseUrl {
+    return dotenv.env["API_BASE_URL"] ??
+        const String.fromEnvironment(
+          "API_BASE_URL",
+          defaultValue: "https://bluewaste-management-system.vercel.app/api",
+        );
+  }
 }

@@ -21,8 +21,7 @@ DROP TABLE IF EXISTS "ResortArea";
 
 -- Remove RESORT_ADMIN from Role enum
 -- PostgreSQL doesn't support removing enum values directly, so we need to alter the enum
--- First, check if there are any users with RESORT_ADMIN role
-UPDATE "User" SET "role" = 'CITIZEN' WHERE "role" = 'RESORT_ADMIN';
+UPDATE "User" SET "role" = 'CITIZEN' WHERE "role"::text = 'RESORT_ADMIN';
 
 -- Create a new enum type without RESORT_ADMIN
 CREATE TYPE "Role_new" AS ENUM ('CITIZEN', 'LGU_ADMIN', 'FIELD_WORKER');
