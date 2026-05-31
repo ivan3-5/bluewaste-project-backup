@@ -6,26 +6,22 @@
       "use": "@vercel/next"
     },
     {
-      "src": "api/[...path].ts",
+      "src": "backend/src/index.ts",
       "use": "@vercel/node"
     }
   ],
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/:path*",
-      "destination": "/api/[...path].ts"
+      "src": "/api/(.*)",
+      "dest": "backend/src/index.ts"
     },
     {
-      "source": "/dashboard/reports/:id",
-      "destination": "/web/dashboard/report?id=:id"
+      "src": "/_next/(.*)",
+      "dest": "web/_next/$1"
     },
     {
-      "source": "/",
-      "destination": "/web"
-    },
-    {
-      "source": "/:path*",
-      "destination": "/web/:path*"
+      "src": "/(.*)",
+      "dest": "web/$1"
     }
   ]
 }
