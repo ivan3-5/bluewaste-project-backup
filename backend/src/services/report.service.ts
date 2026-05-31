@@ -250,7 +250,7 @@ export class ReportService {
     if (annotatedImageBuffer) {
       try {
         annotatedImageUpload = await (
-          await import("../services/cloudinary.service")
+          await import("./cloudinary.service")
         ).CloudinaryService.uploadImage(
           annotatedImageBuffer,
           "bluewaste/analysis",
