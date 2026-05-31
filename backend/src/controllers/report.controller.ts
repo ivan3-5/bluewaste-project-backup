@@ -214,7 +214,7 @@ export class ReportController {
               data: {
                 isSpam: true,
                 spamMarkedAt: new Date(),
-                spamReason: `AI Auto-Spam: Image could not be clearly identified as containing waste or being clean (low confidence of ${(confidence * 100).toFixed(1)}%).`,
+                spamReason: `System Auto-Filter: Image could not be clearly identified as containing waste or being clean (low confidence of ${(confidence * 100).toFixed(1)}%).`,
                 analysisStatus: "CLEAN",
                 analysisConfidence: confidence,
                 analysisWasteCount: analysis.wasteCount,
