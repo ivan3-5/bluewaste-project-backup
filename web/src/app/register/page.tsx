@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/providers/AuthProvider";
+import { getApiErrorMessage } from "@/lib/apiError";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -74,9 +75,7 @@ export default function RegisterPage() {
       });
       router.push("/citizen/report");
     } catch (err: any) {
-      setError(
-        err.response?.data?.error || "Registration failed. Please try again.",
-      );
+      setError(getApiErrorMessage(err, "Registration failed. Please try again."));
     } finally {
       setLoading(false);
     }

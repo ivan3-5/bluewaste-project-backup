@@ -5,16 +5,23 @@ export function getApiErrorMessage(
   fallbackMessage: string,
 ): string {
   if (axios.isAxiosError(error)) {
-    const payload = error.response?.data as
-      | { message?: string; error?: string }
-      | undefined;
+    const payload = error.response?.data as any;
 
-    if (payload?.message && payload.message.trim().length > 0) {
-      return payload.message;
-    }
+    if (payload) {
+      if (typeof payload.message === "string" && payload.message.trim().length > 0) {
+        return payload.message;
+      }
 
-    if (payload?.error && payload.error.trim().length > 0) {
-      return payload.error;
+      if (payload.error) {
+        if (typeof payload.error === "string" && payload.error.trim().length > 0) {
+          return payload.error;
+        }
+        if (typeof payload.error === "object" && payload.error !== null) {
+          if (typeof payload.error.message === "string" && payload.error.message.trim().length > 0) {
+            return payload.error.message;
+          }
+        }
+      }
     }
   }
 
