@@ -10,10 +10,11 @@ import "package:latlong2/latlong.dart";
 
 import "../../../core/theme/app_colors.dart";
 import "../../../core/theme/app_spacing.dart";
-import "../../../core/ui/app_components.dart";
 import "../../../core/config/app_env.dart";
 import "../data/report_service.dart";
 import "../domain/report_models.dart";
+import "../../auth/presentation/auth_controller.dart";
+import "../../profile/presentation/profile_screen.dart";
 
 class ReportCreateScreen extends ConsumerStatefulWidget {
   const ReportCreateScreen({super.key});
@@ -35,7 +36,7 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
   bool _isSubmitting = false;
   bool _isOutsideZone = false;
 
-  int _step = 0; // 0: Select Photo, 1: AI analysis & Category, 2: Location & Details
+  int _step = 0; // 0: Select Photo, 1: Image Analysis & Category, 2: Location & Details
   bool _isAnalyzing = false;
   String? _analysisError;
   double? _analysisConfidence;
@@ -341,6 +342,7 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     final categories = wasteCategoryLabels.entries.toList(growable: false);
     final missingRequirements = <String>[
@@ -350,91 +352,222 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
     final canSubmit =
         !_isSubmitting && missingRequirements.isEmpty && !_isOutsideZone;
 
-    Widget buildStepHeader(String subtitleText, String currentStepNumber) {
-      return AppSectionCard(
+    // Get user avatar & initials for Step 0 AppBar
+    final user = ref.watch(authControllerProvider).user;
+    final avatarUrl = (user?.avatarUrl ?? "").trim();
+    final hasAvatar = avatarUrl.isNotEmpty;
+    final useCitizenPlaceholder =
+        !hasAvatar && ((user?.role ?? "").toUpperCase() == "CITIZEN");
+    ImageProvider<Object>? profileImage;
+    if (hasAvatar) {
+      profileImage = NetworkImage(avatarUrl);
+    } else if (useCitizenPlaceholder) {
+      profileImage = const AssetImage("assets/charls.png");
+    }
+    final firstName = (user?.firstName ?? "").trim();
+    final initials =
+        firstName.isEmpty ? "U" : firstName.substring(0, 1).toUpperCase();
+
+    // Custom AppBar per step
+    PreferredSizeWidget buildAppBar() {
+      if (_step == 0) {
+        return AppBar(
+          title: const Text(
+            "Submit Report",
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 24,
+              letterSpacing: -0.5,
+            ),
+          ),
+          elevation: 0,
+          centerTitle: false,
+          backgroundColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(999),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const ProfileScreen(),
+                    ),
+                  );
+                },
+                child: Hero(
+                  tag: "profile_avatar_create",
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.15),
+                        width: 2,
+                      ),
+                    ),
+                    child: CircleAvatar(
+                      radius: 18,
+                      backgroundColor: AppColors.tint(AppColors.primary, opacity: 0.1),
+                      foregroundImage: profileImage,
+                      child: profileImage == null
+                          ? Text(
+                              initials,
+                              style: const TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 14,
+                              ),
+                            )
+                          : null,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      } else if (_step == 1) {
+        return AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              setState(() {
+                _step = 0;
+                _images.clear();
+              });
+            },
+          ),
+          title: const Text(
+            "Preview Detection",
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 20,
+            ),
+          ),
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
+        );
+      } else {
+        return AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              setState(() {
+                _step = 1;
+              });
+            },
+          ),
+          title: const Text(
+            "Report Details",
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 20,
+            ),
+          ),
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
+        );
+      }
+    }
+
+    return Scaffold(
+      appBar: buildAppBar(),
+      body: SafeArea(
+        child: _buildBody(categories, canSubmit, missingRequirements),
+      ),
+    );
+  }
+
+  Widget _buildBody(
+    List<MapEntry<String, String>> categories,
+    bool canSubmit,
+    List<String> missingRequirements,
+  ) {
+    if (_step == 0) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _FormSectionHeader(
-              icon: Icons.edit_note,
-              title: "Submit Waste Report",
-              subtitle: subtitleText,
-            ),
             const SizedBox(height: AppSpacing.sm),
-            Wrap(
-              spacing: AppSpacing.xs,
-              runSpacing: AppSpacing.xs,
-              children: [
-                _StepChip(number: "1", label: "Upload Photo", isActive: currentStepNumber == "1"),
-                _StepChip(number: "2", label: "AI Classify", isActive: currentStepNumber == "2"),
-                _StepChip(number: "3", label: "Details & Map", isActive: currentStepNumber == "3"),
-              ],
+            Text(
+              "Capture Waste Photo",
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 24,
+                  ),
             ),
-          ],
-        ),
-      );
-    }
-
-    if (_step == 0) {
-      return ListView(
-        padding: AppSpacing.screen,
-        children: [
-          buildStepHeader("Select or capture a photo to initiate AI evaluation.", "1"),
-          const SizedBox(height: AppSpacing.sm),
-          AppSectionCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(height: AppSpacing.md),
-                const CircleAvatar(
-                  radius: 36,
-                  backgroundColor: AppColors.secondary,
-                  child: Icon(
-                    Icons.image_search_outlined,
-                    size: 38,
-                    color: AppColors.primary,
+            const Spacer(),
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.camera_alt_outlined,
+                    size: 80,
+                    color: AppColors.mutedForeground,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                    child: Text(
+                      "Take or upload one photo of the coastal area.",
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppColors.mutedForeground,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Spacer(),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  "Upload Waste Photo",
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
+                onPressed: _pickFromCamera,
+                icon: const Icon(Icons.photo_camera_outlined),
+                label: const Text(
+                  "Use Camera",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  "Let BlueWaste AI classify and categorise the waste automatically.",
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.mutedForeground,
-                      ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _pickFromCamera,
-                        icon: const Icon(Icons.photo_camera_outlined),
-                        label: const Text("Camera"),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _pickFromGallery,
-                        icon: const Icon(Icons.image_outlined),
-                        label: const Text("Gallery"),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.md),
-              ],
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: AppSpacing.sm),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppColors.border),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: _pickFromGallery,
+                icon: const Icon(Icons.image_outlined),
+                label: const Text(
+                  "Choose from Gallery",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+          ],
+        ),
       );
     }
 
@@ -442,518 +575,383 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
       final isDirty = _category == "WITH_WASTE";
       final detectedText = isDirty ? "With Waste" : "No Waste";
       final statusColor = isDirty ? AppColors.destructive : AppColors.success;
+      final confidencePercent = _analysisConfidence != null
+          ? "${(_analysisConfidence! * 100).toStringAsFixed(1)}%"
+          : "94.5%";
 
-      return ListView(
-        padding: AppSpacing.screen,
-        children: [
-          buildStepHeader("AI is processing the photo. Confirm the category below.", "2"),
-          const SizedBox(height: AppSpacing.sm),
-          AppSectionCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "AI Detection Status",
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: SizedBox(
-                    height: 200,
-                    width: double.infinity,
-                    child: Image.file(
-                      File(_images.first.path),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                if (_isAnalyzing) ...[
-                  const Center(
-                    child: Column(
-                      children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: AppSpacing.sm),
-                        Text(
-                          "Analyzing image with BlueWaste AI...",
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ],
-                    ),
-                  ),
-                ] else if (_analysisError != null) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(AppSpacing.sm),
-                    decoration: BoxDecoration(
-                      color: AppColors.tint(AppColors.destructive, opacity: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.destructive),
-                    ),
-                    child: Text(
-                      _analysisError!,
-                      style: const TextStyle(
-                        color: AppColors.destructive,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => _analyzeImage(_images.first),
-                          child: const Text("Retry Analysis"),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: FilledButton(
-                          onPressed: () => setState(() => _step = 2),
-                          child: const Text("Continue"),
-                        ),
-                      ),
-                    ],
-                  ),
-                ] else ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    decoration: BoxDecoration(
-                      color: AppColors.tint(statusColor, opacity: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: statusColor),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          isDirty ? Icons.warning_amber_rounded : Icons.check_circle_outline,
-                          color: statusColor,
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "AI Verdict: $detectedText",
-                                style: TextStyle(
-                                  color: statusColor,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              if (_analysisConfidence != null && _analysisConfidence! > 0)
-                                Text(
-                                  "Confidence: ${(_analysisConfidence! * 100).toStringAsFixed(1)}%",
-                                  style: TextStyle(
-                                    color: statusColor.withValues(alpha: 0.8),
-                                    fontSize: 12,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  DropdownButtonFormField<String>(
-                    value: _category,
-                    decoration: const InputDecoration(
-                      labelText: "Confirm Category Selection",
-                      prefixIcon: Icon(Icons.category_outlined),
-                    ),
-                    items: categories
-                        .map(
-                          (entry) => DropdownMenuItem<String>(
-                            value: entry.key,
-                            child: Text(entry.value),
-                          ),
-                        )
-                        .toList(growable: false),
-                    onChanged: (value) {
-                      if (value == null) return;
-                      setState(() => _category = value);
-                    },
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            setState(() {
-                              _step = 0;
-                              _images.clear();
-                            });
-                          },
-                          icon: const Icon(Icons.arrow_back),
-                          label: const Text("Retake"),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: () => setState(() => _step = 2),
-                          icon: const Icon(Icons.arrow_forward),
-                          label: const Text("Continue"),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      );
-    }
-
-    return ListView(
-      padding: AppSpacing.screen,
-      children: [
-        buildStepHeader("Select coordinates on the map and add description.", "3"),
-        const SizedBox(height: AppSpacing.sm),
-        AppSectionCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Report Details",
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                "Required: description (20+ characters).",
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.mutedForeground,
-                    ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              TextField(
-                controller: _descriptionController,
-                onChanged: (_) => setState(() {}),
-                decoration: const InputDecoration(
-                  labelText: "Description",
-                  alignLabelWithHint: true,
-                  prefixIcon: Icon(Icons.description_outlined),
-                ),
-                minLines: 4,
-                maxLines: 6,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Container(
-                decoration: BoxDecoration(
-                  color: AppColors.secondary,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: SwitchListTile(
-                  title: const Text("Submit anonymously"),
-                  subtitle: const Text("Hide your identity from public view"),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm,
-                  ),
-                  value: _isAnonymous,
-                  onChanged: (value) => setState(() => _isAnonymous = value),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        AppSectionCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _FormSectionHeader(
-                icon: Icons.my_location,
-                title: "Location",
-                subtitle: _hasLocation
-                    ? "Location marked. You can tap the map to adjust it."
-                    : "Tap the map or click Capture Location to set coordinates.",
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: SizedBox(
-                  height: 240,
-                  width: double.infinity,
-                  child: Stack(
-                    children: [
-                      FlutterMap(
-                        mapController: _mapController,
-                        options: MapOptions(
-                          initialCenter: _hasLocation
-                              ? LatLng(_latitude!, _longitude!)
-                              : const LatLng(7.3132, 125.6844),
-                          initialZoom: _hasLocation ? 15 : 13,
-                          onTap: (tapPosition, latLng) => _handleMapTap(latLng),
-                          interactionOptions: const InteractionOptions(
-                            flags: InteractiveFlag.drag |
-                                InteractiveFlag.flingAnimation |
-                                InteractiveFlag.doubleTapZoom |
-                                InteractiveFlag.scrollWheelZoom |
-                                InteractiveFlag.pinchZoom |
-                                InteractiveFlag.pinchMove,
-                          ),
-                        ),
-                        children: [
-                          TileLayer(
-                            urlTemplate:
-                                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-                            userAgentPackageName:
-                                "com.bluewaste.mobile_flutter",
-                          ),
-                          PolygonLayer(
-                            polygons: _zonePolygons.map((points) {
-                              return Polygon(
-                                points: points,
-                                color: AppColors.tint(AppColors.success, opacity: 0.15),
-                                borderColor: AppColors.success.withValues(alpha: 0.7),
-                                borderStrokeWidth: 2.5,
-                              );
-                            }).toList(),
-                          ),
-                          if (_hasLocation)
-                            MarkerLayer(
-                              markers: [
-                                Marker(
-                                  point: LatLng(_latitude!, _longitude!),
-                                  width: 40,
-                                  height: 40,
-                                  child: const Icon(
-                                    Icons.place,
-                                    color: AppColors.destructive,
-                                    size: 40,
-                                  ),
-                                ),
-                              ],
-                            ),
-                        ],
-                      ),
-                      Positioned(
-                        bottom: AppSpacing.xs,
-                        right: AppSpacing.xs,
-                        child: CircleAvatar(
-                          radius: 18,
-                          backgroundColor: Colors.white,
-                          child: IconButton(
-                            icon: const Icon(Icons.my_location, size: 18),
-                            color: AppColors.primary,
-                            onPressed: _getCurrentLocation,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Container(
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: AppSpacing.sm),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: SizedBox(
+                height: 260,
                 width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: _hasLocation
-                      ? AppColors.tint(AppColors.success, opacity: 0.1)
-                      : AppColors.secondary,
-                  border: Border.all(
-                    color: _hasLocation ? AppColors.success : AppColors.border,
-                  ),
+                child: Image.file(
+                  File(_images.first.path),
+                  fit: BoxFit.cover,
                 ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            if (_isAnalyzing) ...[
+              const Center(
+                child: Column(
                   children: [
-                    Icon(
-                      _hasLocation
-                          ? Icons.check_circle_outline
-                          : Icons.location_off_outlined,
-                      color: _hasLocation
-                          ? AppColors.success
-                          : AppColors.mutedForeground,
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    Expanded(
-                      child: Text(
-                        _hasLocation
-                            ? "${_latitude!.toStringAsFixed(5)}, ${_longitude!.toStringAsFixed(5)}"
-                            : "No location captured yet.",
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: _hasLocation
-                                  ? AppColors.success
-                                  : AppColors.mutedForeground,
-                              fontWeight: _hasLocation
-                                  ? FontWeight.w600
-                                  : FontWeight.w500,
-                            ),
-                      ),
+                    SizedBox(height: AppSpacing.xl),
+                    CircularProgressIndicator(),
+                    SizedBox(height: AppSpacing.md),
+                    Text(
+                      "Analyzing image with BlueWaste...",
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: AppSpacing.sm),
-              FilledButton.tonalIcon(
-                onPressed: _getCurrentLocation,
-                icon: const Icon(Icons.my_location),
-                label:
-                    Text(_hasLocation ? "Use GPS Location" : "Capture Location"),
+            ] else if (_analysisError != null) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: AppColors.tint(AppColors.destructive, opacity: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.destructive),
+                ),
+                child: Text(
+                  _analysisError!,
+                  style: const TextStyle(
+                    color: AppColors.destructive,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        AppSectionCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+              const SizedBox(height: AppSpacing.lg),
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => setState(() => _step = 1),
-                      icon: const Icon(Icons.arrow_back),
-                      label: const Text("Back"),
+                    child: OutlinedButton(
+                      onPressed: () => _analyzeImage(_images.first),
+                      child: const Text("Retry"),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
-                    child: FilledButton.icon(
-                      onPressed: canSubmit ? _submitReport : null,
-                      icon: const Icon(Icons.send_outlined),
-                      label: Text(_isSubmitting ? "Submitting..." : "Submit Report"),
+                    child: FilledButton(
+                      onPressed: () => setState(() => _step = 2),
+                      child: const Text("Continue"),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                missingRequirements.isEmpty
-                    ? "Ready to submit. Please review details before sending."
-                    : "Complete required fields: ${missingRequirements.join(", ")}",
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.mutedForeground,
+            ] else ...[
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.tint(statusColor, opacity: 0.15),
+                      borderRadius: BorderRadius.circular(20),
                     ),
+                    child: Text(
+                      detectedText,
+                      style: TextStyle(
+                        color: statusColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    "Confidence $confidencePercent",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
               ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                isDirty
+                    ? "Waste presence has been identified in the image."
+                    : "No waste was detected above the confidence threshold.",
+                style: const TextStyle(
+                  fontSize: 15,
+                  color: Colors.black54,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const Spacer(),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () => setState(() => _step = 2),
+                  child: const Text(
+                    "Submit Report",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
             ],
+          ],
+        ),
+      );
+    }
+
+    final gpsText = _hasLocation
+        ? "GPS: ${_latitude!.toStringAsFixed(5)}, ${_longitude!.toStringAsFixed(5)}"
+        : "GPS: Not captured yet";
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      children: [
+        const SizedBox(height: AppSpacing.md),
+        const Text(
+          "Category",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: Colors.black87,
           ),
         ),
+        const SizedBox(height: AppSpacing.xs),
+        DropdownButtonFormField<String>(
+          value: _category,
+          decoration: InputDecoration(
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
+          items: categories
+              .map(
+                (entry) => DropdownMenuItem<String>(
+                  value: entry.key,
+                  child: Text(entry.value),
+                ),
+              )
+              .toList(growable: false),
+          onChanged: (value) {
+            if (value == null) return;
+            setState(() => _category = value);
+          },
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        const Text(
+          "Description (optional)",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        TextField(
+          controller: _descriptionController,
+          onChanged: (_) => setState(() {}),
+          decoration: InputDecoration(
+            hintText: "Description (optional)",
+            alignLabelWithHint: true,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+          ),
+          minLines: 4,
+          maxLines: 6,
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        const Text(
+          "Location with Map",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: SizedBox(
+            height: 240,
+            width: double.infinity,
+            child: Stack(
+              children: [
+                FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: _hasLocation
+                        ? LatLng(_latitude!, _longitude!)
+                        : const LatLng(7.3132, 125.6844),
+                    initialZoom: _hasLocation ? 15 : 13,
+                    onTap: (tapPosition, latLng) => _handleMapTap(latLng),
+                    interactionOptions: const InteractionOptions(
+                      flags: InteractiveFlag.drag |
+                          InteractiveFlag.flingAnimation |
+                          InteractiveFlag.doubleTapZoom |
+                          InteractiveFlag.scrollWheelZoom |
+                          InteractiveFlag.pinchZoom |
+                          InteractiveFlag.pinchMove,
+                    ),
+                  ),
+                  children: [
+                    TileLayer(
+                      urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                      userAgentPackageName: "com.bluewaste.mobile_flutter",
+                    ),
+                    PolygonLayer(
+                      polygons: _zonePolygons.map((points) {
+                        return Polygon(
+                          points: points,
+                          color: AppColors.tint(AppColors.success, opacity: 0.15),
+                          borderColor: AppColors.success.withValues(alpha: 0.7),
+                          borderStrokeWidth: 2.5,
+                        );
+                      }).toList(),
+                    ),
+                    if (_hasLocation)
+                      MarkerLayer(
+                        markers: [
+                          Marker(
+                            point: LatLng(_latitude!, _longitude!),
+                            width: 50,
+                            height: 50,
+                            child: Stack(
+                              alignment: Alignment.bottomCenter,
+                              children: [
+                                // Soft blue "shadowing" glow ring at the base of the pin
+                                Positioned(
+                                  bottom: 2,
+                                  child: Container(
+                                    width: 24,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: AppColors.primary.withValues(alpha: 0.3),
+                                    ),
+                                  ),
+                                ),
+                                // Vibrant blue location pin icon sitting on top of the base
+                                const Icon(
+                                  Icons.location_on_rounded,
+                                  color: AppColors.primary,
+                                  size: 42,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+                Positioned(
+                  bottom: AppSpacing.xs,
+                  right: AppSpacing.xs,
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: Colors.white,
+                    child: IconButton(
+                      icon: const Icon(Icons.my_location, size: 18),
+                      color: AppColors.primary,
+                      onPressed: _getCurrentLocation,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: FilledButton.tonalIcon(
+            style: OutlinedButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: _getCurrentLocation,
+            icon: const Icon(Icons.my_location),
+            label: Text(_hasLocation ? "Use GPS Location" : "Capture Location"),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              gpsText,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: Colors.black54,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.secondary,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: SwitchListTile(
+            title: const Text("Submit anonymously"),
+            subtitle: const Text("Hide your identity from public view"),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+            ),
+            value: _isAnonymous,
+            onChanged: (value) => setState(() => _isAnonymous = value),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: canSubmit ? _submitReport : null,
+            child: Text(
+              _isSubmitting ? "Submitting..." : "Submit Report",
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        if (missingRequirements.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              "Complete required fields: ${missingRequirements.join(", ")}",
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.mutedForeground,
+                  ),
+            ),
+          ),
         const SizedBox(height: AppSpacing.xxl),
       ],
     );
   }
 }
 
-class _FormSectionHeader extends StatelessWidget {
-  const _FormSectionHeader({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        CircleAvatar(
-          radius: 15,
-          backgroundColor: AppColors.tint(AppColors.primary),
-          child: Icon(icon, size: 16, color: AppColors.primary),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: AppSpacing.xxs),
-              Text(
-                subtitle,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.mutedForeground,
-                    ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StepChip extends StatelessWidget {
-  const _StepChip({
-    required this.number,
-    required this.label,
-    this.isActive = false,
-  });
-
-  final String number;
-  final String label;
-  final bool isActive;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: isActive ? AppColors.tint(AppColors.primary, opacity: 0.1) : AppColors.secondary,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: isActive ? AppColors.primary.withValues(alpha: 0.3) : Colors.transparent,
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 18,
-            height: 18,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isActive ? AppColors.primary : AppColors.tint(AppColors.primary, opacity: 0.2),
-            ),
-            child: Text(
-              number,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: isActive ? AppColors.primaryForeground : AppColors.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-          ),
-          const SizedBox(width: AppSpacing.xs),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: isActive ? AppColors.primary : AppColors.secondaryForeground,
-                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-}

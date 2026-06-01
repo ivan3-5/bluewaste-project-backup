@@ -55,20 +55,22 @@ class _CitizenShellScreenState extends ConsumerState<CitizenShellScreen> {
     ];
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          titles[_index],
-          style: const TextStyle(
-            fontWeight: FontWeight.w800,
-            fontSize: 24,
-            letterSpacing: -0.5,
-          ),
-        ),
-        elevation: 0,
-        centerTitle: false,
-        backgroundColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        actions: [
+      appBar: _index == 1
+          ? null
+          : AppBar(
+              title: Text(
+                titles[_index],
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 24,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              elevation: 0,
+              centerTitle: false,
+              backgroundColor: Colors.transparent,
+              surfaceTintColor: Colors.transparent,
+              actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: InkWell(

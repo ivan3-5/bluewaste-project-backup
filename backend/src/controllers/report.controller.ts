@@ -4,6 +4,7 @@ import { AuthRequest } from "../middleware/auth";
 import prisma from "../config/database";
 import { CloudinaryService } from "../services/cloudinary.service";
 import { sendError } from "../utils/http";
+import { env } from "../config/env";
 
 export class ReportController {
   private static redactAnonymous(data: any, currentUser: any) {
@@ -300,15 +301,67 @@ export class ReportController {
         return sendError(res, 400, "Image file is required", "IMAGE_REQUIRED");
       }
 
-      const uploadResult = await CloudinaryService.uploadImage(file.buffer);
-      const analysis = await ReportService["requestYoloAnalysis"](uploadResult.url);
+      // 1. Build FormData with the uploaded file buffer directly
+      const yoloBody = new FormData();
+      yoloBody.append(
+        "image",
+        new Blob([file.buffer], { type: file.mimetype }),
+        file.originalname || "report-image.jpg",
+      );
+      yoloBody.append("return_annotated", "true");
 
+      // 2. Fetch directly from YOLO API service
+      let yoloResponse: globalThis.Response;
+      try {
+        yoloResponse = await fetch(env.YOLO_API_URL, {
+          method: "POST",
+          body: yoloBody,
+        });
+      } catch (error) {
+        console.error("YOLO service is unavailable:", error);
+        return sendError(res, 500, "YOLO service is currently unavailable", "YOLO_UNAVAILABLE");
+      }
+
+      const yoloText = await yoloResponse.text();
+      let yoloJson: any = {};
+      try {
+        yoloJson = JSON.parse(yoloText);
+      } catch (_) {}
+
+      if (!yoloResponse.ok) {
+        const message =
+          yoloJson?.detail ||
+          yoloJson?.message ||
+          yoloJson?.error ||
+          "YOLO API request failed";
+        return sendError(res, 400, `YOLO API error: ${message}`, "YOLO_ERROR");
+      }
+
+      // 3. Extract the prediction metrics
+      const rawCount = yoloJson?.count;
+      const count = typeof rawCount === "number" && rawCount >= 0 ? Math.floor(rawCount) : 0;
+      const detections = Array.isArray(yoloJson?.detections) ? yoloJson.detections : [];
+      
+      const rawWasteCount = yoloJson?.waste_count;
+      const wasteCount = typeof rawWasteCount === "number" && rawWasteCount >= 0 
+        ? Math.floor(rawWasteCount) 
+        : (detections.length > 0 ? detections.length : count);
+
+      const status = yoloJson?.status === "DIRTY" ? "DIRTY" : "CLEAN";
+      
+      const rawTopConfidence = yoloJson?.top_confidence;
+      const rawConfidence = yoloJson?.confidence;
+      const confidence = typeof rawTopConfidence === "number" && isFinite(rawTopConfidence)
+        ? rawTopConfidence
+        : (typeof rawConfidence === "number" && isFinite(rawConfidence) ? rawConfidence : 0);
+
+      // 4. Return results cleanly without any Cloudinary URL creation!
       res.json({
-        status: analysis.status,
-        wasteCategory: analysis.status === "DIRTY" ? "WITH_WASTE" : "NO_WASTE",
-        imageUrl: uploadResult.url,
-        wasteCount: analysis.wasteCount,
-        confidence: analysis.confidence,
+        status,
+        wasteCategory: status === "DIRTY" ? "WITH_WASTE" : "NO_WASTE",
+        imageUrl: "", // Blank since we do not upload to Cloudinary yet!
+        wasteCount,
+        confidence,
       });
     } catch (error: any) {
       console.error("YOLO analysis error in ReportController.analyzeWaste:", error);
