@@ -35,12 +35,15 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
   bool _isSubmitting = false;
   bool _isOutsideZone = false;
 
+  int _step = 0; // 0: Select Photo, 1: AI analysis & Category, 2: Location & Details
+  bool _isAnalyzing = false;
+  String? _analysisError;
+  double? _analysisConfidence;
+
   final MapController _mapController = MapController();
   List<List<LatLng>> _zonePolygons = <List<LatLng>>[];
 
   bool get _hasLocation => _latitude != null && _longitude != null;
-
-  int get _remainingImageSlots => 5 - _images.length;
 
   @override
   void initState() {
@@ -101,6 +104,32 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
     }
   }
 
+  Future<void> _analyzeImage(XFile file) async {
+    setState(() {
+      _isAnalyzing = true;
+      _analysisError = null;
+    });
+
+    try {
+      final service = ref.read(reportServiceProvider);
+      final result = await service.analyzeWaste(file);
+
+      final wasteCategory = result["wasteCategory"]?.toString() ?? "NO_WASTE";
+      final confidence = double.tryParse(result["confidence"]?.toString() ?? "0") ?? 0;
+
+      setState(() {
+        _category = wasteCategory;
+        _analysisConfidence = confidence;
+        _isAnalyzing = false;
+      });
+    } catch (error) {
+      setState(() {
+        _analysisError = "Failed to analyze image: ${error.toString()}";
+        _isAnalyzing = false;
+      });
+    }
+  }
+
   Future<void> _pickFromCamera() async {
     final picked =
         await _picker.pickImage(source: ImageSource.camera, imageQuality: 75);
@@ -108,32 +137,27 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
       return;
     }
 
-    if (_remainingImageSlots <= 0) {
-      _showMessage("Maximum of 5 images allowed.");
-      return;
-    }
-
     setState(() {
+      _images.clear();
       _images.add(picked);
+      _step = 1;
     });
+    _analyzeImage(picked);
   }
 
   Future<void> _pickFromGallery() async {
-    final remaining = _remainingImageSlots;
-    if (remaining <= 0) {
-      _showMessage("Maximum of 5 images allowed.");
-      return;
-    }
-
     final picked =
-        await _picker.pickMultiImage(imageQuality: 75, limit: remaining);
-    if (picked.isEmpty) {
+        await _picker.pickImage(source: ImageSource.gallery, imageQuality: 75);
+    if (picked == null) {
       return;
     }
 
     setState(() {
-      _images.addAll(picked.take(remaining));
+      _images.clear();
+      _images.add(picked);
+      _step = 1;
     });
+    _analyzeImage(picked);
   }
 
   Future<void> _getCurrentLocation() async {
@@ -283,6 +307,9 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
         _images.clear();
         _isAnonymous = false;
         _category = "WITH_WASTE";
+        _step = 0;
+        _analysisConfidence = null;
+        _analysisError = null;
       });
 
       _showMessage("Report submitted successfully.");
@@ -322,34 +349,275 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
     ];
     final canSubmit =
         !_isSubmitting && missingRequirements.isEmpty && !_isOutsideZone;
-    final hasPhotoSlots = _remainingImageSlots > 0;
+
+    Widget buildStepHeader(String subtitleText, String currentStepNumber) {
+      return AppSectionCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _FormSectionHeader(
+              icon: Icons.edit_note,
+              title: "Submit Waste Report",
+              subtitle: subtitleText,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: AppSpacing.xs,
+              runSpacing: AppSpacing.xs,
+              children: [
+                _StepChip(number: "1", label: "Upload Photo", isActive: currentStepNumber == "1"),
+                _StepChip(number: "2", label: "AI Classify", isActive: currentStepNumber == "2"),
+                _StepChip(number: "3", label: "Details & Map", isActive: currentStepNumber == "3"),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_step == 0) {
+      return ListView(
+        padding: AppSpacing.screen,
+        children: [
+          buildStepHeader("Select or capture a photo to initiate AI evaluation.", "1"),
+          const SizedBox(height: AppSpacing.sm),
+          AppSectionCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(height: AppSpacing.md),
+                const CircleAvatar(
+                  radius: 36,
+                  backgroundColor: AppColors.secondary,
+                  child: Icon(
+                    Icons.image_search_outlined,
+                    size: 38,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  "Upload Waste Photo",
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  "Let BlueWaste AI classify and categorise the waste automatically.",
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.mutedForeground,
+                      ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _pickFromCamera,
+                        icon: const Icon(Icons.photo_camera_outlined),
+                        label: const Text("Camera"),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _pickFromGallery,
+                        icon: const Icon(Icons.image_outlined),
+                        label: const Text("Gallery"),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (_step == 1) {
+      final isDirty = _category == "WITH_WASTE";
+      final detectedText = isDirty ? "With Waste" : "No Waste";
+      final statusColor = isDirty ? AppColors.destructive : AppColors.success;
+
+      return ListView(
+        padding: AppSpacing.screen,
+        children: [
+          buildStepHeader("AI is processing the photo. Confirm the category below.", "2"),
+          const SizedBox(height: AppSpacing.sm),
+          AppSectionCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "AI Detection Status",
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    height: 200,
+                    width: double.infinity,
+                    child: Image.file(
+                      File(_images.first.path),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                if (_isAnalyzing) ...[
+                  const Center(
+                    child: Column(
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: AppSpacing.sm),
+                        Text(
+                          "Analyzing image with BlueWaste AI...",
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ),
+                ] else if (_analysisError != null) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: AppColors.tint(AppColors.destructive, opacity: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.destructive),
+                    ),
+                    child: Text(
+                      _analysisError!,
+                      style: const TextStyle(
+                        color: AppColors.destructive,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => _analyzeImage(_images.first),
+                          child: const Text("Retry Analysis"),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: () => setState(() => _step = 2),
+                          child: const Text("Continue"),
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: AppColors.tint(statusColor, opacity: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: statusColor),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          isDirty ? Icons.warning_amber_rounded : Icons.check_circle_outline,
+                          color: statusColor,
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "AI Verdict: $detectedText",
+                                style: TextStyle(
+                                  color: statusColor,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              if (_analysisConfidence != null && _analysisConfidence! > 0)
+                                Text(
+                                  "Confidence: ${(_analysisConfidence! * 100).toStringAsFixed(1)}%",
+                                  style: TextStyle(
+                                    color: statusColor.withValues(alpha: 0.8),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  DropdownButtonFormField<String>(
+                    value: _category,
+                    decoration: const InputDecoration(
+                      labelText: "Confirm Category Selection",
+                      prefixIcon: Icon(Icons.category_outlined),
+                    ),
+                    items: categories
+                        .map(
+                          (entry) => DropdownMenuItem<String>(
+                            value: entry.key,
+                            child: Text(entry.value),
+                          ),
+                        )
+                        .toList(growable: false),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() => _category = value);
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              _step = 0;
+                              _images.clear();
+                            });
+                          },
+                          icon: const Icon(Icons.arrow_back),
+                          label: const Text("Retake"),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: () => setState(() => _step = 2),
+                          icon: const Icon(Icons.arrow_forward),
+                          label: const Text("Continue"),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      );
+    }
 
     return ListView(
       padding: AppSpacing.screen,
       children: [
-        AppSectionCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _FormSectionHeader(
-                icon: Icons.edit_note,
-                title: "Submit Waste Report",
-                subtitle:
-                    "Provide clear details, location, and photos for faster validation.",
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Wrap(
-                spacing: AppSpacing.xs,
-                runSpacing: AppSpacing.xs,
-                children: const [
-                  _StepChip(number: "1", label: "Details"),
-                  _StepChip(number: "2", label: "Location"),
-                  _StepChip(number: "3", label: "Photos"),
-                ],
-              ),
-            ],
-          ),
-        ),
+        buildStepHeader("Select coordinates on the map and add description.", "3"),
         const SizedBox(height: AppSpacing.sm),
         AppSectionCard(
           child: Column(
@@ -380,28 +648,6 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
                 ),
                 minLines: 4,
                 maxLines: 6,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              DropdownButtonFormField<String>(
-                initialValue: _category,
-                decoration: const InputDecoration(
-                  labelText: "Category",
-                  prefixIcon: Icon(Icons.category_outlined),
-                ),
-                items: categories
-                    .map(
-                      (entry) => DropdownMenuItem<String>(
-                        value: entry.key,
-                        child: Text(entry.value),
-                      ),
-                    )
-                    .toList(growable: false),
-                onChanged: (value) {
-                  if (value == null) {
-                    return;
-                  }
-                  setState(() => _category = value);
-                },
               ),
               const SizedBox(height: AppSpacing.sm),
               Container(
@@ -473,7 +719,6 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
                                 color: AppColors.tint(AppColors.success, opacity: 0.15),
                                 borderColor: AppColors.success.withValues(alpha: 0.7),
                                 borderStrokeWidth: 2.5,
-
                               );
                             }).toList(),
                           ),
@@ -564,115 +809,29 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
             ],
           ),
         ),
-        const SizedBox(height: AppSpacing.sm),
-        AppSectionCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _FormSectionHeader(
-                icon: Icons.photo_library_outlined,
-                title: "Photos",
-                subtitle: "Attach up to 5 clear images.",
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Row(
-                children: [
-                  AppStatusPill(
-                    label: "${_images.length}/5 selected",
-                    color: _images.isEmpty
-                        ? AppColors.mutedForeground
-                        : AppColors.info,
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    hasPhotoSlots
-                        ? "$_remainingImageSlots slot(s) left"
-                        : "Maximum reached",
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.mutedForeground,
-                        ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: hasPhotoSlots ? _pickFromCamera : null,
-                      icon: const Icon(Icons.photo_camera_outlined),
-                      label: const Text("Camera"),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: hasPhotoSlots ? _pickFromGallery : null,
-                      icon: const Icon(Icons.image_outlined),
-                      label: const Text("Gallery"),
-                    ),
-                  ),
-                ],
-              ),
-              if (_images.isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.sm),
-                Wrap(
-                  spacing: AppSpacing.xs,
-                  runSpacing: AppSpacing.xs,
-                  children: _images
-                      .asMap()
-                      .entries
-                      .map(
-                        (entry) => Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: Image.file(
-                                File(entry.value.path),
-                                width: 94,
-                                height: 94,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                            Positioned(
-                              top: -8,
-                              right: -8,
-                              child: InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    _images.removeAt(entry.key);
-                                  });
-                                },
-                                child: const CircleAvatar(
-                                  radius: 12,
-                                  backgroundColor: AppColors.destructive,
-                                  child: Icon(
-                                    Icons.close,
-                                    size: 14,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                      .toList(growable: false),
-                ),
-              ],
-            ],
-          ),
-        ),
         const SizedBox(height: AppSpacing.md),
         AppSectionCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              FilledButton.icon(
-                onPressed: canSubmit ? _submitReport : null,
-                icon: const Icon(Icons.send_outlined),
-                label: Text(_isSubmitting ? "Submitting..." : "Submit Report"),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => setState(() => _step = 1),
+                      icon: const Icon(Icons.arrow_back),
+                      label: const Text("Back"),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: canSubmit ? _submitReport : null,
+                      icon: const Icon(Icons.send_outlined),
+                      label: Text(_isSubmitting ? "Submitting..." : "Submit Report"),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
@@ -741,21 +900,30 @@ class _FormSectionHeader extends StatelessWidget {
 }
 
 class _StepChip extends StatelessWidget {
-  const _StepChip({required this.number, required this.label});
+  const _StepChip({
+    required this.number,
+    required this.label,
+    this.isActive = false,
+  });
 
   final String number;
   final String label;
+  final bool isActive;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.xs,
-        vertical: AppSpacing.xxs,
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
       ),
       decoration: BoxDecoration(
-        color: AppColors.secondary,
+        color: isActive ? AppColors.tint(AppColors.primary, opacity: 0.1) : AppColors.secondary,
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: isActive ? AppColors.primary.withValues(alpha: 0.3) : Colors.transparent,
+          width: 1,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -766,12 +934,12 @@ class _StepChip extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.tint(AppColors.primary),
+              color: isActive ? AppColors.primary : AppColors.tint(AppColors.primary, opacity: 0.2),
             ),
             child: Text(
               number,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: AppColors.primary,
+                    color: isActive ? AppColors.primaryForeground : AppColors.primary,
                     fontWeight: FontWeight.w700,
                   ),
             ),
@@ -780,8 +948,8 @@ class _StepChip extends StatelessWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: AppColors.secondaryForeground,
-                  fontWeight: FontWeight.w600,
+                  color: isActive ? AppColors.primary : AppColors.secondaryForeground,
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
                 ),
           ),
         ],

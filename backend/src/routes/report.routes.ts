@@ -82,6 +82,14 @@ router.post(
   ReportController.addImages,
 );
 
+router.post(
+  "/analyze-waste",
+  authenticate,
+  upload.single("image"),
+  validateUploadedImages,
+  ReportController.analyzeWaste,
+);
+
 // Admin spam restore and delete
 router.put(
   "/:id/restore-spam",

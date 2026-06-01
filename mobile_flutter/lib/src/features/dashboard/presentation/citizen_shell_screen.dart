@@ -7,7 +7,7 @@ import "../../auth/presentation/auth_controller.dart";
 import "../../notifications/presentation/notifications_screen.dart";
 import "../../profile/presentation/profile_screen.dart";
 import "../../reports/presentation/citizen_home_screen.dart";
-import "../../reports/presentation/my_reports_screen.dart";
+
 import "../../reports/presentation/report_create_screen.dart";
 import "../../reports/presentation/reports_map_screen.dart";
 
@@ -43,7 +43,6 @@ class _CitizenShellScreenState extends ConsumerState<CitizenShellScreen> {
         onSelectTab: (tab) => setState(() => _index = tab),
       ),
       const ReportCreateScreen(),
-      const MyReportsScreen(),
       const ReportsMapScreen(),
       const NotificationsScreen(),
     ];
@@ -51,7 +50,6 @@ class _CitizenShellScreenState extends ConsumerState<CitizenShellScreen> {
     const titles = <String>[
       "Home",
       "Submit Report",
-      "My Reports",
       "Map",
       "Notifications",
     ];
@@ -160,11 +158,6 @@ class _CitizenShellScreenState extends ConsumerState<CitizenShellScreen> {
                   icon: Icon(Icons.add_circle_outline),
                   selectedIcon: Icon(Icons.add_circle),
                   label: "Report",
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.list_alt_outlined),
-                  selectedIcon: Icon(Icons.list_alt),
-                  label: "My Reports",
                 ),
                 NavigationDestination(
                   icon: Icon(Icons.map_outlined),

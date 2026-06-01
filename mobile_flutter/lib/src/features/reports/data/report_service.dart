@@ -167,6 +167,29 @@ class ReportService {
     }
   }
 
+  Future<Map<String, dynamic>> analyzeWaste(XFile image) async {
+    try {
+      final multipartFile = await MultipartFile.fromFile(
+        image.path,
+        filename: image.name,
+      );
+
+      final formData = FormData.fromMap({
+        "image": multipartFile,
+      });
+
+      final response = await _dio.post<Map<String, dynamic>>(
+        "/reports/analyze-waste",
+        data: formData,
+        options: Options(headers: {"Content-Type": "multipart/form-data"}),
+      );
+
+      return response.data ?? <String, dynamic>{};
+    } on DioException catch (error) {
+      throw ApiException.fromDioError(error);
+    }
+  }
+
   Future<void> deleteReport(String reportId) async {
     try {
       await _dio.delete<void>("/reports/$reportId");

@@ -293,6 +293,29 @@ export class ReportController {
     }
   }
 
+  static async analyzeWaste(req: AuthRequest, res: Response) {
+    try {
+      const file = req.file;
+      if (!file) {
+        return sendError(res, 400, "Image file is required", "IMAGE_REQUIRED");
+      }
+
+      const uploadResult = await CloudinaryService.uploadImage(file.buffer);
+      const analysis = await ReportService["requestYoloAnalysis"](uploadResult.url);
+
+      res.json({
+        status: analysis.status,
+        wasteCategory: analysis.status === "DIRTY" ? "WITH_WASTE" : "NO_WASTE",
+        imageUrl: uploadResult.url,
+        wasteCount: analysis.wasteCount,
+        confidence: analysis.confidence,
+      });
+    } catch (error: any) {
+      console.error("YOLO analysis error in ReportController.analyzeWaste:", error);
+      sendError(res, 500, "Failed to analyze image", "ANALYSIS_FAILED");
+    }
+  }
+
   static async delete(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;

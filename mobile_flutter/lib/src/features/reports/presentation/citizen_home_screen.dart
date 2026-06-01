@@ -5,6 +5,7 @@ import "../../../core/theme/app_colors.dart";
 import "../../../core/theme/app_spacing.dart";
 import "../../../core/ui/app_components.dart";
 import "../../auth/presentation/auth_controller.dart";
+import "my_reports_screen.dart";
 
 class CitizenHomeScreen extends ConsumerWidget {
   const CitizenHomeScreen({
@@ -26,7 +27,7 @@ class CitizenHomeScreen extends ConsumerWidget {
         _WelcomeCard(
           name: displayName,
           onCreateReport: () => onSelectTab(1),
-          onOpenMap: () => onSelectTab(3),
+          onOpenMap: () => onSelectTab(2),
         ),
         const SizedBox(height: AppSpacing.lg),
         const _SectionHeader(
@@ -48,7 +49,17 @@ class CitizenHomeScreen extends ConsumerWidget {
             final action = _homeActions[index];
             return _QuickActionCard(
               action: action,
-              onTap: () => onSelectTab(action.tabIndex),
+              onTap: () {
+                if (action.tabIndex == -1) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const MyReportsScreen(),
+                    ),
+                  );
+                } else {
+                  onSelectTab(action.tabIndex);
+                }
+              },
             );
           },
         ),
@@ -88,21 +99,21 @@ const List<_HomeAction> _homeActions = [
     subtitle: "Track status",
     icon: Icons.assignment_turned_in_outlined,
     color: AppColors.success,
-    tabIndex: 2,
+    tabIndex: -1,
   ),
   _HomeAction(
     title: "Map",
     subtitle: "View report pins",
     icon: Icons.map_outlined,
     color: AppColors.info,
-    tabIndex: 3,
+    tabIndex: 2,
   ),
   _HomeAction(
     title: "Alerts",
     subtitle: "Read updates",
     icon: Icons.notifications_active_outlined,
     color: AppColors.warning,
-    tabIndex: 4,
+    tabIndex: 3,
   ),
 ];
 

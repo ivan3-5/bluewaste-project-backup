@@ -6,6 +6,7 @@ import "../../../core/theme/app_colors.dart";
 import "../../../core/theme/app_spacing.dart";
 import "../../../core/ui/app_components.dart";
 import "../../auth/presentation/auth_controller.dart";
+import "../../reports/presentation/my_reports_screen.dart";
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -218,6 +219,28 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ],
             ),
           ),
+          if ((user?.role ?? "").toUpperCase() == "CITIZEN") ...[
+            const SizedBox(height: AppSpacing.sm),
+            AppSectionCard(
+              child: ListTile(
+                leading: const Icon(Icons.list_alt_outlined, color: AppColors.primary),
+                title: const Text(
+                  "My Reports",
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                subtitle: const Text("Track your submitted reports and their status"),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                contentPadding: EdgeInsets.zero,
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const MyReportsScreen(),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
           const SizedBox(height: AppSpacing.sm),
           AppSectionCard(
             child: Column(
