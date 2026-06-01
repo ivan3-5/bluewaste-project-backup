@@ -204,20 +204,11 @@
 /* ── Waste map: pre-defined category + status + priority color classes ── */
 
 /* Backgrounds */
-.bg-cat-PLASTIC_WASTE {
-  background-color: #3b82f6;
+.bg-cat-WITH_WASTE {
+  background-color: #ef4444;
 }
-.bg-cat-ORGANIC_WASTE {
-  background-color: #84cc16;
-}
-.bg-cat-GLASS_WASTE {
-  background-color: #06b6d4;
-}
-.bg-cat-METAL_WASTE {
-  background-color: #f97316;
-}
-.bg-cat-PAPER_WASTE {
-  background-color: #8b5cf6;
+.bg-cat-NO_WASTE {
+  background-color: #22c55e;
 }
 
 .bg-st-PENDING {

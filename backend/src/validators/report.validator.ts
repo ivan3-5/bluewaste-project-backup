@@ -6,13 +6,7 @@ export const createReportSchema = z.object({
     .string()
     .min(10, "Description must be at least 10 characters")
     .max(2000),
-  category: z.enum([
-    "PLASTIC_WASTE",
-    "ORGANIC_WASTE",
-    "GLASS_WASTE",
-    "METAL_WASTE",
-    "PAPER_WASTE",
-  ]),
+  category: z.enum(["WITH_WASTE", "NO_WASTE"]),
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
   address: z.string().max(500).nullable().optional(),
@@ -43,15 +37,7 @@ export const mapFilterSchema = z.object({
       "REJECTED",
     ])
     .optional(),
-  category: z
-    .enum([
-      "PLASTIC_WASTE",
-      "ORGANIC_WASTE",
-      "GLASS_WASTE",
-      "METAL_WASTE",
-      "PAPER_WASTE",
-    ])
-    .optional(),
+  category: z.enum(["WITH_WASTE", "NO_WASTE"]).optional(),
   limit: z
     .string()
     .regex(/^\d+$/, "limit must be a positive integer")
@@ -81,15 +67,7 @@ export const reportFilterSchema = z.object({
       "REJECTED",
     ])
     .optional(),
-  category: z
-    .enum([
-      "PLASTIC_WASTE",
-      "ORGANIC_WASTE",
-      "GLASS_WASTE",
-      "METAL_WASTE",
-      "PAPER_WASTE",
-    ])
-    .optional(),
+  category: z.enum(["WITH_WASTE", "NO_WASTE"]).optional(),
   isSpam: z.enum(["true", "false"]).optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),

@@ -36,11 +36,11 @@ const WASTE_LABEL_MAP: Record<string, WasteType> = {
 };
 
 const WASTE_TYPE_TO_CATEGORY: Record<WasteType, WasteCategory> = {
-  PLASTIC: "PLASTIC_WASTE",
-  ORGANIC: "ORGANIC_WASTE",
-  GLASS: "GLASS_WASTE",
-  METAL: "METAL_WASTE",
-  PAPER: "PAPER_WASTE",
+  PLASTIC: "WITH_WASTE",
+  ORGANIC: "WITH_WASTE",
+  GLASS: "WITH_WASTE",
+  METAL: "WITH_WASTE",
+  PAPER: "WITH_WASTE",
 };
 
 const ORGANIC_KEYWORDS = [
@@ -56,7 +56,7 @@ const ORGANIC_KEYWORDS = [
 ];
 
 const CATEGORY_KEYWORDS: Record<WasteCategory, string[]> = {
-  PLASTIC_WASTE: [
+  WITH_WASTE: [
     "plastic",
     "bottle",
     "bag",
@@ -65,19 +65,27 @@ const CATEGORY_KEYWORDS: Record<WasteCategory, string[]> = {
     "container",
     "straw",
     "styrofoam",
+    "glass",
+    "wine glass",
+    "jar",
+    "glass bottle",
+    "metal",
+    "can",
+    "tin",
+    "aluminum",
+    "steel",
+    "paper",
+    "cardboard",
+    "carton",
+    "newspaper",
+    "box",
+    ...ORGANIC_KEYWORDS,
   ],
-  ORGANIC_WASTE: ORGANIC_KEYWORDS,
-  GLASS_WASTE: ["glass", "wine glass", "jar", "glass bottle"],
-  METAL_WASTE: ["metal", "can", "tin", "aluminum", "steel"],
-  PAPER_WASTE: ["paper", "cardboard", "carton", "newspaper", "box"],
+  NO_WASTE: [],
 };
 
 const CATEGORY_MATCH_ORDER: WasteCategory[] = [
-  "ORGANIC_WASTE",
-  "GLASS_WASTE",
-  "METAL_WASTE",
-  "PAPER_WASTE",
-  "PLASTIC_WASTE",
+  "WITH_WASTE",
 ];
 
 function labelMatches(label: string, keywords: string[]) {
@@ -333,17 +341,15 @@ export function inferWasteCategory(
   dominantWaste?: WasteType | null,
 ): WasteCategory {
   if (dominantWaste) {
-    return WASTE_TYPE_TO_CATEGORY[dominantWaste];
+    return "WITH_WASTE";
   }
 
-  for (const category of CATEGORY_MATCH_ORDER) {
-    const keywords = CATEGORY_KEYWORDS[category];
-    if (labels.some((label) => labelMatches(label, keywords))) {
-      return category;
-    }
+  const keywords = CATEGORY_KEYWORDS.WITH_WASTE;
+  if (labels.some((label) => labelMatches(label, keywords))) {
+    return "WITH_WASTE";
   }
 
-  return "PLASTIC_WASTE";
+  return "NO_WASTE";
 }
 
 export function classifyYoloPayload(payload: unknown): ClassificationResult {

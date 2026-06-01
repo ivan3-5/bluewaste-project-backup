@@ -560,6 +560,14 @@ class _ReportsMapScreenState extends ConsumerState<ReportsMapScreen>
           options: const MapOptions(
             initialCenter: _panaboCenter,
             initialZoom: _defaultZoom,
+            interactionOptions: InteractionOptions(
+              flags: InteractiveFlag.drag |
+                  InteractiveFlag.flingAnimation |
+                  InteractiveFlag.doubleTapZoom |
+                  InteractiveFlag.scrollWheelZoom |
+                  InteractiveFlag.pinchZoom |
+                  InteractiveFlag.pinchMove,
+            ),
           ),
           children: [
             TileLayer(

@@ -23,13 +23,12 @@ class ReportCreateScreen extends ConsumerStatefulWidget {
 }
 
 class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
-  final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
 
   final List<XFile> _images = <XFile>[];
   final ImagePicker _picker = ImagePicker();
 
-  String _category = "PLASTIC_WASTE";
+  String _category = "WITH_WASTE";
   bool _isAnonymous = false;
   double? _latitude;
   double? _longitude;
@@ -51,7 +50,6 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
 
   @override
   void dispose() {
-    _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
@@ -234,13 +232,8 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
   }
 
   Future<void> _submitReport() async {
-    final title = _titleController.text.trim();
+    final title = "Waste Report - ${wasteCategoryLabels[_category] ?? _category}";
     final description = _descriptionController.text.trim();
-
-    if (title.length < 5) {
-      _showMessage("Title must be at least 5 characters.");
-      return;
-    }
 
     if (description.length < 20) {
       _showMessage("Description must be at least 20 characters.");
@@ -284,13 +277,12 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
         );
       }
 
-      _titleController.clear();
       _descriptionController.clear();
 
       setState(() {
         _images.clear();
         _isAnonymous = false;
-        _category = "PLASTIC_WASTE";
+        _category = "WITH_WASTE";
       });
 
       _showMessage("Report submitted successfully.");
@@ -325,7 +317,6 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
   Widget build(BuildContext context) {
     final categories = wasteCategoryLabels.entries.toList(growable: false);
     final missingRequirements = <String>[
-      if (_titleController.text.trim().length < 5) "Title",
       if (_descriptionController.text.trim().length < 20) "Description",
       if (!_hasLocation) "Location",
     ];
@@ -373,20 +364,10 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
-                "Required: title (5+) and description (20+ characters).",
+                "Required: description (20+ characters).",
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: AppColors.mutedForeground,
                     ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              TextField(
-                controller: _titleController,
-                onChanged: (_) => setState(() {}),
-                decoration: const InputDecoration(
-                  labelText: "Title",
-                  prefixIcon: Icon(Icons.title_outlined),
-                ),
-                maxLength: 100,
               ),
               const SizedBox(height: AppSpacing.sm),
               TextField(
@@ -469,6 +450,14 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
                               : const LatLng(7.3132, 125.6844),
                           initialZoom: _hasLocation ? 15 : 13,
                           onTap: (tapPosition, latLng) => _handleMapTap(latLng),
+                          interactionOptions: const InteractionOptions(
+                            flags: InteractiveFlag.drag |
+                                InteractiveFlag.flingAnimation |
+                                InteractiveFlag.doubleTapZoom |
+                                InteractiveFlag.scrollWheelZoom |
+                                InteractiveFlag.pinchZoom |
+                                InteractiveFlag.pinchMove,
+                          ),
                         ),
                         children: [
                           TileLayer(

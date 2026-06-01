@@ -25,11 +25,8 @@ enum ReportStatus {
 }
 
 enum WasteCategory {
-  PLASTIC_WASTE
-  ORGANIC_WASTE
-  GLASS_WASTE
-  METAL_WASTE
-  PAPER_WASTE
+  WITH_WASTE
+  NO_WASTE
 }
 
 enum ImageType {

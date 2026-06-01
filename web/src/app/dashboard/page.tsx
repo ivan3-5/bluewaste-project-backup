@@ -48,11 +48,8 @@ const BAR_HEIGHT_CLASSES = [
 ];
 
 const CATEGORY_DOT_CLASSES: Record<WasteCategory, string> = {
-  PLASTIC_WASTE: "bg-blue-500",
-  ORGANIC_WASTE: "bg-lime-500",
-  GLASS_WASTE: "bg-cyan-500",
-  METAL_WASTE: "bg-orange-500",
-  PAPER_WASTE: "bg-violet-500",
+  WITH_WASTE: "bg-red-500",
+  NO_WASTE: "bg-green-500",
 };
 
 const formatPercent = (value: number) => {
