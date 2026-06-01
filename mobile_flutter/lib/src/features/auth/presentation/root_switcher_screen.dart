@@ -5,6 +5,7 @@ import "../../../core/providers.dart";
 import "../../../core/theme/app_colors.dart";
 import "../../dashboard/presentation/citizen_shell_screen.dart";
 import "../../dashboard/presentation/worker_shell_screen.dart";
+import "../../dashboard/presentation/admin_shell_screen.dart";
 import "onboarding_screen.dart";
 import "login_screen.dart";
 import "auth_controller.dart";
@@ -92,6 +93,10 @@ class _RootSwitcherScreenState extends ConsumerState<RootSwitcherScreen> {
 
     if (authState.user?.isWorker ?? false) {
       return const WorkerShellScreen();
+    }
+
+    if (authState.user?.isAdmin ?? false) {
+      return const AdminShellScreen();
     }
 
     return const CitizenShellScreen();

@@ -134,6 +134,34 @@ class StatusHistoryEntry {
   }
 }
 
+class AssignedWorkerInfo {
+  const AssignedWorkerInfo({
+    required this.id,
+    required this.firstName,
+    required this.lastName,
+    required this.role,
+    this.avatarUrl,
+  });
+
+  final String id;
+  final String firstName;
+  final String lastName;
+  final String role;
+  final String? avatarUrl;
+
+  String get fullName => "$firstName $lastName".trim();
+
+  factory AssignedWorkerInfo.fromJson(Map<String, dynamic> json) {
+    return AssignedWorkerInfo(
+      id: (json["id"] ?? "").toString(),
+      firstName: (json["firstName"] ?? "").toString(),
+      lastName: (json["lastName"] ?? "").toString(),
+      role: (json["role"] ?? "FIELD_WORKER").toString(),
+      avatarUrl: json["avatarUrl"]?.toString(),
+    );
+  }
+}
+
 class ReportRecord {
   const ReportRecord({
     required this.id,
@@ -151,6 +179,8 @@ class ReportRecord {
     this.priority,
     this.reporter,
     this.statusHistory,
+    this.assignedToId,
+    this.assignedTo,
   });
 
   final String id;
@@ -168,6 +198,8 @@ class ReportRecord {
   final String? priority;
   final ReporterInfo? reporter;
   final List<StatusHistoryEntry>? statusHistory;
+  final String? assignedToId;
+  final AssignedWorkerInfo? assignedTo;
 
   factory ReportRecord.fromJson(Map<String, dynamic> json) {
     double parseDouble(dynamic value, double fallback) {
@@ -193,6 +225,7 @@ class ReportRecord {
         .toList(growable: false);
 
     final reporterJson = json["reporter"] as Map<String, dynamic>?;
+    final assignedToJson = json["assignedTo"] as Map<String, dynamic>?;
 
     return ReportRecord(
       id: (json["id"] ?? "").toString(),
@@ -210,6 +243,8 @@ class ReportRecord {
       priority: json["priority"]?.toString(),
       reporter: reporterJson != null ? ReporterInfo.fromJson(reporterJson) : null,
       statusHistory: historyList,
+      assignedToId: json["assignedToId"]?.toString(),
+      assignedTo: assignedToJson != null ? AssignedWorkerInfo.fromJson(assignedToJson) : null,
     );
   }
 }
