@@ -4,11 +4,11 @@ import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:intl/intl.dart";
 
-import "../../../core/theme/app_colors.dart";
-import "../../../core/theme/app_spacing.dart";
-import "../../../core/ui/app_components.dart";
-import "../data/report_service.dart";
-import "../domain/report_models.dart";
+import "../../../../core/theme/app_colors.dart";
+import "../../../../core/theme/app_spacing.dart";
+import "../../../../core/ui/app_components.dart";
+import "../../data/report_service.dart";
+import "../../domain/report_models.dart";
 
 class MyReportsScreen extends ConsumerStatefulWidget {
   const MyReportsScreen({super.key});

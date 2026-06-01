@@ -6,10 +6,9 @@ import "../../../core/theme/app_spacing.dart";
 import "../../auth/presentation/auth_controller.dart";
 import "../../notifications/presentation/notifications_screen.dart";
 import "../../profile/presentation/profile_screen.dart";
-import "../../reports/presentation/citizen_home_screen.dart";
-
-import "../../reports/presentation/report_create_screen.dart";
-import "../../reports/presentation/reports_map_screen.dart";
+import "../../reports/presentation/citizen/citizen_home_screen.dart";
+import "../../reports/presentation/citizen/report_create_screen.dart";
+import "../../reports/presentation/shared/reports_map_screen.dart";
 
 class CitizenShellScreen extends ConsumerStatefulWidget {
   const CitizenShellScreen({super.key});

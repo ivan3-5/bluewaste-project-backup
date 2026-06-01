@@ -70,6 +70,70 @@ class ReportImage {
   }
 }
 
+class ReporterInfo {
+  const ReporterInfo({
+    required this.id,
+    required this.firstName,
+    required this.lastName,
+    this.email,
+    this.phone,
+  });
+
+  final String id;
+  final String firstName;
+  final String lastName;
+  final String? email;
+  final String? phone;
+
+  factory ReporterInfo.fromJson(Map<String, dynamic> json) {
+    return ReporterInfo(
+      id: (json["id"] ?? "").toString(),
+      firstName: (json["firstName"] ?? "").toString(),
+      lastName: (json["lastName"] ?? "").toString(),
+      email: json["email"]?.toString(),
+      phone: json["phone"]?.toString(),
+    );
+  }
+}
+
+class StatusHistoryEntry {
+  const StatusHistoryEntry({
+    required this.id,
+    this.previousStatus,
+    required this.newStatus,
+    this.notes,
+    this.changedByName,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String? previousStatus;
+  final String newStatus;
+  final String? notes;
+  final String? changedByName;
+  final DateTime createdAt;
+
+  factory StatusHistoryEntry.fromJson(Map<String, dynamic> json) {
+    final changedBy = json["changedBy"] as Map<String, dynamic>?;
+    String? name;
+    if (changedBy != null) {
+      final first = (changedBy["firstName"] ?? "").toString();
+      final last = (changedBy["lastName"] ?? "").toString();
+      name = "$first $last".trim();
+      if (name.isEmpty) name = null;
+    }
+
+    return StatusHistoryEntry(
+      id: (json["id"] ?? "").toString(),
+      previousStatus: json["previousStatus"]?.toString(),
+      newStatus: (json["newStatus"] ?? "PENDING").toString(),
+      notes: json["notes"]?.toString(),
+      changedByName: name,
+      createdAt: DateTime.tryParse(json["createdAt"]?.toString() ?? "") ?? DateTime.now(),
+    );
+  }
+}
+
 class ReportRecord {
   const ReportRecord({
     required this.id,
@@ -84,6 +148,9 @@ class ReportRecord {
     required this.updatedAt,
     required this.images,
     this.address,
+    this.priority,
+    this.reporter,
+    this.statusHistory,
   });
 
   final String id;
@@ -98,6 +165,9 @@ class ReportRecord {
   final DateTime createdAt;
   final DateTime updatedAt;
   final List<ReportImage> images;
+  final String? priority;
+  final ReporterInfo? reporter;
+  final List<StatusHistoryEntry>? statusHistory;
 
   factory ReportRecord.fromJson(Map<String, dynamic> json) {
     double parseDouble(dynamic value, double fallback) {
@@ -117,6 +187,13 @@ class ReportRecord {
         .map(ReportImage.fromJson)
         .toList(growable: false);
 
+    final historyList = (json["statusHistory"] as List<dynamic>? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .map(StatusHistoryEntry.fromJson)
+        .toList(growable: false);
+
+    final reporterJson = json["reporter"] as Map<String, dynamic>?;
+
     return ReportRecord(
       id: (json["id"] ?? "").toString(),
       title: (json["title"] ?? "").toString(),
@@ -130,6 +207,9 @@ class ReportRecord {
       createdAt: parseDate(json["createdAt"]),
       updatedAt: parseDate(json["updatedAt"]),
       images: imageList,
+      priority: json["priority"]?.toString(),
+      reporter: reporterJson != null ? ReporterInfo.fromJson(reporterJson) : null,
+      statusHistory: historyList,
     );
   }
 }

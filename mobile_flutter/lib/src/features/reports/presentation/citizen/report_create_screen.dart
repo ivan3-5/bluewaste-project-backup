@@ -8,13 +8,13 @@ import "package:image_picker/image_picker.dart";
 import "package:dio/dio.dart";
 import "package:latlong2/latlong.dart";
 
-import "../../../core/theme/app_colors.dart";
-import "../../../core/theme/app_spacing.dart";
-import "../../../core/config/app_env.dart";
-import "../data/report_service.dart";
-import "../domain/report_models.dart";
-import "../../auth/presentation/auth_controller.dart";
-import "../../profile/presentation/profile_screen.dart";
+import "../../../../core/theme/app_colors.dart";
+import "../../../../core/theme/app_spacing.dart";
+import "../../../../core/config/app_env.dart";
+import "../../data/report_service.dart";
+import "../../domain/report_models.dart";
+import "../../../auth/presentation/auth_controller.dart";
+import "../../../profile/presentation/profile_screen.dart";
 
 class ReportCreateScreen extends ConsumerStatefulWidget {
   const ReportCreateScreen({super.key});
@@ -904,11 +904,10 @@ class _ReportCreateScreenState extends ConsumerState<ReportCreateScreen> {
           ],
         ),
         const SizedBox(height: AppSpacing.sm),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.secondary,
-            borderRadius: BorderRadius.circular(12),
-          ),
+        Material(
+          color: AppColors.secondary,
+          borderRadius: BorderRadius.circular(12),
+          clipBehavior: Clip.antiAlias,
           child: SwitchListTile(
             title: const Text("Submit anonymously"),
             subtitle: const Text("Hide your identity from public view"),

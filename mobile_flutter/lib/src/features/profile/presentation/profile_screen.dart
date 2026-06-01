@@ -6,7 +6,7 @@ import "../../../core/theme/app_colors.dart";
 import "../../../core/theme/app_spacing.dart";
 import "../../../core/ui/app_components.dart";
 import "../../auth/presentation/auth_controller.dart";
-import "../../reports/presentation/my_reports_screen.dart";
+import "../../reports/presentation/citizen/my_reports_screen.dart";
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
