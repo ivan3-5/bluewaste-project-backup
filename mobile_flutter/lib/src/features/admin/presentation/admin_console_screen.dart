@@ -25,6 +25,9 @@ class _AdminConsoleScreenState extends ConsumerState<AdminConsoleScreen> with Si
   final _announcementTitleController = TextEditingController();
   final _announcementBodyController = TextEditingController();
 
+  final _userSearchController = TextEditingController();
+  String _roleFilter = "";
+
   List<AppUser> _users = const [];
   bool _loadingUsers = true;
   bool _submitting = false;
@@ -32,7 +35,7 @@ class _AdminConsoleScreenState extends ConsumerState<AdminConsoleScreen> with Si
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _loadUsers();
   }
 
@@ -45,6 +48,7 @@ class _AdminConsoleScreenState extends ConsumerState<AdminConsoleScreen> with Si
     _phoneController.dispose();
     _announcementTitleController.dispose();
     _announcementBodyController.dispose();
+    _userSearchController.dispose();
     super.dispose();
   }
 
@@ -149,7 +153,8 @@ class _AdminConsoleScreenState extends ConsumerState<AdminConsoleScreen> with Si
           unselectedLabelColor: AppColors.mutedForeground,
           indicatorColor: AppColors.primary,
           tabs: const [
-            Tab(icon: Icon(Icons.people_outline), text: "User Directory"),
+            Tab(icon: Icon(Icons.engineering_outlined), text: "Workers Setup"),
+            Tab(icon: Icon(Icons.people_outline), text: "All Users"),
             Tab(icon: Icon(Icons.campaign_outlined), text: "Broadcast Alerts"),
           ],
         ),
@@ -160,6 +165,7 @@ class _AdminConsoleScreenState extends ConsumerState<AdminConsoleScreen> with Si
                 controller: _tabController,
                 children: [
                   _buildUserDirectoryTab(),
+                  _buildAllUsersTab(),
                   _buildBroadcastTab(),
                 ],
               ),
@@ -358,6 +364,191 @@ class _AdminConsoleScreenState extends ConsumerState<AdminConsoleScreen> with Si
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildAllUsersTab() {
+    if (_loadingUsers) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final query = _userSearchController.text.toLowerCase().trim();
+    final filtered = _users.where((u) {
+      final matchesQuery = query.isEmpty ||
+          u.fullName.toLowerCase().contains(query) ||
+          u.email.toLowerCase().contains(query);
+
+      final matchesRole = _roleFilter.isEmpty || u.role == _roleFilter;
+
+      return matchesQuery && matchesRole;
+    }).toList();
+
+    return Column(
+      children: [
+        // Filters bar (Search + Role select)
+        Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            children: [
+              TextField(
+                controller: _userSearchController,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  hintText: "Search name or email...",
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _userSearchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _userSearchController.clear();
+                            setState(() {});
+                          },
+                        )
+                      : null,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildRoleChip("All Roles", ""),
+                    const SizedBox(width: AppSpacing.xs),
+                    _buildRoleChip("Admin", "LGU_ADMIN"),
+                    const SizedBox(width: AppSpacing.xs),
+                    _buildRoleChip("Field Worker", "FIELD_WORKER"),
+                    const SizedBox(width: AppSpacing.xs),
+                    _buildRoleChip("Citizen", "CITIZEN"),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Accounts List
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            itemCount: filtered.length,
+            itemBuilder: (context, index) {
+              final u = filtered[index];
+              final isWorker = u.role == "FIELD_WORKER";
+              final isAdmin = u.role == "LGU_ADMIN";
+              final tagColor = isAdmin
+                  ? Colors.blue
+                  : (isWorker ? Colors.teal : Colors.grey);
+              final roleLabel = isAdmin
+                  ? "Admin"
+                  : (isWorker ? "Worker" : "Citizen");
+
+              return Card(
+                margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: AppColors.tint(tagColor),
+                    child: Icon(
+                      isAdmin
+                          ? Icons.admin_panel_settings_outlined
+                          : (isWorker
+                              ? Icons.engineering_outlined
+                              : Icons.person_outline),
+                      color: tagColor,
+                    ),
+                  ),
+                  title: Text(
+                    "${u.firstName} ${u.lastName}",
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  subtitle: Text(
+                    "${u.email}\nRole: $roleLabel • ${u.isActive ? 'Active' : 'Inactive'}",
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Active/Inactive status switch
+                      Switch(
+                        value: u.isActive,
+                        activeThumbColor: AppColors.success,
+                        onChanged: (bool value) async {
+                          setState(() => _submitting = true);
+                          try {
+                            await ref.read(adminServiceProvider).updateUser(
+                                  u.id,
+                                  firstName: u.firstName,
+                                  lastName: u.lastName,
+                                  isActive: value,
+                                );
+                            _showMessage(
+                              "User '${u.fullName}' status updated successfully.",
+                            );
+                            await _loadUsers();
+                          } catch (e) {
+                            _showMessage(e.toString());
+                          } finally {
+                            setState(() => _submitting = false);
+                          }
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, color: AppColors.destructive),
+                        onPressed: () {
+                          showDialog<void>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text("Confirm Delete"),
+                              content: Text(
+                                "Are you sure you want to permanently delete the account of ${u.firstName}?",
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text("Cancel"),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    _deleteUser(u.id);
+                                  },
+                                  child: const Text(
+                                    "Delete",
+                                    style: TextStyle(color: AppColors.destructive),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRoleChip(String label, String roleValue) {
+    final selected = _roleFilter == roleValue;
+    return ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (bool value) {
+        if (value) {
+          setState(() {
+            _roleFilter = roleValue;
+          });
+        }
+      },
+      selectedColor: AppColors.tint(AppColors.primary, opacity: 0.15),
+      labelStyle: TextStyle(
+        color: selected ? AppColors.primary : AppColors.mutedForeground,
+        fontWeight: FontWeight.bold,
+        fontSize: 12,
+      ),
     );
   }
 }

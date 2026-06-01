@@ -49,7 +49,7 @@ class _AdminShellScreenState extends ConsumerState<AdminShellScreen> {
     const titles = <String>[
       "Overview",
       "Reports Manager",
-      "Zone Map",
+      "Map",
       "System Console",
     ];
 

@@ -32,13 +32,6 @@ class _ReportsMapScreenState extends ConsumerState<ReportsMapScreen>
   static const double _fixedMarkerDiameter = 23;
   static const double _fixedDotSize = 5;
 
-  static const Map<String, double> _priorityCoreSizes = {
-    "CRITICAL": 22,
-    "HIGH": 19,
-    "MEDIUM": 15,
-    "LOW": 13,
-  };
-
   final MapController _mapController = MapController();
   late final AnimationController _markerPulseController;
   List<ReportRecord> _reports = const [];
@@ -99,45 +92,6 @@ class _ReportsMapScreenState extends ConsumerState<ReportsMapScreen>
 
   Color _pinColor(String status) {
     return AppColors.statusColor(status);
-  }
-
-  Color _priorityColor(String priority) {
-    switch (priority) {
-      case "CRITICAL":
-        return AppColors.destructive;
-      case "HIGH":
-        return AppColors.orange;
-      case "LOW":
-        return AppColors.info;
-      case "MEDIUM":
-      default:
-        return AppColors.warning;
-    }
-  }
-
-  String _priorityLabel(String priority) {
-    switch (priority) {
-      case "CRITICAL":
-        return "Critical";
-      case "HIGH":
-        return "High";
-      case "LOW":
-        return "Low";
-      case "MEDIUM":
-      default:
-        return "Medium";
-    }
-  }
-
-  double _markerDiameter(String priority) {
-    final coreSize = _priorityCoreSizes[priority] ?? 15;
-    return coreSize + 8;
-  }
-
-  double _statusDotSize(String priority) {
-    final coreSize = _priorityCoreSizes[priority] ?? 15;
-    final dotSize = (coreSize * 0.38).roundToDouble();
-    return dotSize < 4 ? 4 : dotSize;
   }
 
   double _markerPhase({required bool intense}) {

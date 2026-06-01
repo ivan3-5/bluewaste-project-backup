@@ -1,3 +1,5 @@
+import "package:latlong2/latlong.dart";
+
 class AdminDashboardOverview {
   const AdminDashboardOverview({
     required this.overview,
@@ -95,6 +97,40 @@ class DashboardCategoryEntry {
     return DashboardCategoryEntry(
       category: (json["category"] ?? "").toString(),
       count: json["count"] as int? ?? 0,
+    );
+  }
+}
+
+class ReportingZone {
+  const ReportingZone({
+    required this.id,
+    required this.name,
+    required this.coordinates,
+    required this.isActive,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String name;
+  final List<LatLng> coordinates;
+  final bool isActive;
+  final DateTime createdAt;
+
+  factory ReportingZone.fromJson(Map<String, dynamic> json) {
+    final rawCoords = json["coordinates"] as List<dynamic>? ?? const [];
+    final coordsList = rawCoords
+        .map((c) => LatLng(
+              (c["lat"] as num).toDouble(),
+              (c["lng"] as num).toDouble(),
+            ))
+        .toList();
+
+    return ReportingZone(
+      id: (json["id"] ?? "").toString(),
+      name: (json["name"] ?? "").toString(),
+      coordinates: coordsList,
+      isActive: json["isActive"] == true,
+      createdAt: DateTime.tryParse(json["createdAt"]?.toString() ?? "") ?? DateTime.now(),
     );
   }
 }

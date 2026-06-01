@@ -1,5 +1,6 @@
 import "package:dio/dio.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
+import "package:latlong2/latlong.dart";
 
 import "../../../core/network/api_exception.dart";
 import "../../../core/providers.dart";
@@ -106,7 +107,10 @@ class AdminService {
     String userId, {
     required String firstName,
     required String lastName,
+    String? email,
+    String? role,
     String? phone,
+    bool? isActive,
   }) async {
     try {
       final response = await _dio.put<Map<String, dynamic>>(
@@ -114,7 +118,10 @@ class AdminService {
         data: {
           "firstName": firstName,
           "lastName": lastName,
+          if (email != null) "email": email,
+          if (role != null) "role": role,
           if (phone != null) "phone": phone,
+          if (isActive != null) "isActive": isActive,
         },
       );
 
@@ -151,6 +158,50 @@ class AdminService {
   Future<void> restoreSpam(String reportId) async {
     try {
       await _dio.put<void>("/reports/$reportId/restore-spam");
+    } on DioException catch (error) {
+      throw ApiException.fromDioError(error);
+    }
+  }
+
+  Future<List<ReportingZone>> getReportingZones() async {
+    try {
+      final response = await _dio.get<List<dynamic>>("/reporting-zones");
+      final data = response.data ?? const [];
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map(ReportingZone.fromJson)
+          .toList(growable: false);
+    } on DioException catch (error) {
+      throw ApiException.fromDioError(error);
+    }
+  }
+
+  Future<ReportingZone> createReportingZone({
+    required String name,
+    required List<LatLng> coordinates,
+  }) async {
+    try {
+      final coordsData = coordinates
+          .map((ll) => {"lat": ll.latitude, "lng": ll.longitude})
+          .toList();
+
+      final response = await _dio.post<Map<String, dynamic>>(
+        "/reporting-zones",
+        data: {
+          "name": name,
+          "coordinates": coordsData,
+        },
+      );
+
+      return ReportingZone.fromJson(response.data ?? <String, dynamic>{});
+    } on DioException catch (error) {
+      throw ApiException.fromDioError(error);
+    }
+  }
+
+  Future<void> deleteReportingZone(String zoneId) async {
+    try {
+      await _dio.delete<void>("/reporting-zones/$zoneId");
     } on DioException catch (error) {
       throw ApiException.fromDioError(error);
     }

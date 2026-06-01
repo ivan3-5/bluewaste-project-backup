@@ -61,7 +61,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             physics: const NeverScrollableScrollPhysics(),
             crossAxisSpacing: AppSpacing.sm,
             mainAxisSpacing: AppSpacing.sm,
-            childAspectRatio: 1.2,
+            childAspectRatio: 1.15,
             children: [
               _buildMetricCard(
                 title: "Total Reports",
@@ -186,35 +186,51 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: color.withValues(alpha: 0.12),
-            child: Icon(icon, color: color, size: 18),
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -1.0,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            physics: const NeverScrollableScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: color.withValues(alpha: 0.12),
+                    child: Icon(icon, color: color, size: 18),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        value,
+                        style: const TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -1.0,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.mutedForeground,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.mutedForeground,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }

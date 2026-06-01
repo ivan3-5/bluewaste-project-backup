@@ -7,6 +7,7 @@ class AppUser {
     required this.role,
     this.phone,
     this.avatarUrl,
+    this.isActive = true,
   });
 
   final String id;
@@ -16,6 +17,7 @@ class AppUser {
   final String role;
   final String? phone;
   final String? avatarUrl;
+  final bool isActive;
 
   String get fullName => "$firstName $lastName".trim();
   bool get isWorker => role == "FIELD_WORKER";
@@ -30,6 +32,7 @@ class AppUser {
       role: (json["role"] ?? "CITIZEN").toString(),
       phone: json["phone"]?.toString(),
       avatarUrl: json["avatarUrl"]?.toString(),
+      isActive: json["isActive"] != false,
     );
   }
 
@@ -42,6 +45,7 @@ class AppUser {
       "role": role,
       "phone": phone,
       "avatarUrl": avatarUrl,
+      "isActive": isActive,
     };
   }
 
@@ -50,6 +54,7 @@ class AppUser {
     String? lastName,
     String? phone,
     String? avatarUrl,
+    bool? isActive,
   }) {
     return AppUser(
       id: id,
@@ -59,6 +64,7 @@ class AppUser {
       role: role,
       phone: phone ?? this.phone,
       avatarUrl: avatarUrl ?? this.avatarUrl,
+      isActive: isActive ?? this.isActive,
     );
   }
 }
